@@ -98,16 +98,6 @@ You SHOULD adhere to the [AirBnB JavaScript Styleguide](https://github.com/airbn
 
   After a branch was successfully merged into the master branch all feature branches aren't very useful any longer. Therefore you MUST always delete those feature branches after the merge if not already done by the reviewer (in GitLab there is a checkbox right next to the `merge` button that will automatically delete the feature branch after the merge).
 
-### <a name="issue-tracker">Issue Tracker</a>
-This project uses the issue tracker from GitLab (you can find it [here](https://gitlab.informatik.uni-bremen.de/sputze/aimdata/issues)). So far we use 4 main labels to categorize the issues:
-
-- `feature`: This label should be used when opening an issue as a feature request or as a reminder to add a specific _new_ feature.
-- `bug`: This label indicates that someone found a bug. The priority of this label is higher then all others.
-- `in progress`: An issues labeled with the in progress-status is currently in the works by another developer.
-- `discussion`: The discussion label is used to have issues that discuss certain things in the project. An action on the codebase isn't necessary most of the time.
-
-If you think that labels are missing on certain issues feel free to add them.
-
 ### How to review
 To review the code others wrote is one of the main tasks of this project (you can read more information in the [Contributing](#contributing) section). The formal process is pretty easy and straight forward (the feature branch to be reviewed will be named `feature/to-be-reviewed` in this example).
 
