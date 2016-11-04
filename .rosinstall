@@ -1,0 +1,3 @@
+- git:
+    local-name: robosherlock
+    uri: https://github.com/RoboSherlock/robosherlock.git
