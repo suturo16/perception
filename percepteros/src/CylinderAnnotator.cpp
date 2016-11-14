@@ -1,4 +1,4 @@
-#include </home/surxz/caterros/src/perception/percepteros/include/percepteROS/CylinderAnnotator.h>
+#include <../include/percepteROS/CylinderAnnotator.h>
 
   TyErrorId CylinderAnnotator::initialize(AnnotatorContext &ctx)
   {
