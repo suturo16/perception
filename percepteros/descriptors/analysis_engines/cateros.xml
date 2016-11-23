@@ -136,7 +136,7 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot.ini</string>
+            <string>config_mongodb_playback.ini</string>
           </array>
         </value>
       </nameValuePair>
@@ -145,9 +145,9 @@
       <fixedFlow>
       <node>CollectionReader</node>
       <node>ImagePreprocessor</node>
-      <node>CylinderAnnotator</node>
       <node>PointCloudFilter</node>
       <node>NormalEstimator</node>
+      <node>CylinderAnnotator</node>
       <node>PlaneAnnotator</node>
       <node>ImageSegmentationAnnotator</node>
       <node>PointCloudClusterExtractor</node>
