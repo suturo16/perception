@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>percepteros</name>
   <version>0.0.0</version>
   <description>The percepteROS package</description>
@@ -40,8 +40,21 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>robosherlock</build_depend>
-  <run_depend>robosherlock</run_depend>
+  <build_depend>roscpp</build_depend>
+  <depend>tf_conversions</depend>
+  <depend>image_transport</depend>
+  <depend>image_geometry</depend>
+  <!-- install dependencies for robosherlock -->
+  <depend>automake</depend>
+  <depend>xerces</depend>
+  <depend>libicu-dev</depend>
+  <depend>apr</depend>
+  <depend>mongodb</depend>
+  <depend>scons</depend>
+  <depend>java</depend>
+  <depend>boost</depend>
+  <!-- dependency to robosherlock for catkin_make, otherwise the build order would be wrong -->
+  <depend>robosherlock</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
