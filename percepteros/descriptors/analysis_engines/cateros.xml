@@ -112,6 +112,9 @@
     <delegateAnalysisEngine key="TFBroadcaster">
       <import location="../../../../robosherlock/descriptors/annotators/io/TFBroadcaster.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="TrayAnnotator">
+      <import location="../annotators/TrayAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="Trigger">
       <import location="../../../../robosherlock/descriptors/annotators/utils/Trigger.xml"/>
     </delegateAnalysisEngine>
@@ -150,10 +153,11 @@
       <node>CollectionReader</node>
       <node>ImagePreprocessor</node>
       <node>PointCloudFilter</node>
-      <node>PlaneAnnotator</node>
       <node>NormalEstimator</node>
+      <node>PlaneAnnotator</node>
+      <node>CylinderAnnotator</node>
+      <node>TrayAnnotator</node>
       <node>PointCloudClusterExtractor</node>
-      <!--node>ImageSegmentationAnnotator</node-->
       <node>ClusterMerger</node>
       <node>CylinderAnnotator</node>
       <node>ROSPublisher</node>

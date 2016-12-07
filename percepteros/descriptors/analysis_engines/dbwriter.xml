@@ -112,6 +112,9 @@
     <delegateAnalysisEngine key="TFBroadcaster">
       <import location="../../../../robosherlock/descriptors/annotators/io/TFBroadcaster.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="TrayAnnotator">
+      <import location="../annotators/TrayAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="Trigger">
       <import location="../../../../robosherlock/descriptors/annotators/utils/Trigger.xml"/>
     </delegateAnalysisEngine>

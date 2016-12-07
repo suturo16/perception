@@ -56,4 +56,5 @@ target_link_libraries(rs_cylinderAnnotator ${CATKIN_LIBRARIES})
 rs_add_library(rs_rosPublisher src/ROSPublisher.cpp)
 target_link_libraries(rs_rosPublisher ${CATKIN_LIBRARIES})
 
-
+rs_add_library(rs_trayAnnotator src/TrayAnnotator.cpp)
+target_link_libraries(rs_trayAnnotator ${CATKIN_LIBRARIES})
