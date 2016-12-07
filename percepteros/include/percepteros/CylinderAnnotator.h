@@ -23,11 +23,14 @@
 #include <pcl/sample_consensus/sac_model_cylinder.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/common/transforms.h>
+#include <pcl/impl/point_types.hpp>
+#include <pcl/PointIndices.h>
 #include <geometry_msgs/PoseStamped.h>
 
 
 #include <pcl/visualization/pcl_visualizer.h>
 
+#include <percepteros/types/all_types.h>
 
 #include <uima/api.hpp>
 using namespace uima;
@@ -76,9 +79,9 @@ public:
 
 
   int isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object,
-                                  geometry_msgs::PoseStamped &pose);
+                                  geometry_msgs::PoseStamped &pose, percepteros::RecognitionObject &o, CAS &tcas);
 
-  void detectObjectsOnTable(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input);
+  void detectObjectsOnTable(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input, CAS &tcas);
 
 
   float dot(pcl::PointXYZRGBNormal p1, Eigen::Vector3f p2)

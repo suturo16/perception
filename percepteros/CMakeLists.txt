@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(percepteros)
-find_package(catkin REQUIRED robosherlock)
+find_package(catkin REQUIRED robosherlock suturo_perception_msgs)
 ################################################################################
 ## Constants for project                                                      ##
 ################################################################################
-set(NAMESPACE percepteROS)
-set(TYPESYSTEM_CPP_PATH ${PROJECT_SOURCE_DIR}/include/percepteROS/types)
+set(NAMESPACE percepteros)
+set(TYPESYSTEM_CPP_PATH ${PROJECT_SOURCE_DIR}/include/percepteros/types)
 set(TYPESYSTEM_XML_PATH ${PROJECT_SOURCE_DIR}/descriptors/typesystem)
 set(ANNOTATOR_PATH      ${PROJECT_SOURCE_DIR}/descriptors/annotators)
 set(ENGINE_PATH         ${PROJECT_SOURCE_DIR}/descriptors/analysis_engines)
@@ -52,3 +52,8 @@ find_additional_files()
 #add_subdirectory(src/xxx)
 rs_add_library(rs_cylinderAnnotator src/CylinderAnnotator.cpp)
 target_link_libraries(rs_cylinderAnnotator ${CATKIN_LIBRARIES})
+
+rs_add_library(rs_rosPublisher src/ROSPublisher.cpp)
+target_link_libraries(rs_rosPublisher ${CATKIN_LIBRARIES})
+
+
