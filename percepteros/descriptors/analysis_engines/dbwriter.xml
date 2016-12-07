@@ -91,6 +91,9 @@
     <delegateAnalysisEngine key="PrimitiveShapeAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/PrimitiveShapeAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="ROSPublisher">
+      <import location="../annotators/ROSPublisher.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="RegionFilter">
       <import location="../../../../robosherlock/descriptors/annotators/filter/RegionFilter.xml"/>
     </delegateAnalysisEngine>

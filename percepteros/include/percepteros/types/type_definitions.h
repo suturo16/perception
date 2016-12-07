@@ -4,5 +4,6 @@
 #ifndef __PERCEPTEROS_TYPE_DEFINITIONS_H__
 #define __PERCEPTEROS_TYPE_DEFINITIONS_H__
 
+#define PERCEPTEROS_RECOGNITIONTYPES_RECOGNITIONOBJECT "percepteros.recognitiontypes.RecognitionObject"
 
 #endif /* __PERCEPTEROS_TYPE_DEFINITIONS_H__ */

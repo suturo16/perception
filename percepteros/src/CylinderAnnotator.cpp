@@ -1,4 +1,7 @@
-#include <../include/percepteROS/CylinderAnnotator.h>
+#include <../include/percepteros/CylinderAnnotator.h>
+#include <rs/types/all_types.h>
+
+typedef pcl::PointXYZRGBA PointT;
 
   TyErrorId CylinderAnnotator::initialize(AnnotatorContext &ctx)
   {
@@ -17,29 +20,62 @@
     outInfo("process start");
     rs::StopWatch clock;
     rs::SceneCas cas(tcas);
-    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloudNormal_ptr(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudA_ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+    rs::Scene scene = cas.getScene();
+    std::vector<rs::Cluster> clusters;
+    scene.identifiables.filter(clusters);
 
+    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT>);
     pcl::PointCloud<pcl::Normal>::Ptr normal_ptr(new pcl::PointCloud<pcl::Normal>);
+    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_cluster_normal (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 
-    cas.get(VIEW_CLOUD,*cloudA_ptr);
+    cas.get(VIEW_CLOUD, *cloud_ptr);
     cas.get(VIEW_NORMALS, *normal_ptr);
-    pcl::copyPointCloud(*cloudA_ptr,*cloud_ptr);
-    pcl::concatenateFields (*cloud_ptr, *normal_ptr, *cloudNormal_ptr);
-    // Create the filtering object
-    pcl::VoxelGrid<pcl::PointXYZRGBNormal> sor;
-    sor.setInputCloud (cloudNormal_ptr);
-    sor.setLeafSize (0.01f, 0.01f, 0.01f);
-    sor.filter (*cloudNormal_ptr);
 
-    geometry_msgs::PoseStamped pose;
+    for(auto cluster : clusters)
+    {
+      pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
+      rs::ReferenceClusterPoints clusterpoints(cluster.points());
+      rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 
-    detectObjectsOnTable(cloud_ptr);
+      pcl::PointCloud<PointT>::Ptr cluster_cloud(new pcl::PointCloud<PointT>());
+      pcl::PointCloud<pcl::Normal>::Ptr cluster_normal(new pcl::PointCloud<pcl::Normal>());
 
+      for(std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
+          pit != cluster_indices->indices.end(); pit++)
+      {
+        cluster_cloud->points.push_back(cloud_ptr->points[*pit]);
+        cluster_normal->points.push_back(normal_ptr->points[*pit]);
+      }
+      cluster_cloud->width = cluster_cloud->points.size();
+      cluster_cloud->height = 1;
+      cluster_cloud->is_dense = true;
+      cluster_normal->width = cluster_normal->points.size();
+      cluster_normal->height = 1;
+      cluster_normal->is_dense = true;
 
-    outInfo("Pose:x:" << pose.pose.position.x << " y:" << pose.pose.position.y << " z:" << pose.pose.position.z);
-    outInfo("took: " << clock.getTime() << " ms.");
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_clusterRGB (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+      pcl::copyPointCloud(*cluster_cloud,*cloud_clusterRGB);
+      pcl::concatenateFields (*cloud_clusterRGB, *cluster_normal, *cloud_cluster_normal);
+      // Create the filtering object
+      /*pcl::VoxelGrid<pcl::PointXYZRGBNormal> sor;
+      sor.setInputCloud (cloud_cluster_normal);
+      sor.setLeafSize (0.01f, 0.01f, 0.01f);
+      sor.filter (*cloud_cluster_normal);*/
+
+      geometry_msgs::PoseStamped pose;
+      percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
+
+      int cyl = isCylinder(cloud_cluster_normal, pose, o, tcas);
+      if(cyl){
+          rs::StampedPose sp = o.pose.get();
+          outInfo("Pose:x:" << pose.pose.position.x << " y:" << pose.pose.position.y << " z:" << pose.pose.position.z);
+          outInfo("Pose:x:" << sp.translation.get()[0] << " y:" << sp.translation.get()[1] << " z:" << sp.translation.get()[2]);
+          outInfo("took: " << clock.getTime() << " ms.");
+          cluster.annotations.append(o);
+      }
+
+    }
     return UIMA_ERR_NONE;
   }
 
@@ -113,7 +149,7 @@
 
 
 int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object,
-                                geometry_msgs::PoseStamped &pose) {
+                                geometry_msgs::PoseStamped &pose, percepteros::RecognitionObject &o, CAS &tcas) {
 
   pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_rem1(new pcl::PointCloud<pcl::PointXYZRGBNormal>());
   pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_rem2(new pcl::PointCloud<pcl::PointXYZRGBNormal>());
@@ -197,110 +233,33 @@ int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr c
     pose.pose.position.y = (max_v3 + min_v3) * v3.y() / 2.0f + axis_v2 * v2.y() + axis_v1 * v1.y();
     pose.pose.position.z = (max_v3 + min_v3) * v3.z() / 2.0f + axis_v2 * v2.z() + axis_v1 * v1.z();
 
+    float height = max_v3 - min_v3;
+    float width= coefficients_cylinder->values[6] * 2;
+    float depth = width;
+
+    std::vector<double> rotVec(9), trans(3);
+    trans[0]=pose.pose.position.x;
+    trans[1]=pose.pose.position.y;
+    trans[2]=pose.pose.position.z;
+
+
+    rs::StampedPose stampedpose = rs::create<rs::StampedPose>(tcas);
+    stampedpose.rotation.set(rotVec);
+    stampedpose.translation.set(trans);
+    stampedpose.frame.set(cloud_object->header.frame_id);
+
+    o.name.set("Cylinder");
+    o.type.set(2);
+    o.pose.set(stampedpose);
+    o.width.set(width);
+    o.height.set(height);
+    o.depth.set(depth);
+
     //TODO IMPORTANT: implement shape
-    /*shape.height = max_v3 - min_v3;
-    shape.width = shape.depth = coefficients_cylinder->values[6] * 2;
-    shape.type = perception_msgs::Shape::CYLINDER;*/
+
+    /*shape.type = perception_msgs::Shape::CYLINDER;*/
 
     return (int)(cloud_object->points.size() - cloud_rem2->points.size());
-}
-
-void CylinderAnnotator::detectObjectsOnTable(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
-{
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_f (new pcl::PointCloud<pcl::PointXYZRGB>);
-    // Create the filtering object: downsample the dataset using a leaf size of 1cm
-    pcl::VoxelGrid<pcl::PointXYZRGB> vg;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
-    vg.setInputCloud (cloud);
-    vg.setLeafSize (0.01f, 0.01f, 0.01f);
-    vg.filter (*cloud_filtered);
-    std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size ()  << " data points." << std::endl; //*
-
-    // Create the segmentation object for the planar model and set all the parameters
-    pcl::SACSegmentation<pcl::PointXYZRGB> seg;
-    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZRGB> ());
-    seg.setOptimizeCoefficients (true);
-    seg.setModelType (pcl::SACMODEL_PLANE);
-    seg.setMethodType (pcl::SAC_RANSAC);
-    seg.setMaxIterations (100);
-    seg.setDistanceThreshold (0.02);
-
-    int i=0, nr_points = (int) cloud_filtered->points.size ();
-    while (cloud_filtered->points.size () > 0.3 * nr_points)
-    {
-      // Segment the largest planar component from the remaining cloud
-      seg.setInputCloud (cloud_filtered);
-      seg.segment (*inliers, *coefficients);
-      if (inliers->indices.size () == 0)
-      {
-        std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-        break;
-      }
-
-      // Extract the planar inliers from the input cloud
-      pcl::ExtractIndices<pcl::PointXYZRGB> extract;
-      extract.setInputCloud (cloud_filtered);
-      extract.setIndices (inliers);
-      extract.setNegative (false);
-
-      // Get the points associated with the planar surface
-      extract.filter (*cloud_plane);
-      std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points." << std::endl;
-
-      // Remove the planar inliers, extract the rest
-      extract.setNegative (true);
-      extract.filter (*cloud_f);
-      *cloud_filtered = *cloud_f;
-    }
-
-    // Creating the KdTree object for the search method of the extraction
-    pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB>);
-    tree->setInputCloud (cloud_filtered);
-
-    std::vector<pcl::PointIndices> cluster_indices;
-    pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
-    ec.setClusterTolerance (0.02); // 2cm
-    ec.setMinClusterSize (100);
-    ec.setMaxClusterSize (25000);
-    ec.setSearchMethod (tree);
-    ec.setInputCloud (cloud_filtered);
-    ec.extract (cluster_indices);
-
-    int j = 0;
-    for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
-    {
-      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZRGB>);
-      for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
-        cloud_cluster->points.push_back (cloud_filtered->points[*pit]); //*
-      cloud_cluster->width = cloud_cluster->points.size ();
-      cloud_cluster->height = 1;
-      cloud_cluster->is_dense = true;
-
-      // Create the normal estimation class, and pass the input dataset to it
-      pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
-      ne.setInputCloud (cloud_cluster);
-
-      // Create an empty kdtree representation, and pass it to the normal estimation object.
-      // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-      pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB> ());
-      ne.setSearchMethod (tree);
-
-      // Output datasets
-      pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
-
-      // Use all neighbors in a sphere of radius 3cm
-      ne.setRadiusSearch (0.03);
-
-      // Compute the features
-      ne.compute (*cloud_normals);
-
-      pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_cluster_normal (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-      pcl::concatenateFields(*cloud_cluster,*cloud_normals,*cloud_cluster_normal);
-      geometry_msgs::PoseStamped pose;
-      isCylinder(cloud_cluster_normal, pose);
-    }
 }
 // This macro exports an entry point that is used to create the annotator.
 MAKE_AE(CylinderAnnotator)
