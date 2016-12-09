@@ -28,6 +28,7 @@
 #include <rs/DrawingAnnotator.h>
 #include <rs/utils/time.h>
 #include <rs/utils/output.h>
+#include <percepteros/types/all_types.h>
 
 #include <rs/segmentation/ImageSegmentation.h>
 
@@ -262,10 +263,20 @@ private:
       rs::Cluster cluster = rs::create<rs::Cluster>(tcas);
       cluster.rois(roi);
       cluster.points(points);
-      cluster.source.set("ImageSegmentation");
+      cluster.source.set("TrayAnnotator");
       cluster.annotations.append(rs::conversion::to(tcas, seg));
-      cluster.annotations.append(getPose(tcas, seg, scene.timestamp()));
       cluster.annotations.append(buildDesciptor(tcas, seg));
+      
+      percepteros::RecognitionObject tray = rs::create<percepteros::RecognitionObject>(tcas);
+      tray.name.set("Dropzone");
+      tray.type.set(5);
+      tray.height.set(0);
+      tray.width.set(seg.rect.width);
+      tray.depth.set(seg.rect.height);
+      
+      cluster.annotations.append(getPose(tcas, seg, scene.timestamp()));
+      cluster.annotations.append(tray);
+      
       scene.identifiables.append(cluster);
     }
   }
