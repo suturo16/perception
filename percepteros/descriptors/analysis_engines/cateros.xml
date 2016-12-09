@@ -155,10 +155,9 @@
       <node>PointCloudFilter</node>
       <node>NormalEstimator</node>
       <node>PlaneAnnotator</node>
-      <node>CylinderAnnotator</node>
       <node>TrayAnnotator</node>
       <node>PointCloudClusterExtractor</node>
-      <node>ClusterMerger</node>
+      <node>CylinderAnnotator</node>
       <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>

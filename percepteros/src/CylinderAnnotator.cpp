@@ -68,11 +68,25 @@ typedef pcl::PointXYZRGBA PointT;
 
       int cyl = isCylinder(cloud_cluster_normal, pose, o, tcas);
       if(cyl){
-          rs::StampedPose sp = o.pose.get();
           outInfo("Pose:x:" << pose.pose.position.x << " y:" << pose.pose.position.y << " z:" << pose.pose.position.z);
-          outInfo("Pose:x:" << sp.translation.get()[0] << " y:" << sp.translation.get()[1] << " z:" << sp.translation.get()[2]);
           outInfo("took: " << clock.getTime() << " ms.");
           cluster.annotations.append(o);
+
+          tf::StampedTransform camToWorld;
+          camToWorld.setIdentity();
+          if(scene.viewPoint.has())
+          {
+            rs::conversion::from(scene.viewPoint.get(), camToWorld);
+          }
+
+          tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
+          tf::Stamped<tf::Pose> world(camToWorld*transform, camToWorld.stamp_, camToWorld.frame_id_);
+
+          rs::PoseAnnotation poseAnnotation = rs::create<rs::PoseAnnotation>(tcas);
+          poseAnnotation.camera.set(rs::conversion::to(tcas, camera));
+          poseAnnotation.world.set(rs::conversion::to(tcas, world));
+          poseAnnotation.source.set("3DEstimate");
+          cluster.annotations.append(poseAnnotation);
       }
 
     }
@@ -237,27 +251,20 @@ int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr c
     float width= coefficients_cylinder->values[6] * 2;
     float depth = width;
 
-    std::vector<double> rotVec(9), trans(3);
-    trans[0]=pose.pose.position.x;
-    trans[1]=pose.pose.position.y;
-    trans[2]=pose.pose.position.z;
+    tf::Vector3 trans(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
+    tf::Matrix3x3 rot;
+    rot.setValue(mat(0,0), mat(0,1), mat(0,2),
+                 mat(1,0), mat(1,1), mat(1,2),
+                 mat(2,0), mat(2,1), mat(2,2));
 
-
-    rs::StampedPose stampedpose = rs::create<rs::StampedPose>(tcas);
-    stampedpose.rotation.set(rotVec);
-    stampedpose.translation.set(trans);
-    stampedpose.frame.set(cloud_object->header.frame_id);
+    transform.setOrigin(trans);
+    transform.setBasis(rot);
 
     o.name.set("Cylinder");
     o.type.set(2);
-    o.pose.set(stampedpose);
     o.width.set(width);
     o.height.set(height);
     o.depth.set(depth);
-
-    //TODO IMPORTANT: implement shape
-
-    /*shape.type = perception_msgs::Shape::CYLINDER;*/
 
     return (int)(cloud_object->points.size() - cloud_rem2->points.size());
 }

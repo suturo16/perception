@@ -51,6 +51,8 @@ private:
     constexpr static double CYLINDER_PLANE_DISTANCE_THRESHOLD = 0.01;
     constexpr static double CYLINDER_OVEREXTENSION_THRESHOLD = 0.003;
     constexpr static double CYLINDER_MAX_OVEREXTENSION_RATIO = 1250;
+
+    tf::Transform transform;
 public:
   TyErrorId initialize(uima::AnnotatorContext &ctx);
 
