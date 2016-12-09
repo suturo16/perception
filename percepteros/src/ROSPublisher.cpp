@@ -55,24 +55,36 @@ private:
 
      for(rs::Cluster c: clusters){
         std::vector<percepteros::RecognitionObject> objects;
+        std::vector<rs::PoseAnnotation> poses;
+        
         c.annotations.filter(objects);
-
-        if(objects.size()!=0){
-            for(percepteros::RecognitionObject recObj : objects){
+        c.annotations.filter(poses);
+        
+        if(objects.size()!=0 && objects.size() == poses.size()){
+            for(int i = 0; i < objects.size(); i++){
+            	percepteros::RecognitionObject recObj  = objects[i];
+            	rs::StampedPose pose = poses[i].world.get();
+            	std::vector<double> translation = pose.translation.get();
+            	std::vector<double> rotation = pose.rotation.get();
+            	Eigen::Matrix3d mat;
+            	mat << 	rotation[0], rotation[1], rotation[2], 
+            			rotation[3], rotation[4], rotation[5],
+            			rotation[6], rotation[7], rotation[8];
+            	Eigen::Quaterniond q(mat);
+            	
                 outInfo(recObj.name.get());
 
                 suturo_perception_msgs::ObjectDetection objectDetectionMsg;
+                
 
-                tf::Stamped<tf::Pose> tf_stamped_pose;
-                rs::conversion::from(recObj.pose.get(), tf_stamped_pose);
-
-                objectDetectionMsg.pose.pose.position.x=tf_stamped_pose.getOrigin().getX();
-                objectDetectionMsg.pose.pose.position.y=tf_stamped_pose.getOrigin().getY();
-                objectDetectionMsg.pose.pose.position.z=tf_stamped_pose.getOrigin().getZ();
-                objectDetectionMsg.pose.pose.orientation.x=tf_stamped_pose.getRotation().getX();
-                objectDetectionMsg.pose.pose.orientation.y=tf_stamped_pose.getRotation().getY();
-                objectDetectionMsg.pose.pose.orientation.z=tf_stamped_pose.getRotation().getZ();
-                objectDetectionMsg.pose.pose.orientation.w=tf_stamped_pose.getRotation().getW();
+                objectDetectionMsg.pose.pose.position.x=translation[0];
+                objectDetectionMsg.pose.pose.position.y=translation[1];
+                objectDetectionMsg.pose.pose.position.z=translation[2];
+                
+                objectDetectionMsg.pose.pose.orientation.x=q.x();
+                objectDetectionMsg.pose.pose.orientation.y=q.y();
+                objectDetectionMsg.pose.pose.orientation.z=q.z();
+                objectDetectionMsg.pose.pose.orientation.w=q.w();
                 objectDetectionMsg.name=recObj.name.get();
                 objectDetectionMsg.type=recObj.type.get();
                 objectDetectionMsg.width=recObj.width.get();
