@@ -159,7 +159,6 @@
       <node>TrayAnnotator</node>
       <node>PointCloudClusterExtractor</node>
       <node>ClusterMerger</node>
-      <node>CylinderAnnotator</node>
       <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
