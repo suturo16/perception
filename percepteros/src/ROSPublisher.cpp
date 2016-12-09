@@ -76,6 +76,7 @@ private:
 
                 suturo_perception_msgs::ObjectDetection objectDetectionMsg;
                 
+                objectDetectionMsg.pose.header.frame_id = "head_mount_kinect_rgb_optical_frame";
 
                 objectDetectionMsg.pose.pose.position.x=translation[0];
                 objectDetectionMsg.pose.pose.position.y=translation[1];
