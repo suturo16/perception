@@ -87,6 +87,7 @@ typedef pcl::PointXYZRGBA PointT;
           poseAnnotation.world.set(rs::conversion::to(tcas, world));
           poseAnnotation.source.set("3DEstimate");
           cluster.annotations.append(poseAnnotation);
+          scene.identifiables.append(cluster);
       }
 
     }
