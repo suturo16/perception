@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package>
+  <name>dialogsystem</name>
+  <version>0.0.0</version>
+  <description>dialog system for pepper robot</description>
+
+  <maintainer email="fkenghag@uni-bremen.de">Franklin Kenghagho</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>roslib</run_depend>
+  <run_depend>SimpleXMLRPCServer.SimpleXMLRPCRequestHandler</run_depend>
+  <run_depend>SimpleXMLRPCServer.SimpleXMLRPCServer</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+ 
+
+  
+</package>

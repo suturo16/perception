@@ -1,0 +1,8 @@
+<launch>
+  <node name="rpc_server" pkg="dialogsystem" type="rpc_server.py" output="screen">
+    <param name="SERVER_PORT" value="8000"/>
+    <param name="SERVER_IP" value="127.0.0.1"/>
+    
+  </node>    
+</launch>
+
