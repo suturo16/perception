@@ -82,23 +82,21 @@ void subscriber(const suturo_perception_msgs::ObjectDetection& msg)
       	br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "head_mount_kinect_rgb_optical_frame", msg.name));
 
      	visualization_msgs::Marker markerTray;
-      	markerCyl.header = pose.header;
-      	markerCyl.id=2;
-      	markerCyl.type = visualization_msgs::Marker::CUBE;
-      	markerCyl.ns = "percepteros";
-      	markerCyl.pose = pose.pose;
-      	markerCyl.scale.x = msg.width;
-      	markerCyl.scale.y = msg.depth;
-      	markerCyl.scale.z = 0.1;
+      	markerTray.header = pose.header;
+      	markerTray.id=2;
+      	markerTray.type = visualization_msgs::Marker::CUBE;
+      	markerTray.ns = "percepteros";
+      	markerTray.pose = pose.pose;
+      	markerTray.scale.x = msg.width;
+      	markerTray.scale.y = msg.depth;
+      	markerTray.scale.z = 0.1;
       	// Set the color -- be sure to set alpha to something non-zero!
-      	markerCyl.color.r = 1.0f;
-      	markerCyl.color.g = 1.0f;
-      	markerCyl.color.b = 0.0f;
-      	markerCyl.color.a = 1.0;
+      	markerTray.color.r = 1.0f;
+      	markerTray.color.g = 1.0f;
+      	markerTray.color.b = 0.0f;
+      	markerTray.color.a = 1.0;
 
-
-      	vis_pub1.publish(marker);
-      	vis_pub2.publish(markerCyl);
+      	vis_pub2.publish(markerTray);
     }
 }
 
