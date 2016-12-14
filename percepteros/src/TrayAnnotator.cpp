@@ -91,6 +91,7 @@ private:
     outInfo("process begins");
     rs::SceneCas cas(tcas);
     rs::Scene scene = cas.getScene();
+    std::vector<float> dimensions = {};
 
     cas.get(VIEW_COLOR_IMAGE_HD, color);
     cas.get(VIEW_CLOUD, *cloud);
@@ -167,6 +168,8 @@ private:
       planeRoiHires = planeRoi;
       planeRoiHires.x *= 2;
       planeRoiHires.y *= 2;
+      dimensions.push_back(planeRoiHires.width);
+      dimensions.push_back(planeRoiHires.height);
       planeRoiHires.width *= 2;
       planeRoiHires.height *= 2;
 
@@ -193,7 +196,7 @@ private:
       ImageSegmentation::segment(dilatedCanny, segments, minSize, minHoleSize, planeRoiHires);
       ImageSegmentation::computePose(segments, cameraMatrix, distCoefficients, planeNormal, planeDistance);
       
-      addClusters(tcas, scene);
+      addClusters(tcas, scene, dimensions);
     }
 
     return UIMA_ERR_NONE;
@@ -220,7 +223,7 @@ private:
     }
   }
 
-  void addClusters(CAS &tcas, rs::Scene &scene)
+  void addClusters(CAS &tcas, rs::Scene &scene, std::vector<float> &dimensions)
   {
     for(size_t i = 0; i < segments.size(); ++i)
     {
@@ -271,8 +274,8 @@ private:
       tray.name.set("Dropzone");
       tray.type.set(5);
       tray.height.set(0);
-      tray.width.set(seg.rect.width);
-      tray.depth.set(seg.rect.height);
+      tray.width.set(dimensions[i*2]);
+      tray.depth.set(dimensions[i*2+1]);
       
       cluster.annotations.append(getPose(tcas, seg, scene.timestamp()));
       cluster.annotations.append(tray);
