@@ -252,6 +252,10 @@ int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr c
     float width= coefficients_cylinder->values[6] * 2;
     float depth = width;
 
+    if(height<0.01||width<0.01||depth<0.01){
+        return 0;
+    }
+
     tf::Vector3 trans(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
     tf::Matrix3x3 rot;
     rot.setValue(mat(0,0), mat(0,1), mat(0,2),

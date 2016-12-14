@@ -43,14 +43,15 @@ private:
     constexpr static double EPSILON_ANGLE = 0.3;
     constexpr static int MIN_CLOUD_SIZE = 50;
 
-    static constexpr double CYLINDER_NORMAL_WEIGHT = 0.024;
-    constexpr static double CYLINDER_MIN_RADIUS = 0.005;
-    constexpr static double CYLINDER_MAX_RADIUS = 0.1;
-    constexpr static double CYLINDER_DISTANCE_THRESHOLD = 0.15;
+    constexpr static double CYLINDER_NORMAL_WEIGHT = 0.024;
+    constexpr static double CYLINDER_MIN_RADIUS = 0.01;
+    constexpr static double CYLINDER_MAX_RADIUS = 0.05;
+    constexpr static double CYLINDER_DISTANCE_THRESHOLD = 0.015;
     constexpr static double CYLINDER_MIN_RATIO = 0.5;
     constexpr static double CYLINDER_PLANE_DISTANCE_THRESHOLD = 0.01;
     constexpr static double CYLINDER_OVEREXTENSION_THRESHOLD = 0.003;
     constexpr static double CYLINDER_MAX_OVEREXTENSION_RATIO = 1250;
+
 
     tf::Transform transform;
 public:
