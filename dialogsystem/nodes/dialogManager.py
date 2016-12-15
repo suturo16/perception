@@ -6,16 +6,9 @@ import rospy
 import xmlrpclib
 
 from std_msgs.msg import( String )
-from std_srvs.srv import( Empty, EmptyResponse )
+
 from naoqi_bridge_msgs.msg import(
-    WordRecognized,
-    SetSpeechVocabularyGoal,
-    SetSpeechVocabularyResult,
-    SetSpeechVocabularyAction,
-    SpeechWithFeedbackGoal,
-    SpeechWithFeedbackResult,
-    SpeechWithFeedbackFeedback,
-    SpeechWithFeedbackAction )
+    WordRecognized )
 import sys
 from naoqi import ALProxy
 import numpy as np
