@@ -10,7 +10,12 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <run_depend>sys</run_depend>
+  <run_depend>actionlib</run_depend>
   <run_depend>roslib</run_depend>
+  <run_depend>naoqi_bridge_msgs</run_depend>
+  <run_depend>naoqi_driver</run_depend>
+  <run_depend>naoqi_driver_py</run_depend>
   <run_depend>SimpleXMLRPCServer.SimpleXMLRPCRequestHandler</run_depend>
   <run_depend>SimpleXMLRPCServer.SimpleXMLRPCServer</run_depend>
   <run_depend>rospy</run_depend>
