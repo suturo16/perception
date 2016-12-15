@@ -13,12 +13,12 @@
   <run_depend>sys</run_depend>
   <run_depend>roslib</run_depend>
   <run_depend>naoqi_bridge_msgs</run_depend>
-  <run_depend>naoqi_driver</run_depend>
   <run_depend>naoqi_driver_py</run_depend>
   <run_depend>SimpleXMLRPCServer</run_depend>
   <run_depend>xmlrpclib</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>numpy</run_depend>
  
 
   
