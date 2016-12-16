@@ -12,8 +12,11 @@
   
   <run_depend>sys</run_depend>
   <run_depend>roslib</run_depend>
+  <!-- git https://github.com/ros-naoqi/naoqi_bridge_msgs.git --> 
   <run_depend>naoqi_bridge_msgs</run_depend>
-  <run_depend>naoqi_driver_py</run_depend>
+  <!-- package naoqi(nao driver) is downloadable from Aldebaran website -->
+  <!-- under the name pynaoqi-python2.7-2.1.4.13-linux64 -->
+  <run_depend>naoqi</run_depend>
   <run_depend>SimpleXMLRPCServer</run_depend>
   <run_depend>xmlrpclib</run_depend>
   <run_depend>rospy</run_depend>
