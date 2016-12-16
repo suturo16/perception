@@ -2,15 +2,12 @@
 
 import rospy
 import sys
-
-
-from naoqi_driver.naoqi_node import NaoqiNode
 from naoqi import (ALBroker, ALProxy, ALModule)
-
 from std_msgs.msg import( String )
 from naoqi_bridge_msgs.msg import(
     WordRecognized,
     )
+
 
 class Util:
     # Methods for name conversion
