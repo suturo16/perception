@@ -10,4 +10,7 @@
     version: 26compat
 - git:
     local-name: robosherlock
-    uri: https://github.com/RoboSherlock/robosherlock.git
+    uri: https://github.com/Surxz/robosherlock.git
+- git:
+    local-name: geometry2
+    uri: https://github.com/ros/geometry2.git
