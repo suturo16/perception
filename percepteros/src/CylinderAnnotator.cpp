@@ -31,6 +31,8 @@
     cas.get(VIEW_CLOUD, *cloud_ptr);
     cas.get(VIEW_NORMALS, *normal_ptr);
 
+    clusterIndices.clear();
+
     for(auto cluster : clusters)
     {
       pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
