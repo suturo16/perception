@@ -13,6 +13,9 @@
     <delegateAnalysisEngine key="CaffeAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/CaffeAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="CakeAnnotator">
+      <import location="../annotators/CakeAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="ClassifierDetection">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/ClassifierDetection.xml"/>
     </delegateAnalysisEngine>
@@ -142,13 +145,14 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot_not_loc.ini</string>
+            <string>config_mongodb_playback.ini</string>
           </array>
         </value>
       </nameValuePair>
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
+      <node>Trigger</node>
       <node>CollectionReader</node>
       <node>ImagePreprocessor</node>
       <node>PointCloudFilter</node>
@@ -157,6 +161,7 @@
       <node>TrayAnnotator</node>
       <node>PointCloudClusterExtractor</node>
       <node>CylinderAnnotator</node>
+      <node>CakeAnnotator</node>
       <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>

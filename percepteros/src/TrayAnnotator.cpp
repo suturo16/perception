@@ -96,6 +96,9 @@ private:
     cas.get(VIEW_COLOR_IMAGE_HD, color);
     cas.get(VIEW_CLOUD, *cloud);
 
+    std::cout << cloud->points.size();
+    std::cout << color.size();
+
     cv::cvtColor(color, hsv, cv::COLOR_BGR2HSV_FULL);
 
     camToWorld.setIdentity();
@@ -252,7 +255,6 @@ private:
         size_t index = (roi_lowres.y + r) * cloud->width + roi_lowres.x;
         const uint8_t *itM = mask.ptr<uint8_t>(r);
         const pcl::PointXYZRGBA *itP = &cloud->points[index];
-
         for(int c = 0; c < mask.cols; ++c, ++itM, ++itP, ++index)
         {
           if(*itM > 0 && itP->z > 0)

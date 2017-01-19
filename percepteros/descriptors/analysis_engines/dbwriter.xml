@@ -13,6 +13,9 @@
     <delegateAnalysisEngine key="CaffeAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/CaffeAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="CakeAnnotator">
+      <import location="../annotators/CakeAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="ClassifierDetection">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/ClassifierDetection.xml"/>
     </delegateAnalysisEngine>

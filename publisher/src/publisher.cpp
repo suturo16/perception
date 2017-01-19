@@ -8,6 +8,7 @@
 
 ros::Publisher vis_pub1;
 ros::Publisher vis_pub2;
+tf::TransformBroadcaster* br;
 
 
 /**
@@ -15,12 +16,12 @@ ros::Publisher vis_pub2;
  */
 void subscriber(const suturo_perception_msgs::ObjectDetection& msg)
 {
+
     if(msg.type==2){
       geometry_msgs::PoseStamped pose;
 
       pose = msg.pose;
 
-      tf::TransformBroadcaster br;
       //tf::Transform transform;
 
       tf::Stamped<tf::Pose> transform;
@@ -28,8 +29,7 @@ void subscriber(const suturo_perception_msgs::ObjectDetection& msg)
 
       tf::poseStampedMsgToTF(pose, transform);
 
-      //ros::Rate rate(10.0);
-      br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "head_mount_kinect_rgb_optical_frame", msg.name));
+      br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), pose.header.frame_id, msg.name));
 
       visualization_msgs::Marker marker;
       marker.header = pose.header;
@@ -40,8 +40,8 @@ void subscriber(const suturo_perception_msgs::ObjectDetection& msg)
       marker.pose = pose.pose;
       // Set the scale of the marker -- 1x1x1 here means 1m on a side
       marker.scale.x = 0.1;
-      marker.scale.y = 0.1;
-      marker.scale.z = 0.1;
+      marker.scale.y = 0.01;
+      marker.scale.z = 0.01;
 
       // Set the color -- be sure to set alpha to something non-zero!
       marker.color.r = 0.0f;
@@ -68,7 +68,7 @@ void subscriber(const suturo_perception_msgs::ObjectDetection& msg)
 
       vis_pub1.publish(marker);
       vis_pub2.publish(markerCyl);
-    } else if (msg.type==5) {
+    } /*else if (msg.type==5) {
     	geometry_msgs::PoseStamped pose;
 
       	pose = msg.pose;
@@ -97,20 +97,22 @@ void subscriber(const suturo_perception_msgs::ObjectDetection& msg)
       	markerTray.color.a = 1.0;
 
       	vis_pub2.publish(markerTray);
-    }
+    }*/
 }
 
 int main(int argc, char **argv)
 {
 
   ros::init(argc, argv, "listener");
+  tf::TransformBroadcaster bro;
+  br = &bro;
 
   ros::NodeHandle n;
 
   ros::Subscriber sub = n.subscribe("percepteros/object_detection", 1000, subscriber);
 
-  vis_pub1= n.advertise<visualization_msgs::Marker>( "visualization_marker", 10 );
-  vis_pub2= n.advertise<visualization_msgs::Marker>( "visualization_marker", 10 );
+  vis_pub1= n.advertise<visualization_msgs::Marker>( "visualization_marker", 0 );
+  vis_pub2= n.advertise<visualization_msgs::Marker>( "visualization_marker", 0 );
 
   ros::spin();
 
