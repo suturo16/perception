@@ -1,11 +1,12 @@
 #include <../include/percepteros/CylinderAnnotator.h>
 #include <rs/types/all_types.h>
+#include <rs/utils/common.h>
 
-typedef pcl::PointXYZRGBA PointT;
 
   TyErrorId CylinderAnnotator::initialize(AnnotatorContext &ctx)
   {
     outInfo("initialize");
+    cloud_ptr = pcl::PointCloud<PointT>::Ptr(new pcl::PointCloud<PointT>);
     return UIMA_ERR_NONE;
   }
 
@@ -15,7 +16,7 @@ typedef pcl::PointXYZRGBA PointT;
     return UIMA_ERR_NONE;
   }
 
-  TyErrorId CylinderAnnotator::process(CAS &tcas, ResultSpecification const &res_spec)
+  TyErrorId CylinderAnnotator::processWithLock(CAS &tcas, ResultSpecification const &res_spec)
   {
     outInfo("process start");
     rs::StopWatch clock;
@@ -24,12 +25,13 @@ typedef pcl::PointXYZRGBA PointT;
     std::vector<rs::Cluster> clusters;
     scene.identifiables.filter(clusters);
 
-    pcl::PointCloud<PointT>::Ptr cloud_ptr(new pcl::PointCloud<PointT>);
     pcl::PointCloud<pcl::Normal>::Ptr normal_ptr(new pcl::PointCloud<pcl::Normal>);
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_cluster_normal (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 
     cas.get(VIEW_CLOUD, *cloud_ptr);
     cas.get(VIEW_NORMALS, *normal_ptr);
+
+    clusterIndices.clear();
 
     for(auto cluster : clusters)
     {
@@ -63,14 +65,25 @@ typedef pcl::PointXYZRGBA PointT;
       sor.setLeafSize (0.01f, 0.01f, 0.01f);
       sor.filter (*cloud_cluster_normal);*/
 
+       pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGBNormal> ());
+
+       // Create the filtering object
+       /*pcl::VoxelGrid<pcl::PointXYZRGBNormal> sor;
+       sor.setInputCloud (cloud_cluster_normal);
+       sor.setLeafSize (0.01f, 0.01f, 0.01f);
+       sor.filter (*cloud_filtered);*/
+
       geometry_msgs::PoseStamped pose;
       percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
+      tf::Transform transform;
 
-      int cyl = isCylinder(cloud_cluster_normal, pose, o, tcas);
+      int cyl = isCylinder(cloud_cluster_normal, pose, o, tcas,transform);
       if(cyl){
+          clusterIndices.push_back(*cluster_indices);
           outInfo("Pose:x:" << pose.pose.position.x << " y:" << pose.pose.position.y << " z:" << pose.pose.position.z);
           outInfo("took: " << clock.getTime() << " ms.");
           cluster.annotations.append(o);
+
 
           tf::StampedTransform camToWorld;
           camToWorld.setIdentity();
@@ -137,10 +150,9 @@ typedef pcl::PointXYZRGBA PointT;
                                        double radius_max,
                                        double distance,
                                        pcl::ModelCoefficients::Ptr coefficients,
-                                       pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_remaining)
+                                       pcl::PointIndices::Ptr cluster_indices)
   {
     pcl::SACSegmentationFromNormals <pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> seg;
-    pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
     pcl::ExtractIndices <pcl::PointXYZRGBNormal> extract;
 
     seg.setOptimizeCoefficients(true);
@@ -152,28 +164,24 @@ typedef pcl::PointXYZRGBA PointT;
     seg.setDistanceThreshold(distance);
     seg.setInputCloud(cloud_input);
     seg.setInputNormals(cloud_input);
-    seg.segment(*inliers, *coefficients);
+    seg.segment(*cluster_indices, *coefficients);
 
-    extract.setInputCloud(cloud_input);
-    extract.setIndices(inliers);
-    extract.setNegative(true);
-    extract.filter(*cloud_remaining);
-
-    return (int)inliers->indices.size();
+    return (int)cluster_indices->indices.size();
   }
 
 
 int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object,
-                                geometry_msgs::PoseStamped &pose, percepteros::RecognitionObject &o, CAS &tcas) {
-
-  pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_rem1(new pcl::PointCloud<pcl::PointXYZRGBNormal>());
-  pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_rem2(new pcl::PointCloud<pcl::PointXYZRGBNormal>());
+                                  geometry_msgs::PoseStamped &pose, percepteros::RecognitionObject &o, CAS &tcas,
+                                  tf::Transform& transform) {
 
   pcl::ModelCoefficients::Ptr coefficients_cylinder(new pcl::ModelCoefficients);
-  pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients);
+
+  pcl::PointIndices::Ptr point_indices(new pcl::PointIndices());
 
   int cylinder_size = segmentCylinder(cloud_object, CYLINDER_NORMAL_WEIGHT, CYLINDER_MIN_RADIUS, CYLINDER_MAX_RADIUS,
-                                      CYLINDER_DISTANCE_THRESHOLD,coefficients_cylinder, cloud_rem1);
+                                      CYLINDER_DISTANCE_THRESHOLD,coefficients_cylinder, point_indices);
+
+  //cluster_indices.push_back(*point_indices);
 
   if(coefficients_cylinder->values.size()==0){
       outInfo("No Cylinder found.");
@@ -188,8 +196,8 @@ int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr c
     return 0;
   }
   outInfo("Found Cylinder.");
-  segmentPlane(cloud_rem1, pcl::SACMODEL_PERPENDICULAR_PLANE, CYLINDER_PLANE_DISTANCE_THRESHOLD,
-               coefficients_plane, cloud_rem2, cylinder_axis_direction, EPSILON_ANGLE);
+  //segmentPlane(cloud_rem1, pcl::SACMODEL_PERPENDICULAR_PLANE, CYLINDER_PLANE_DISTANCE_THRESHOLD,
+  //             coefficients_plane, cloud_rem2, cylinder_axis_direction, EPSILON_ANGLE);
 
 
   Eigen::Vector3f v1, v2, v3;
@@ -228,10 +236,10 @@ int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr c
       }
     }
 
-    if(overextension * CYLINDER_MAX_OVEREXTENSION_RATIO > (float)cloud_object->points.size())
+    /*if(overextension * CYLINDER_MAX_OVEREXTENSION_RATIO > (float)cloud_object->points.size())
     {
       return 0;
-    }
+    }*/
 
     Eigen::Matrix3f mat;
     mat << v1, v2, v3;
@@ -252,6 +260,10 @@ int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr c
     float width= coefficients_cylinder->values[6] * 2;
     float depth = width;
 
+    if(height<0.01||width<0.01||depth<0.01){
+        return 0;
+    }
+
     tf::Vector3 trans(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
     tf::Matrix3x3 rot;
     rot.setValue(mat(0,0), mat(0,1), mat(0,2),
@@ -267,7 +279,32 @@ int CylinderAnnotator::isCylinder(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr c
     o.height.set(height);
     o.depth.set(depth);
 
-    return (int)(cloud_object->points.size() - cloud_rem2->points.size());
+    return (int)(cloud_object->points.size());
+}
+
+void CylinderAnnotator::fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
+{
+  const std::string &cloudname = this->name;
+  for(size_t i = 0; i < clusterIndices.size(); ++i)
+  {
+    const pcl::PointIndices &indices = clusterIndices[i];
+    for(size_t j = 0; j < indices.indices.size(); ++j)
+    {
+      size_t index = indices.indices[j];
+      cloud_ptr->points[index].rgba = rs::common::colors[i % rs::common::numberOfColors];
+    }
+  }
+
+  if(firstRun)
+  {
+    visualizer.addPointCloud(cloud_ptr, cloudname);
+    visualizer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
+  }
+  else
+  {
+    visualizer.updatePointCloud(cloud_ptr, cloudname);
+    visualizer.getPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
+  }
 }
 // This macro exports an entry point that is used to create the annotator.
 MAKE_AE(CylinderAnnotator)

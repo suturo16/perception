@@ -58,3 +58,6 @@ target_link_libraries(rs_rosPublisher ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_trayAnnotator src/TrayAnnotator.cpp)
 target_link_libraries(rs_trayAnnotator ${CATKIN_LIBRARIES})
+
+rs_add_library(rs_cakeAnnotator src/CakeAnnotator.cpp)
+target_link_libraries(rs_cakeAnnotator ${CATKIN_LIBRARIES})
