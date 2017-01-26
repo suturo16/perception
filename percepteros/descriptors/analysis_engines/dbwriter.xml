@@ -52,8 +52,14 @@
     <delegateAnalysisEngine key="ImageSegmentationAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/segmentation/ImageSegmentationAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="IncrementalPointRegistration">
+      <import location="../annotators/IncrementalPointRegistration.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="KNNClassifier">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/KNNClassifier.xml"/>
+    </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="KinectFusion">
+      <import location="../annotators/KinectFusion.xml"/>
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="LinemodAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/LinemodAnnotator.xml"/>

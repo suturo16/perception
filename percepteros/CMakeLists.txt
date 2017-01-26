@@ -58,3 +58,9 @@ target_link_libraries(rs_rosPublisher ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_trayAnnotator src/TrayAnnotator.cpp)
 target_link_libraries(rs_trayAnnotator ${CATKIN_LIBRARIES})
+
+rs_add_library(rs_kinectFusion src/KinectFusion.cpp)
+target_link_libraries(rs_kinectFusion ${CATKIN_LIBRARIES})
+
+rs_add_library(rs_incrementalPointRegistration src/IncrementalPointRegistration.cpp)
+target_link_libraries(rs_incrementalPointRegistration ${CATKIN_LIBRARIES})
