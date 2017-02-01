@@ -1,0 +1,13 @@
+%YAML:1.0
+annotators:
+    - Trigger
+    - CollectionReader
+    - ImagePreprocessor
+    - PointCloudFilter
+    - NormalEstimator
+    - PlaneAnnotator
+    - PointCloudClusterExtractor
+    - TrayAnnotator
+    - CakeAnnotator
+    - CylinderAnnotator
+    - ROSPublisher

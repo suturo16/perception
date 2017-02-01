@@ -160,7 +160,6 @@
       <node>TrayAnnotator</node>
       <node>PointCloudClusterExtractor</node>
       <node>CylinderAnnotator</node>
-      <node>CakeAnnotator</node>
       <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
