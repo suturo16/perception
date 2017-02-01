@@ -5,7 +5,9 @@ void CaterrosPipelineManager::run()
 {
   for(; ros::ok();)
   {
-    processing_mutex_.lock();
+    std::unique_lock<std::mutex> lock1(processing_mutex_);
+    //lock1.lock();
+    //processing_mutex_.lock();
     if(waitForServiceCall_ || pause_)
     {
       usleep(100000);
@@ -14,7 +16,8 @@ void CaterrosPipelineManager::run()
     {
       engine.process(true);
     }
-    processing_mutex_.unlock();
+    lock1.unlock();
+    //processing_mutex_.unlock();
     ros::spinOnce();
   }
 }
@@ -29,9 +32,9 @@ bool CaterrosPipelineManager::resetAE(std::string newContextName)
     std::vector<std::string> lowLvlPipeline;
     fs["annotators"] >> lowLvlPipeline;
 
-    processing_mutex_.lock();
+    std::lock_guard<std::mutex> lock(processing_mutex_);
     this->init(contextAEPath, configFile);
-    processing_mutex_.unlock();
+    //processing_mutex_.unlock();
 
     return true;
   }
