@@ -8,5 +8,4 @@ annotators:
     - PointCloudClusterExtractor
     - TrayAnnotator
     - CakeAnnotator
-    - CylinderAnnotator
     - ROSPublisher

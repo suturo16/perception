@@ -96,9 +96,6 @@ private:
             }
         }
     }
-
-    ros::spinOnce();
-
     return UIMA_ERR_NONE;
   }
 

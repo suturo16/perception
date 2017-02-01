@@ -108,13 +108,11 @@ public:
   bool setPipelineCallback(suturo_perception_msgs::RunPipeline::Request &req,
                        suturo_perception_msgs::RunPipeline::Response &res){
       std::string configFile_ = ros::package::getPath("percepteros") +"/config/cake.yaml";
-      //processing_mutex_.lock();
-      std::lock_guard<std::mutex> lock(processing_mutex_);
-
-      std::string xml = "caterros";
-      this->init(xml,configFile_);
-      //processing_mutex_.unlock();
-
+      cv::FileStorage fs(configFile_, cv::FileStorage::READ);
+      std::vector<std::string> lowLvlPipeline;
+      fs["annotators"] >> lowLvlPipeline;
+      engine.setNextPipeline(lowLvlPipeline);
+      engine.applyNextPipeline();
       return true;
   }
 
@@ -139,7 +137,6 @@ public:
       {
         outError("Contexts need to have a an AE defined");
         outInfo("releasing lock");
-        //processing_mutex_.unlock();
         return false;
       }
 

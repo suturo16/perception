@@ -17,23 +17,6 @@
 
 #include <tf_conversions/tf_eigen.h>
 
-
-/*
- * struct for passing vital information from a query to individual annotators
- *e.g. the timestamp for CollectionReader, or location for the RegionFilter;
- *For now it's hacky consider changin interface to an wesom json thingy instead of
- * desig_integration, and then just push the whole query to the cas and let
- * individual annotators look it query contains something interesting for them
-*/
-struct RSQuery
-{
-  uint64_t timestamp = std::numeric_limits<uint64_t>::max();
-  std::string location = "";
-  std::string objToInspect = "";
-  std::string ingredient ="";
-  std::string asJson="";
-};
-
 class CaterrosControlledAnalysisEngine: public RSAnalysisEngine
 {
 
@@ -57,9 +40,6 @@ public:
     rspm(NULL),currentAEName(""),nh_(nh),it_(nh_),useIdentityResolution_(false)
   {
     process_mutex = boost::shared_ptr<std::mutex>(new std::mutex);
-    base64ImgPub = nh_.advertise<std_msgs::String>(std::string("image_base64"), 5);
-    image_pub_ = it_.advertise("result_image", 1, true);
-    pc_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("points", 5 );
   }
 
   ~CaterrosControlledAnalysisEngine()
