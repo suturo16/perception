@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     help();
     return 1;
   }
-  ros::init(argc, argv, std::string("RoboSherlock_") + getenv("USER"));
+  ros::init(argc, argv, std::string("percepteros"));
 
     std::vector<std::string> args;
     args.resize(argc - 1);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     {
       args[argI - 1] = argv[argI];
     }
-    bool useVisualizer = true;
+    bool useVisualizer = false;
     bool waitForServiceCall = false;
     bool useCWAssumption = false;
     bool useObjIDRes = false;

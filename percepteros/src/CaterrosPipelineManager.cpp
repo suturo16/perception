@@ -17,12 +17,12 @@ void CaterrosPipelineManager::run()
   }
 }
 
-bool CaterrosPipelineManager::resetAE(std::string newContextName)
+bool CaterrosPipelineManager::resetAE(std::string newPipelineName)
 {
   std::string contextAEPath;
-  if(rs::common::getAEPaths(newContextName, contextAEPath))
+  if(rs::common::getAEPaths(newPipelineName, contextAEPath))
   {
-    outInfo("Setting new context: " << newContextName);
+    outInfo("Setting new context: " << newPipelineName);
     cv::FileStorage fs(configFile, cv::FileStorage::READ);
     std::vector<std::string> lowLvlPipeline;
     fs["annotators"] >> lowLvlPipeline;

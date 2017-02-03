@@ -58,7 +58,7 @@ public:
 
 
     // Call this service to switch between AEs
-    setContextService = nh_.advertiseService("set_context", &CaterrosPipelineManager::resetAECallback, this);
+    //setContextService = nh_.advertiseService("set_context", &CaterrosPipelineManager::resetAECallback, this);
     setContextService = nh_.advertiseService("set_pipeline", &CaterrosPipelineManager::setPipelineCallback, this);
 
 
@@ -107,7 +107,19 @@ public:
 
   bool setPipelineCallback(suturo_perception_msgs::RunPipeline::Request &req,
                        suturo_perception_msgs::RunPipeline::Response &res){
-      std::string configFile_ = ros::package::getPath("percepteros") +"/config/cake.yaml";
+      std::vector<std::string> objects = req.objects;
+      std::string pipelineName = "";
+      //TODO multiple objects can be given
+      for(std::string object : objects){
+          if(object.compare("cake") == 0){
+            pipelineName="cake";
+          } else if(object.compare("cylinder") == 0){
+            pipelineName = "cylinder";
+          } else {
+              pipelineName= "config";
+          }
+      }
+      std::string configFile_ = ros::package::getPath("percepteros") +"/config/"+pipelineName+".yaml";
       cv::FileStorage fs(configFile_, cv::FileStorage::READ);
       std::vector<std::string> lowLvlPipeline;
       fs["annotators"] >> lowLvlPipeline;
@@ -121,15 +133,17 @@ public:
   bool resetAECallback(suturo_perception_msgs::RunPipeline::Request &req,
                        suturo_perception_msgs::RunPipeline::Response &res){
       std::vector<std::string> objects = req.objects;
-      std::string ctxName = "";
+      std::string pipelineName = "";
       for(std::string object : objects){
           if(object.compare("cake") == 0){
-            ctxName="cakeros";
+            pipelineName="cake";
+          } else if(object.compare("cylinder") == 0){
+            pipelineName = "cylinder";
           } else {
-            ctxName = "cylinder";
+              pipelineName= "config";
           }
       }
-      if(resetAE(ctxName))
+      if(resetAE(pipelineName))
       {
         return true;
       }
@@ -143,7 +157,7 @@ public:
       return true;
   }
 
-  bool resetAE(std::string newContextName);
+  bool resetAE(std::string newPipelineName);
 
 
 
