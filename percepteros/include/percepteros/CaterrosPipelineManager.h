@@ -109,11 +109,11 @@ public:
                        suturo_perception_msgs::RunPipeline::Response &res){
       std::vector<std::string> objects = req.objects;
       std::string pipelineName = "";
-      //TODO multiple objects can be given
+      //TODO multiple objects can be given, decide on annotators depending on given objects
       for(std::string object : objects){
-          if(object.compare("cake") == 0){
+          if(object == "cake"){
             pipelineName="cake";
-          } else if(object.compare("cylinder") == 0){
+          } else if(object =="cylinder"){
             pipelineName = "cylinder";
           } else {
               pipelineName= "config";
