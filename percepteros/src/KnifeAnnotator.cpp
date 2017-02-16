@@ -6,34 +6,57 @@
 #include <rs/scene_cas.h>
 #include <rs/DrawingAnnotator.h>
 #include <rs/utils/common.h>
+#include <rs/utils/time.h>
 
-#include <pcl/features/normal_3d.h>
 #include <percepteros/types/all_types.h>
 
 #include <geometry_msgs/PoseStamped.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
+//surface matching
+#include <pcl/io/ply_io.h>
+#include <Eigen/Core>
+#include <pcl/console/print.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/features/fpfh_omp.h>
+#include <pcl/filters/filter.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/registration/icp.h>
+#include <pcl/registration/sample_consensus_prerejective.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/visualization/pcl_visualizer.h>
+
 using namespace uima;
 
 typedef pcl::PointNormal PointG;
+typedef pcl::PointCloud<PointG> PCG;
 typedef pcl::Normal PointN;
 typedef pcl::PointXYZ PointT;
+typedef pcl::FPFHSignature33 FeatureT;
+typedef pcl::FPFHEstimationOMP<PointG,PointG,FeatureT> FET;
+typedef pcl::PointCloud<FeatureT> FCT;
+typedef pcl::visualization::PointCloudColorHandlerCustom<PointG> ColorHandlerT;
 
 class KnifeAnnotator : public DrawingAnnotator
 {
 private:
   pcl::PointCloud<PointT>::Ptr cloud_ptr;
 	pcl::PointCloud<PointN>::Ptr normal_ptr;
-	pcl::PointCloud<PointG>::Ptr cloud_normal_ptr;
-	pcl::PointCloud<PointG>::Ptr model_ptr;
+	PCG::Ptr cloud_normal_ptr;
+	PCG::Ptr model_ptr;
+	PCG::Ptr model_aligned;
+
+	static const size_t PPF_LENGTH = 5;
 
 public:
 
   KnifeAnnotator(): DrawingAnnotator(__func__){
       cloud_ptr = pcl::PointCloud<PointT>::Ptr(new pcl::PointCloud<PointT>);
 			normal_ptr = pcl::PointCloud<PointN>::Ptr(new pcl::PointCloud<PointN>);
-			cloud_normal_ptr = pcl::PointCloud<PointG>::Ptr(new pcl::PointCloud<PointG>);
+			cloud_normal_ptr = PCG::Ptr(new PCG);
+			model_ptr = PCG::Ptr(new PCG);
+			model_aligned = PCG::Ptr(new PCG);
   }
 
   TyErrorId initialize(AnnotatorContext &ctx)
@@ -50,74 +73,86 @@ public:
 
   TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec)
   {
-    outInfo("process start");
+    outInfo("process start\n");
     rs::SceneCas cas(tcas);
-		
+		pcl::PLYReader reader;
+		FCT::Ptr object_f(new FCT);
+		FCT::Ptr cloud_f(new FCT);
+		rs::StopWatch clock;
+
+		outInfo("getting clouds\n");
 		//get points and normals
     cas.get(VIEW_CLOUD, *cloud_ptr);
     cas.get(VIEW_NORMALS, *normal_ptr);
-		
+		pcl::concatenateFields(*cloud_ptr, *normal_ptr, *cloud_normal_ptr);
+
 		//get points from ply file
-		model_ptr = loadPly("../data/knife.ply");
+		reader.read("../data/knife.ply", *model_ptr);
+		
+		//downsampling
+		outInfo("downsampling\n");
+		pcl::VoxelGrid<PointG> grid;
+		const float leaf = 0.005f;
+		grid.setLeafSize(leaf, leaf, leaf);
+		grid.setInputCloud(cloud_normal_ptr);
+		grid.filter(*cloud_normal_ptr);
+		grid.setInputCloud(model_ptr);
+		grid.filter(*model_ptr);
+		
+		outInfo("At " << clock.getTime() << "ms.");
+
+		//estimating features
+		outInfo("estimating features\n");
+		FET fest;
+		fest.setRadiusSearch(0.025);
+		fest.setInputCloud(cloud_normal_ptr);
+		fest.setInputNormals(cloud_normal_ptr);
+		fest.compute(*cloud_f);
+		fest.setInputCloud(model_ptr);
+		fest.setInputNormals(model_ptr);
+		fest.compute(*object_f);
+
+		outInfo("At " << clock.getTime() << "ms.");		
+
+		//aligning
+		outInfo("start alignment\n");
+		pcl::SampleConsensusPrerejective<PointG,PointG,FeatureT> align;
+		align.setInputSource(cloud_normal_ptr);
+		align.setSourceFeatures(cloud_f);
+		align.setInputTarget(model_ptr);
+		align.setTargetFeatures(object_f);
+		align.setMaximumIterations(50000); //ransac iterations
+		align.setNumberOfSamples(3);
+		align.setCorrespondenceRandomness(5); //number of nearest features to use
+		align.setSimilarityThreshold(0.9f); //polygonal edge length similarity threshold
+		align.setMaxCorrespondenceDistance(2.5f * leaf); //inlier threshold
+		align.setInlierFraction(0.25f); // required inlier fraction for accepting a pose hypothesis
+		align.align(*model_aligned);
+
+		outInfo("At " << clock.getTime() << "ms.");
+		
+		if (align.hasConverged()) {
+			outInfo("finished alignment");
+			Eigen::Matrix4f transformation = align.getFinalTransformation();
+			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (0,0), transformation (0,1), transformation (0,2));
+			pcl::console::print_info ("R = | %6.3f %6.3f %6.3f | \n", transformation (1,0), transformation (1,1), transformation (1,2));
+			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (2,0), transformation (2,1), transformation (2,2));
+			pcl::console::print_info ("\n");
+			pcl::console::print_info ("t = < %0.3f, %0.3f, %0.3f >\n", transformation (0,3), transformation (1,3), transformation (2,3));
+			pcl::console::print_info ("\n");
+			pcl::console::print_info ("Inliers: %i/%i\n", align.getInliers ().size (), model_ptr->size ());
+			
+			//show alignment
+			pcl::visualization::PCLVisualizer visu("Alignment");
+			visu.addPointCloud (cloud_normal_ptr, ColorHandlerT (cloud_normal_ptr, 0.0, 255.0, 0.0), "scene");
+			visu.addPointCloud (model_aligned, ColorHandlerT (model_aligned, 0.0, 0.0, 255.0), "model_aligned");
+			visu.spin ();
+		} else {
+			outInfo("alignment not finished");
+		}
+
     return UIMA_ERR_NONE;
   }
-
-	pcl::PointCloud<PointG>::Ptr loadPly(const char* filename) {
-		pcl::PointCloud<PointG>::Ptr model = pcl::PointCloud<PointG>::Ptr(new pcl::PointCloud<PointG>);
-		int numVertices = 0;
-
-		std::ifstream ifs(filename);
-		
-		//check if file available
-		if(!ifs.is_open()) {
-			printf("Cannot open file\n");
-			return model;
-		}
-		
-		//get number of vertices
-		std::string str;
-		while (str.substr(0, 10) != "end_header") {
-			std::string entry = str.substr(0, 14);
-			if (entry == "element vertex") {
-				numVertices = atoi(str.substr(15, str.size()-15).c_str());
-			}
-			std::getline(ifs, str);
-		}
-
-		//get data of points
-		for (int i = 0; i < numVertices; i++) {
-			float data[6];
-			PointG* point = new PointG;
-			
-			//get raw data
-			for (int j = 0; j < 6; j++) {
-				std::getline(ifs, str, ' ');
-				data[j] = stof(str);
-			}
-			std::getline(ifs, str);
-
-			//normalize normals
-			double norm = sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
-			if (norm > 0.00001) {
-				data[3] /= (float)norm;
-				data[4] /= (float)norm;
-				data[5] /= (float)norm;
-			}
-			
-			//setting point
-			point->x = data[0];
-			point->y = data[1];
-			point->z = data[2];
-			point->normal_x = data[3];
-			point->normal_y = data[4];
-			point->normal_z = data[5];
-			
-			//push point
-			model->push_back(*point);
-		}
-
-		return model;
-	}
 };
 
 // This macro exports an entry point that is used to create the annotator.
