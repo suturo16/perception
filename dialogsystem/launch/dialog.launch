@@ -2,6 +2,22 @@
  <param name="busy" value="0"/>
  <param name="receiving" value="0"/>
  <param name="CONFIG" value="$(find dialogsystem)/launch/pepper.corpus"/>
+ 
+ <param name="INTERFACE" value="eth0"/>
+    
+ <param name="RPCSERVERPORT" value="8000"/>
+ <param name="RPCSERVERIP" value="127.0.0.1"/>
+
+ <param name="PR2PORT" value="8005"/>
+ <param name="PR2IP" value="192.168.101.249"/>
+
+
+ <node name="netparamupdater" pkg="dialogsystem" type="netparamupdater.py" output="screen">
+ </node> 
+
+ <node name="rpc_server" pkg="dialogsystem" type="rpc_server.py" output="screen">
+  </node>
+
 
  <node name="synthetiser" pkg="dialogsystem" type="nao_speech.py" output="screen">
     <param name="PORT" value="9559"/>
@@ -13,11 +29,7 @@
     <param name="IP" value="192.168.101.69"/>
     
   </node>
-  <node name="rpc_server" pkg="dialogsystem" type="rpc_server.py" output="screen">
-    <param name="SERVER_PORT" value="8000"/>
-    <param name="SERVER_IP" value="192.168.101.249"/>
-    
-  </node>
+ 
 <node name="dialogManager" pkg="dialogsystem" type="dialogManager.py" output="screen">
      <param name="PR2_PORT" value="8005"/>
      <param name="PR2_IP" value="192.168.101.249"/>
