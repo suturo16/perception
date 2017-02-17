@@ -75,6 +75,7 @@ public:
   {
     outInfo("process start\n");
     rs::SceneCas cas(tcas);
+		rs::Scene scene = cas.getScene();
 		pcl::PLYReader reader;
 		FCT::Ptr object_f(new FCT);
 		FCT::Ptr cloud_f(new FCT);
@@ -134,6 +135,7 @@ public:
 		if (align.hasConverged()) {
 			outInfo("finished alignment");
 			Eigen::Matrix4f transformation = align.getFinalTransformation();
+			/*
 			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (0,0), transformation (0,1), transformation (0,2));
 			pcl::console::print_info ("R = | %6.3f %6.3f %6.3f | \n", transformation (1,0), transformation (1,1), transformation (1,2));
 			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (2,0), transformation (2,1), transformation (2,2));
@@ -147,6 +149,64 @@ public:
 			visu.addPointCloud (cloud_normal_ptr, ColorHandlerT (cloud_normal_ptr, 0.0, 255.0, 0.0), "scene");
 			visu.addPointCloud (model_aligned, ColorHandlerT (model_aligned, 0.0, 0.0, 255.0), "model_aligned");
 			visu.spin ();
+			*/
+			//publishing results
+			geometry_msgs::PoseStamped pose;
+			percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
+			tf::Transform transform;
+
+			Eigen::Matrix3f mat;
+			mat << transformation(0,0), transformation(0,1), transformation(0,2),
+						 transformation(1,0), transformation(1,1), transformation(1,2),
+						 transformation(2,0), transformation(2,1), transformation(2,2);
+
+			Eigen::Quaternionf qua(mat);
+			qua.normalize();
+
+			tf::Vector3 trans(transformation(3,0), transformation(3,1), transformation(3,2));
+			tf::Matrix3x3 rot;
+			rot.setValue(mat(0,0), mat(0,1), mat(0,2),
+									 mat(1,0), mat(1,1), mat(1,2),
+									 mat(2,0), mat(2,1), mat(2,2));
+
+			transform.setOrigin(trans);
+			transform.setBasis(rot);
+
+			pose.header.frame_id = cloud_ptr->header.frame_id;
+			pose.pose.orientation.x = qua.x();
+			pose.pose.orientation.y = qua.y();
+			pose.pose.orientation.z = qua.z();
+			pose.pose.orientation.w = qua.w();
+
+			pose.pose.position.x = transformation(3,0);
+			pose.pose.position.y = transformation(3,1);
+			pose.pose.position.z = transformation(3,2);
+
+			o.name.set("Knife");
+			o.type.set(6);
+			o.width.set(0);
+			o.height.set(0);
+			o.depth.set(0);
+
+			tf::StampedTransform camToWorld;
+			camToWorld.setIdentity();
+			if (scene.viewPoint.has()) {
+				rs::conversion::from(scene.viewPoint.get(), camToWorld);
+			}
+
+			tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
+			tf::Stamped<tf::Pose> world(camToWorld*transform, camToWorld.stamp_, camToWorld.frame_id_);
+
+			rs::PoseAnnotation poseAnnotation = rs::create<rs::PoseAnnotation>(tcas);
+			poseAnnotation.camera.set(rs::conversion::to(tcas, camera));
+			poseAnnotation.world.set(rs::conversion::to(tcas, world));
+			poseAnnotation.source.set("3DEstimate");
+			
+			rs::Cluster cluster;
+			cluster.annotations.append(o);
+			cluster.annotations.append(poseAnnotation);
+			scene.identifiables.append();
+
 		} else {
 			outInfo("alignment not finished");
 		}
