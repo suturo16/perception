@@ -35,7 +35,7 @@ class Server:
    def notify(self):
        #publish status of PR2
        status=1
-       self.pub.publish(String(status))
+       self.pub.publish(String(str(status)))
        return self.confirmation
 
 
