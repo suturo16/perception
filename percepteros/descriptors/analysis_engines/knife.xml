@@ -157,8 +157,7 @@
       <fixedFlow>
       <node>Trigger</node>
       <node>CollectionReader</node>
-      <node>ImagePreprocessor</node>
-      <node>PointCloudFilter</node>
+			<node>ImagePreprocessor</node>
       <node>NormalEstimator</node>
       <node>KnifeAnnotator</node>
       </fixedFlow>
