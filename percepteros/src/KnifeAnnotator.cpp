@@ -84,16 +84,17 @@ public:
 		outInfo("getting clouds\n");
 		//get points and normals
     cas.get(VIEW_CLOUD, *cloud_ptr);
+		outInfo("Point number: " << cloud_ptr->size());
     cas.get(VIEW_NORMALS, *normal_ptr);
 		pcl::concatenateFields(*cloud_ptr, *normal_ptr, *cloud_normal_ptr);
 
 		//get points from ply file
-		reader.read("../data/knife.ply", *model_ptr);
+		reader.read("/home/tobias/cateros/src/perception/percepteros/data/knife_true_zero.ply", *model_ptr);
 		
 		//downsampling
 		outInfo("downsampling\n");
 		pcl::VoxelGrid<PointG> grid;
-		const float leaf = 0.005f;
+		const float leaf = 0.1f;
 		grid.setLeafSize(leaf, leaf, leaf);
 		grid.setInputCloud(cloud_normal_ptr);
 		grid.filter(*cloud_normal_ptr);
@@ -108,9 +109,11 @@ public:
 		fest.setRadiusSearch(0.025);
 		fest.setInputCloud(cloud_normal_ptr);
 		fest.setInputNormals(cloud_normal_ptr);
+		outInfo("Compute cloud");
 		fest.compute(*cloud_f);
 		fest.setInputCloud(model_ptr);
 		fest.setInputNormals(model_ptr);
+		outInfo("compute object");
 		fest.compute(*object_f);
 
 		outInfo("At " << clock.getTime() << "ms.");		
@@ -135,7 +138,7 @@ public:
 		if (align.hasConverged()) {
 			outInfo("finished alignment");
 			Eigen::Matrix4f transformation = align.getFinalTransformation();
-			/*
+			
 			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (0,0), transformation (0,1), transformation (0,2));
 			pcl::console::print_info ("R = | %6.3f %6.3f %6.3f | \n", transformation (1,0), transformation (1,1), transformation (1,2));
 			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (2,0), transformation (2,1), transformation (2,2));
@@ -149,7 +152,7 @@ public:
 			visu.addPointCloud (cloud_normal_ptr, ColorHandlerT (cloud_normal_ptr, 0.0, 255.0, 0.0), "scene");
 			visu.addPointCloud (model_aligned, ColorHandlerT (model_aligned, 0.0, 0.0, 255.0), "model_aligned");
 			visu.spin ();
-			*/
+			
 			//publishing results
 			geometry_msgs::PoseStamped pose;
 			percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
@@ -202,11 +205,10 @@ public:
 			poseAnnotation.world.set(rs::conversion::to(tcas, world));
 			poseAnnotation.source.set("3DEstimate");
 			
-			rs::Cluster cluster;
+			rs::Cluster cluster = rs::create<rs::Cluster>(tcas);
 			cluster.annotations.append(o);
 			cluster.annotations.append(poseAnnotation);
-			scene.identifiables.append();
-
+			scene.identifiables.append(cluster);
 		} else {
 			outInfo("alignment not finished");
 		}

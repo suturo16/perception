@@ -161,16 +161,12 @@
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
+			<node>Trigger</node>
       <node>CollectionReader</node>
-      <node>ImagePreprocessor</node>
-      <node>PointCloudFilter</node>
+			<node>ImagePreprocessor</node>
+			<node>PointCloudFilter</node>
       <node>NormalEstimator</node>
-      <node>PlaneAnnotator</node>
-      <node>TrayAnnotator</node>
-      <node>PointCloudClusterExtractor</node>
-      <node>CylinderAnnotator</node>
-      <node>CakeAnnotator</node>
-      <node>ROSPublisher</node>
+      <node>KnifeAnnotator</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>
