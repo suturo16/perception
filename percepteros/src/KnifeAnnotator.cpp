@@ -33,6 +33,7 @@ typedef pcl::PointNormal PointG;
 typedef pcl::PointCloud<PointG> PCG;
 typedef pcl::Normal PointN;
 typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGBA PointW;
 typedef pcl::FPFHSignature33 FeatureT;
 typedef pcl::FPFHEstimationOMP<PointG,PointG,FeatureT> FET;
 typedef pcl::PointCloud<FeatureT> FCT;
@@ -41,6 +42,7 @@ typedef pcl::visualization::PointCloudColorHandlerCustom<PointG> ColorHandlerT;
 class KnifeAnnotator : public DrawingAnnotator
 {
 private:
+	pcl::PointCloud<PointW>::Ptr temp_ptr;
   pcl::PointCloud<PointT>::Ptr cloud_ptr;
 	pcl::PointCloud<PointN>::Ptr normal_ptr;
 	PCG::Ptr cloud_normal_ptr;
@@ -52,6 +54,7 @@ private:
 public:
 
   KnifeAnnotator(): DrawingAnnotator(__func__){
+			temp_ptr = pcl::PointCloud<PointW>::Ptr(new pcl::PointCloud<PointW>);
       cloud_ptr = pcl::PointCloud<PointT>::Ptr(new pcl::PointCloud<PointT>);
 			normal_ptr = pcl::PointCloud<PointN>::Ptr(new pcl::PointCloud<PointN>);
 			cloud_normal_ptr = PCG::Ptr(new PCG);
@@ -83,14 +86,15 @@ public:
 
 		outInfo("getting clouds\n");
 		//get points and normals
-    cas.get(VIEW_CLOUD, *cloud_ptr);
-		outInfo("Point number: " << cloud_ptr->size());
+    cas.get(VIEW_CLOUD, *temp_ptr);
+		pcl::copyPointCloud(*temp_ptr, *cloud_ptr);
     cas.get(VIEW_NORMALS, *normal_ptr);
 		pcl::concatenateFields(*cloud_ptr, *normal_ptr, *cloud_normal_ptr);
+		
 
 		//get points from ply file
 		reader.read("/home/tobias/cateros/src/perception/percepteros/data/knife_true_zero.ply", *model_ptr);
-		
+
 		//downsampling
 		outInfo("downsampling\n");
 		pcl::VoxelGrid<PointG> grid;
@@ -125,12 +129,12 @@ public:
 		align.setSourceFeatures(cloud_f);
 		align.setInputTarget(model_ptr);
 		align.setTargetFeatures(object_f);
-		align.setMaximumIterations(50000); //ransac iterations
+		align.setMaximumIterations(500000); //ransac iterations
 		align.setNumberOfSamples(3);
 		align.setCorrespondenceRandomness(5); //number of nearest features to use
-		align.setSimilarityThreshold(0.9f); //polygonal edge length similarity threshold
-		align.setMaxCorrespondenceDistance(2.5f * leaf); //inlier threshold
-		align.setInlierFraction(0.25f); // required inlier fraction for accepting a pose hypothesis
+		align.setSimilarityThreshold(0.5f); //polygonal edge length similarity threshold
+		align.setMaxCorrespondenceDistance(2.0f * leaf); //inlier threshold
+		align.setInlierFraction(0.1f); // required inlier fraction for accepting a pose hypothesis
 		align.align(*model_aligned);
 
 		outInfo("At " << clock.getTime() << "ms.");
@@ -146,12 +150,6 @@ public:
 			pcl::console::print_info ("t = < %0.3f, %0.3f, %0.3f >\n", transformation (0,3), transformation (1,3), transformation (2,3));
 			pcl::console::print_info ("\n");
 			pcl::console::print_info ("Inliers: %i/%i\n", align.getInliers ().size (), model_ptr->size ());
-			
-			//show alignment
-			pcl::visualization::PCLVisualizer visu("Alignment");
-			visu.addPointCloud (cloud_normal_ptr, ColorHandlerT (cloud_normal_ptr, 0.0, 255.0, 0.0), "scene");
-			visu.addPointCloud (model_aligned, ColorHandlerT (model_aligned, 0.0, 0.0, 255.0), "model_aligned");
-			visu.spin ();
 			
 			//publishing results
 			geometry_msgs::PoseStamped pose;
