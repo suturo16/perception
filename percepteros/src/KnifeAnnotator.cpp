@@ -15,7 +15,7 @@
 #include <pcl/point_types.h>
 
 //surface matching
-#include <pcl/io/ply_io.h>
+#include <pcl/io/obj_io.h>
 #include <Eigen/Core>
 #include <pcl/console/print.h>
 #include <pcl/features/normal_3d_omp.h>
@@ -79,7 +79,7 @@ public:
     outInfo("process start\n");
     rs::SceneCas cas(tcas);
 		rs::Scene scene = cas.getScene();
-		pcl::PLYReader reader;
+		pcl::OBJReader reader;
 		FCT::Ptr object_f(new FCT);
 		FCT::Ptr cloud_f(new FCT);
 		rs::StopWatch clock;
@@ -90,10 +90,9 @@ public:
 		pcl::copyPointCloud(*temp_ptr, *cloud_ptr);
     cas.get(VIEW_NORMALS, *normal_ptr);
 		pcl::concatenateFields(*cloud_ptr, *normal_ptr, *cloud_normal_ptr);
-		
 
 		//get points from ply file
-		reader.read("/home/tobias/cateros/src/perception/percepteros/data/knife_true_zero.ply", *model_ptr);
+		reader.read("/home/tobias/cateros/src/perception/percepteros/data/KNIFE_FINAL.obj", *model_ptr);
 
 		//downsampling
 		outInfo("downsampling\n");
@@ -143,52 +142,26 @@ public:
 			outInfo("finished alignment");
 			Eigen::Matrix4f transformation = align.getFinalTransformation();
 			
-			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (0,0), transformation (0,1), transformation (0,2));
-			pcl::console::print_info ("R = | %6.3f %6.3f %6.3f | \n", transformation (1,0), transformation (1,1), transformation (1,2));
-			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (2,0), transformation (2,1), transformation (2,2));
-			pcl::console::print_info ("\n");
-			pcl::console::print_info ("t = < %0.3f, %0.3f, %0.3f >\n", transformation (0,3), transformation (1,3), transformation (2,3));
-			pcl::console::print_info ("\n");
-			pcl::console::print_info ("Inliers: %i/%i\n", align.getInliers ().size (), model_ptr->size ());
-			
 			//publishing results
-			geometry_msgs::PoseStamped pose;
 			percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
 			tf::Transform transform;
-
-			Eigen::Matrix3f mat;
-			mat << transformation(0,0), transformation(0,1), transformation(0,2),
-						 transformation(1,0), transformation(1,1), transformation(1,2),
-						 transformation(2,0), transformation(2,1), transformation(2,2);
-
-			Eigen::Quaternionf qua(mat);
-			qua.normalize();
-
-			tf::Vector3 trans(transformation(3,0), transformation(3,1), transformation(3,2));
+			
+			tf::Vector3 trans(transformation(0,3), transformation(1,3), transformation(2,3));
 			tf::Matrix3x3 rot;
-			rot.setValue(mat(0,0), mat(0,1), mat(0,2),
-									 mat(1,0), mat(1,1), mat(1,2),
-									 mat(2,0), mat(2,1), mat(2,2));
-
+			rot.setValue(transformation(0,0), transformation(0,1), transformation(0,2),
+									 transformation(1,0), transformation(1,1), transformation(1,2),
+									 transformation(2,0), transformation(2,1), transformation(2,2));
 			transform.setOrigin(trans);
 			transform.setBasis(rot);
-
-			pose.header.frame_id = cloud_ptr->header.frame_id;
-			pose.pose.orientation.x = qua.x();
-			pose.pose.orientation.y = qua.y();
-			pose.pose.orientation.z = qua.z();
-			pose.pose.orientation.w = qua.w();
-
-			pose.pose.position.x = transformation(3,0);
-			pose.pose.position.y = transformation(3,1);
-			pose.pose.position.z = transformation(3,2);
+			
+			outInfo("Transform: " << transformation(0,3) << transformation(1,3) << transformation(2,3));
 
 			o.name.set("Knife");
 			o.type.set(6);
 			o.width.set(0);
 			o.height.set(0);
 			o.depth.set(0);
-
+			
 			tf::StampedTransform camToWorld;
 			camToWorld.setIdentity();
 			if (scene.viewPoint.has()) {

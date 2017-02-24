@@ -148,19 +148,19 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_mongodb_playback.ini</string>
+            <string>config_kinect_robot_not_loc.ini</string>
           </array>
         </value>
       </nameValuePair>
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
-			<node>Trigger</node>
       <node>CollectionReader</node>
 			<node>ImagePreprocessor</node>
 			<node>PointCloudFilter</node>
       <node>NormalEstimator</node>
       <node>KnifeAnnotator</node>
+			<node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>
