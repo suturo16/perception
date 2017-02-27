@@ -162,11 +162,15 @@
     <flowConstraints>
       <fixedFlow>
       <node>CollectionReader</node>
-			<node>ImagePreprocessor</node>
-			<node>PointCloudFilter</node>
+      <node>ImagePreprocessor</node>
+      <node>PointCloudFilter</node>
       <node>NormalEstimator</node>
-      <node>KnifeAnnotator</node>
-			<node>ROSPublisher</node>
+      <node>PlaneAnnotator</node>
+      <node>TrayAnnotator</node>
+      <node>PointCloudClusterExtractor</node>
+      <node>CylinderAnnotator</node>
+      <node>CakeAnnotator</node>
+      <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>
