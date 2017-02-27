@@ -58,9 +58,6 @@
     <delegateAnalysisEngine key="KNNClassifier">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/KNNClassifier.xml"/>
     </delegateAnalysisEngine>
-    <delegateAnalysisEngine key="KnifeAnnotator">
-      <import location="../annotators/KnifeAnnotator.xml"/>
-    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="LinemodAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/LinemodAnnotator.xml"/>
     </delegateAnalysisEngine>
@@ -148,7 +145,7 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot_not_loc.ini</string>
+            <string>config_mongodb_playback.ini</string>
           </array>
         </value>
       </nameValuePair>
@@ -156,11 +153,15 @@
     <flowConstraints>
       <fixedFlow>
       <node>CollectionReader</node>
-			<node>ImagePreprocessor</node>
-			<node>PointCloudFilter</node>
+      <node>ImagePreprocessor</node>
+      <node>PointCloudFilter</node>
       <node>NormalEstimator</node>
-      <node>KnifeAnnotator</node>
-			<node>ROSPublisher</node>
+      <node>PlaneAnnotator</node>
+      <node>TrayAnnotator</node>
+      <node>PointCloudClusterExtractor</node>
+      <node>CylinderAnnotator</node>
+      <node>CakeAnnotator</node>
+      <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>
