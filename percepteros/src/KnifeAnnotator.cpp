@@ -145,6 +145,13 @@ public:
 			percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
 			tf::Transform transform;
 			
+			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (0,0), transformation (0,1), transformation (0,2));
+			pcl::console::print_info ("R = | %6.3f %6.3f %6.3f | \n", transformation (1,0), transformation (1,1), transformation (1,2));
+			pcl::console::print_info ("    | %6.3f %6.3f %6.3f | \n", transformation (2,0), transformation (2,1), transformation (2,2));
+			pcl::console::print_info ("\n");
+			pcl::console::print_info ("t = < %0.3f, %0.3f, %0.3f >\n", transformation (0,3), transformation (1,3), transformation (2,3));
+			pcl::console::print_info ("\n");
+
 			tf::Vector3 trans(transformation(0,3), transformation(1,3), transformation(2,3));
 			tf::Matrix3x3 rot;
 			rot.setValue(transformation(0,0), transformation(0,1), transformation(0,2),
@@ -153,7 +160,6 @@ public:
 			transform.setOrigin(trans);
 			transform.setBasis(rot);
 			
-			outInfo("Transform: " << transformation(0,3) << transformation(1,3) << transformation(2,3));
 
 			o.name.set("Knife");
 			o.type.set(6);
