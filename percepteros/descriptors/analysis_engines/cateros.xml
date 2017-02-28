@@ -58,6 +58,9 @@
     <delegateAnalysisEngine key="KNNClassifier">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/KNNClassifier.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="KnifeAnnotator">
+      <import location="../annotators/KnifeAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="LinemodAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/LinemodAnnotator.xml"/>
     </delegateAnalysisEngine>
@@ -154,13 +157,11 @@
       <fixedFlow>
       <node>CollectionReader</node>
       <node>ImagePreprocessor</node>
-      <node>PointCloudFilter</node>
-      <node>NormalEstimator</node>
-      <node>PlaneAnnotator</node>
-      <node>TrayAnnotator</node>
-      <node>PointCloudClusterExtractor</node>
-      <node>CylinderAnnotator</node>
-      <node>CakeAnnotator</node>
+			<node>PointCloudFilter</node>
+			<node>NormalEstimator</node>
+			<node>PlaneAnnotator</node>
+			<node>PointCloudClusterExtractor</node>
+      <node>KnifeAnnotator</node>
       <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>

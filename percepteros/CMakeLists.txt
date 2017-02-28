@@ -63,5 +63,8 @@ target_link_libraries(rs_trayAnnotator ${CATKIN_LIBRARIES})
 rs_add_library(rs_cakeAnnotator src/CakeAnnotator.cpp)
 target_link_libraries(rs_cakeAnnotator ${CATKIN_LIBRARIES})
 
+rs_add_library(rs_knifeAnnotator src/KnifeAnnotator.cpp)
+target_link_libraries(rs_knifeAnnotator ${CATKIN_LIBRARIES})
+
 rs_add_executable(caterrosRun src/CaterrosRun.cpp src/CaterrosPipelineManager.cpp src/CaterrosControlledAnalysisEngine.cpp)
 target_link_libraries(caterrosRun ${CATKIN_LIBRARIES})
