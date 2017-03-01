@@ -158,7 +158,6 @@
       <node>NormalEstimator</node>
       <node>PlaneAnnotator</node>
       <node>PointCloudClusterExtractor</node>
-      <node>CylinderAnnotator</node>
       <node>CakeAnnotator</node>
       <node>ROSPublisher</node>
       </fixedFlow>

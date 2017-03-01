@@ -17,6 +17,59 @@ tf::TransformBroadcaster* br;
 void subscriber(const suturo_perception_msgs::ObjectDetection& msg)
 {
 
+    if(msg.type==1){
+        geometry_msgs::PoseStamped pose;
+
+        pose = msg.pose;
+
+        //tf::Transform transform;
+
+        tf::Stamped<tf::Pose> transform;
+        //tf2::convert
+
+        tf::poseStampedMsgToTF(pose, transform);
+
+        //br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), pose.header.frame_id, msg.name));
+
+        visualization_msgs::Marker marker;
+        marker.header = pose.header;
+        marker.ns = "percepteros";
+        marker.id = 0;
+        marker.type = visualization_msgs::Marker::ARROW;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.pose = pose.pose;
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        marker.scale.x = 0.1;
+        marker.scale.y = 0.01;
+        marker.scale.z = 0.01;
+
+        // Set the color -- be sure to set alpha to something non-zero!
+        marker.color.r = 0.0f;
+        marker.color.g = 1.0f;
+        marker.color.b = 0.0f;
+        marker.color.a = 1.0;
+        std::cout<<"Publishing";
+
+        visualization_msgs::Marker markerCyl;
+        markerCyl.header = pose.header;
+        markerCyl.id=2;
+        markerCyl.type = visualization_msgs::Marker::CUBE;
+        markerCyl.ns = "percepteros";
+        markerCyl.pose = pose.pose;
+        markerCyl.scale.x = msg.width;
+        markerCyl.scale.y = msg.depth;
+        markerCyl.scale.z = msg.height;
+        // Set the color -- be sure to set alpha to something non-zero!
+        markerCyl.color.r = 1.0f;
+        markerCyl.color.g = 1.0f;
+        markerCyl.color.b = 0.0f;
+        markerCyl.color.a = 1.0;
+
+
+        vis_pub1.publish(marker);
+        vis_pub2.publish(markerCyl);
+    }
+
     if(msg.type==2){
       geometry_msgs::PoseStamped pose;
 
