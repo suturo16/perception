@@ -225,8 +225,8 @@ public:
 
 		o.name.set("Knife");
 		o.type.set(6);
-		o.width.set(0.056f);
-		o.height.set(0.28f);
+		o.width.set(0.28f);
+		o.height.set(0.056f);
 		o.depth.set(0.03f);
 		
 		return transform;
