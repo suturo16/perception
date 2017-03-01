@@ -15,6 +15,7 @@
 #include <pcl/point_types.h>
 #include <pcl/point_types_conversion.h>
 #include <pcl/common/geometry.h>
+#include <iostream>
 
 #include <cmath>
 
@@ -23,6 +24,8 @@
 
 using namespace uima;
 
+typedef pcl::Normal	PointN;
+typedef pcl::PointCloud<PointN> PCN;
 typedef pcl::PointXYZRGBA PointR;
 typedef pcl::PointCloud<PointR> PCR;
 
@@ -30,6 +33,7 @@ class KnifeAnnotator : public DrawingAnnotator
 {
 private:
 	PCR::Ptr cloud_r = PCR::Ptr(new PCR);
+	PCN::Ptr cloud_n = PCN::Ptr(new PCN);
 	int GREEN_UPPER_BOUND = 80;
 	int BLUE_LOWER_BOUND = 20;
 	int RED_UPPER_BOUND = 80;
@@ -64,15 +68,17 @@ public:
 
 		//get scene points
 		cas.get(VIEW_CLOUD, *cloud_r);
-		
+		cas.get(VIEW_NORMALS, *cloud_n);
+
 		//helpers
 		rs::StopWatch clock;
 		bool found = false;
 
 		for (auto cluster : clusters) {
-			std::vector<float> orientation = checkCluster(cluster, cloud_r);
+			std::vector<float> orientation = checkCluster(cluster, cloud_r, cloud_n);
 			
-			if (orientation[0] != 0 && orientation[1] != 0 && orientation[2] != 0) {
+			if (orientation[0] != 0 && orientation[1] != 0 && orientation[2] != 0
+					&& orientation[3] != 0 && orientation[4] != 0 && orientation[5] != 0) {
 				outInfo("found knife");
 				found = true;
 
@@ -111,35 +117,56 @@ public:
     return UIMA_ERR_NONE;
   }
 
-	std::vector<float> checkCluster(rs::Cluster cluster, PCR::Ptr cloud_ptr) {
+	std::vector<float> checkCluster(rs::Cluster cluster, PCR::Ptr cloud_ptr, PCN::Ptr normal_ptr) {
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
 		rs::ReferenceClusterPoints clusterpoints(cluster.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 		int colorCounter = 0;
-		std::vector<float> orientation(3);
+		int normalCounter = 0;
+		std::vector<float> orientation(6);
 		PointR temp;
-		outInfo("Cluster size: " << cluster_indices->indices.size());
+		PointN tempN;
+		//outInfo("Cluster size: " << cluster_indices->indices.size());
 
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
 				 pit != cluster_indices->indices.end(); pit++) {
 			temp = cloud_ptr->points[*pit];
+			tempN = normal_ptr->points[*pit];
 			if ((int) temp.g > GREEN_UPPER_BOUND && (int) temp.b < BLUE_LOWER_BOUND && (int) temp.r > RED_UPPER_BOUND) {
 				colorCounter++;
+				//middle value for location
 				orientation[0] += temp.x;
 				orientation[1] += temp.y;
 				orientation[2] += temp.z;
+				//middle value for normal
+				if (tempN.normal_x == tempN.normal_x &&
+						tempN.normal_y == tempN.normal_y &&
+						tempN.normal_z == tempN.normal_z) {
+					orientation[3] += tempN.normal_x;
+					orientation[4] += tempN.normal_y;
+					orientation[5] += tempN.normal_z;
+					normalCounter++;
+				}
 				//outInfo("RGB: " << (int) temp.r << "/" << (int) temp.g << "/" << (int) temp.b);
 			}
 		}
 		
 		if (colorCounter > POINT_THRESHOLD) {
+			//middle value for location
 			orientation[0] /= colorCounter;
 			orientation[1] /= colorCounter;
 			orientation[2] /= colorCounter;
+			//middle value for normal
+			orientation[3] /= normalCounter;
+			orientation[4] /= normalCounter;
+			orientation[5] /= normalCounter;
 		} else {
 			orientation[0] = 0;
 			orientation[1] = 0;
 			orientation[2] = 0;
+			orientation[3] = 0;
+			orientation[4] = 0;
+			orientation[5] = 0;
 		}
 
 		return orientation;
@@ -173,26 +200,20 @@ public:
 		tf::Vector3 trans(highest.x, highest.y, highest.z);		
 		transform.setOrigin(trans);
 		
-		//see http://math.stackexchange.com/a/476311
-		tf::Vector3 up(highest.x, highest.y, highest.z);
-		tf::Vector3 down(orientation[0], orientation[1], orientation[2]);
-		up.normalize();
-		down.normalize();
-	
-		tf::Vector3 cross = up.cross(down);
-		float cos = 1 / (1 + up.dot(down));
-		
-		tf::Matrix3x3 vx;
-		vx.setValue(0, -cross[2], cross[1],
-								cross[2], 0, -cross[0],
-								-cross[1], cross[0], 0);
-		tf::Matrix3x3 vx2 = (vx * vx); 
-		
-		tf::Matrix3x3 rot;
-		rot.setValue(	1, vx[0][1] + vx2[0][1] * cos, vx[0][2] + vx2[0][2] * cos, 
-									vx[1][0] + vx2[1][0] * cos,	1, vx[1][2] + vx2[1][2] * cos, 
-									vx[2][0] + vx2[2][0] * cos, vx[2][0] + vx2[2][0] * cos, 1);
+		outInfo("Median normal: " << orientation[3] << "," << orientation[4] << "," << orientation[5]);
 
+		tf::Vector3 x(orientation[3], orientation[4], orientation[5]);
+		tf::Vector3 z(highest.x - orientation[0], highest.y - orientation[1], highest.z - orientation[2]);
+		tf::Vector3 y = x.cross(z);
+
+		x.normalize();
+		y.normalize();
+		z.normalize();
+
+		tf::Matrix3x3 rot;
+		rot.setValue(x[0], x[1], x[2],
+								 y[0], y[1], y[2],
+								 z[0], z[1], z[2]);
 		transform.setBasis(rot);
 
 		o.name.set("Knife");

@@ -9,4 +9,5 @@ annotators:
     - TrayAnnotator
     - CakeAnnotator
     - CylinderAnnotator
+    - KnifeAnnotator
     - ROSPublisher
