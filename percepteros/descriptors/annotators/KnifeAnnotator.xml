@@ -9,8 +9,68 @@
     <version>1.0</version>
     <vendor/>
     <configurationParameters>
+			<configurationParameter>
+				<name>maxGreen</name>
+				<type>Float</type>
+				<multiValued>false</multiValued>
+				<mandatory>true</mandatory>
+			</configurationParameter>
+			<configurationParameter>
+				<name>minBlue</name>
+				<type>Float</type>
+				<multiValued>false</multiValued>
+				<mandatory>true</mandatory>
+			</configurationParameter>
+			<configurationParameter>
+				<name>maxRed</name>
+				<type>Float</type>
+				<multiValued>false</multiValued>
+				<mandatory>true</mandatory>
+			</configurationParameter>
+			<configurationParameter>
+				<name>minPoints</name>
+				<type>Float</type>
+				<multiValued>false</multiValued>
+				<mandatory>true</mandatory>
+			</configurationParameter>
+			<configurationParameter>
+				<name>maxDistance</name>
+				<type>Float</type>
+				<multiValued>false</multiValued>
+				<mandatory>true</mandatory>
+			</configurationParameter>
     </configurationParameters>
     <configurationParameterSettings>
+			<nameValuePair>
+				<name>maxGreen</name>
+				<value>
+					<float>100</float>
+				</value>
+			</nameValuePair>
+			<nameValuePair>
+				<name>minBlue</name>
+				<value>
+					<float>20</float>
+				</value>
+			</nameValuePair>
+			<nameValuePair>
+				<name>maxRed</name>
+				<value>
+					<float>100</float>
+				</value>
+			</nameValuePair>
+			<nameValuePair>
+				<name>minPoints</name>
+				<value>
+					<float>10</float>
+				</value>
+			</nameValuePair>
+			<nameValuePair>
+				<name>maxDistance</name>
+				<value>
+					<float>0.2</float>
+				</value>
+			</nameValuePair>
     </configurationParameterSettings>
     <typeSystemDescription>
         <imports>
