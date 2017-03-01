@@ -13,52 +13,28 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/point_types_conversion.h>
 
 //surface matching
-#include <pcl/io/obj_io.h>
-#include <Eigen/Core>
 #include <pcl/console/print.h>
-#include <pcl/features/normal_3d_omp.h>
-#include <pcl/features/fpfh_omp.h>
-#include <pcl/filters/filter.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/registration/icp.h>
-#include <pcl/registration/sample_consensus_prerejective.h>
-#include <pcl/segmentation/sac_segmentation.h>
 
 using namespace uima;
 
-typedef pcl::PointNormal PointG;
-typedef pcl::PointCloud<PointG> PCG;
-typedef pcl::Normal PointN;
-typedef pcl::PointXYZ PointT;
-typedef pcl::PointXYZRGBA PointW;
-typedef pcl::FPFHSignature33 FeatureT;
-typedef pcl::FPFHEstimationOMP<PointG,PointG,FeatureT> FET;
-typedef pcl::PointCloud<FeatureT> FCT;
-typedef pcl::visualization::PointCloudColorHandlerCustom<PointG> ColorHandlerT;
+typedef pcl::PointXYZRGBA PointR;
+typedef pcl::PointCloud<PointR> PCR;
 
 class KnifeAnnotator : public DrawingAnnotator
 {
 private:
-	pcl::PointCloud<PointW>::Ptr temp_ptr;
-  pcl::PointCloud<PointT>::Ptr cloud_ptr;
-	pcl::PointCloud<PointN>::Ptr normal_ptr;
-	PCG::Ptr cloud_normal_ptr;
-	PCG::Ptr model_ptr;
-	PCG::Ptr model_aligned;
-	FCT::Ptr model_f;
+	PCR::Ptr cloud_r = PCR::Ptr(new PCR);
+	float GREEN_UPPER_BOUND = 140;
+	float BLUE_LOWER_BOUND = 20;
+	float RED_UPPER_BOUND = 150;
+	int POINT_THRESHOLD = 50;
 
 public:
 
   KnifeAnnotator(): DrawingAnnotator(__func__){
-			temp_ptr = pcl::PointCloud<PointW>::Ptr(new pcl::PointCloud<PointW>);
-      cloud_ptr = pcl::PointCloud<PointT>::Ptr(new pcl::PointCloud<PointT>);
-			normal_ptr = pcl::PointCloud<PointN>::Ptr(new pcl::PointCloud<PointN>);
-			cloud_normal_ptr = PCG::Ptr(new PCG);
-			model_ptr = PCG::Ptr(new PCG);
-			model_f = FCT::Ptr(new FCT);
-			model_aligned = PCG::Ptr(new PCG);
   }
 
   TyErrorId initialize(AnnotatorContext &ctx)
@@ -81,59 +57,25 @@ public:
 		rs::Scene scene = cas.getScene();
 		std::vector<rs::Cluster> clusters;
 		scene.identifiables.filter(clusters);
+
+		//get scene points
+		cas.get(VIEW_CLOUD, *cloud_r);
 		
-		outInfo("Number of clusters: " << clusters.size());
-
-		//get scene clusters
-		cas.get(VIEW_CLOUD, *temp_ptr);
-		cas.get(VIEW_NORMALS, *normal_ptr);
-		pcl::copyPointCloud(*temp_ptr, *cloud_ptr);
-		pcl::concatenateFields(*cloud_ptr, *normal_ptr, *cloud_normal_ptr);
-
-		//get points from obj file
-		pcl::OBJReader reader;
-		reader.read("/home/tobias/cateros/src/perception/percepteros/data/BEST_SIDE_M.obj", *model_ptr);
-
-		//downsampling
-		pcl::VoxelGrid<PointG> grid;
-		const float leaf = 0.005f;
-		grid.setLeafSize(leaf, leaf, leaf);
-		grid.setInputCloud(model_ptr);
-		grid.filter(*model_ptr);
-
-		//estimating features
-		FET fest;
-		fest.setRadiusSearch(0.025);
-		fest.setInputCloud(model_ptr);
-		fest.setInputNormals(model_ptr);
-		fest.compute(*model_f);
-		
-		//aligning
-		pcl::SampleConsensusPrerejective<PointG,PointG,FeatureT> align;
-		align.setMaximumIterations(50000); //ransac iterations
-		align.setNumberOfSamples(10);
-		align.setCorrespondenceRandomness(5); //number of nearest features to use
-		align.setSimilarityThreshold(0.9f); //polygonal edge length similarity threshold
-		align.setMaxCorrespondenceDistance(2.5f * leaf); //inlier threshold
-		align.setInlierFraction(0.25f); // required inlier fraction for accepting a pose hypothesis
-		
-		bool finished = false;
+		//helpers
 		rs::StopWatch clock;
+		bool found = false;
 
 		for (auto cluster : clusters) {
-			Eigen::Matrix4f transformation;
-			PCG::Ptr cluster_ptr = extractPoints(cluster, cloud_normal_ptr, grid);
-			FCT::Ptr cluster_f = extractFeatures(cluster_ptr, fest);
-			doTransformation(model_aligned, model_ptr, model_f, cluster_ptr, cluster_f, align);
+			found = checkCluster(cluster, cloud_r);
 			
-			if (align.hasConverged()) {
-				transformation = align.getFinalTransformation();
-				finished = true;
-				outInfo("finished alignment");
+			if (found) {
+				outInfo("found knife");
 				
+				PointR highest = getHandle(cluster, cloud_r);
+
 				//can't give tcas to function, so have to do it here
 				percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
-				tf::Transform transform = publishResults(cluster, transformation, o);
+				tf::Transform transform = publishResults(cluster, highest, o);
 				
 				rs::PoseAnnotation poseAnnotation = rs::create<rs::PoseAnnotation>(tcas);
 				tf::StampedTransform camToWorld;
@@ -151,70 +93,66 @@ public:
 
 				cluster.annotations.append(o);
 				cluster.annotations.append(poseAnnotation);
-				scene.identifiables.append(cluster);
+				//scene.identifiables.append(cluster);
 				break;
 			}
+			outInfo("Finished recognition in: " << clock.getTime() << "ms.");
 		}
 		
-		if (!finished) {
-			outInfo("No matching cluster found");
+		if (!found) {
+			outInfo("No matching cluster");
 		}
-		
-		outInfo("Finished recognition in: " << clock.getTime() << "ms.");
 
     return UIMA_ERR_NONE;
   }
 
-	FCT::Ptr extractFeatures(PCG::Ptr input, FET fest) {
-		//initialize feature object
-		FCT::Ptr input_f(new FCT);
-
-		//compute features
-		fest.setInputCloud(input);
-		fest.setInputNormals(input);
-		fest.compute(*input_f);
-		
-		//return feature object
-		return input_f;
-	}
-
-	PCG::Ptr extractPoints(rs::Cluster cluster, PCG::Ptr cloud_ptr, pcl::VoxelGrid<PointG> grid) {
-		PCG::Ptr cluster_ptr(new PCG);
+	bool checkCluster(rs::Cluster cluster, PCR::Ptr cloud_ptr) {
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
 		rs::ReferenceClusterPoints clusterpoints(cluster.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+		int colorCounter = 0;
+		PointR temp;
+		outInfo("Cluster size: " << cluster_indices->indices.size());
 
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
 				 pit != cluster_indices->indices.end(); pit++) {
-			cluster_ptr->push_back(cloud_ptr->points[*pit]);		 
+			temp = cloud_ptr->points[*pit];
+			if ((int) temp.g > GREEN_UPPER_BOUND && (int) temp.b < BLUE_LOWER_BOUND && (int) temp.r > RED_UPPER_BOUND) {
+				colorCounter++;
+			}
+		}
+		
+		if (colorCounter > POINT_THRESHOLD) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	PointR getHandle(rs::Cluster cluster, PCR::Ptr cloud_ptr) {
+		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
+		rs::ReferenceClusterPoints clusterpoints(cluster.points());
+		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+		PointR temp;
+		PointR highest = cloud_ptr->points[0];
+
+		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
+				 pit != cluster_indices->indices.end(); pit++) {
+			temp = cloud_ptr->points[*pit];
+			if ((int) temp.x > (int) highest.x) {
+				highest = temp;
+			}
 		}
 
-		cluster_ptr->width = cluster_ptr->points.size();
-		cluster_ptr->height = 1;
-		cluster_ptr->is_dense = true;
-
-		grid.setInputCloud(cluster_ptr);
-		grid.filter(*cluster_ptr);
-
-		return cluster_ptr;
+		return highest;
 	}
 
-	void doTransformation(PCG::Ptr model_aligned, PCG::Ptr model_ptr, FCT::Ptr model_f, PCG::Ptr cluster_ptr, FCT::Ptr cluster_f, pcl::SampleConsensusPrerejective<PointG,PointG,FeatureT> align) {
-		align.setInputSource(model_ptr);
-		align.setSourceFeatures(model_f);
-		align.setInputTarget(cluster_ptr);
-		align.setTargetFeatures(cluster_f);
-		align.align(*model_aligned);
-	}
-
-	tf::Transform publishResults(rs::Cluster cluster, Eigen::Matrix4f transformation, percepteros::RecognitionObject o) {
+	tf::Transform publishResults(rs::Cluster cluster, PointR highest, percepteros::RecognitionObject o) {
 		tf::Transform transform;
 		
-		tf::Vector3 trans(transformation(0,3), transformation(1,3), transformation(2,3));
+		tf::Vector3 trans(highest.x, highest.y, highest.z);
 		tf::Matrix3x3 rot;
-		rot.setValue(transformation(0,0), transformation(0,1), transformation(0,2),
-								 transformation(1,0), transformation(1,1), transformation(1,2),
-								 transformation(2,0), transformation(2,1), transformation(2,2));
+		rot.setValue(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
 		transform.setOrigin(trans);
 		transform.setBasis(rot);
