@@ -157,7 +157,9 @@
       <fixedFlow>
       <node>CollectionReader</node>
 			<node>ImagePreprocessor</node>
-      <node>NormalEstimator</node>
+			<node>PointCloudFilter</node>
+			<node>PlaneAnnotator</node>
+			<node>PointCloudClusterExtractor</node>
       <node>KnifeAnnotator</node>
 			<node>ROSPublisher</node>
       </fixedFlow>
