@@ -47,7 +47,7 @@ public:
 		
 		//extract color parameters
 		ctx.extractValue("maxGreen", GREEN_UPPER_BOUND);
-		ctx.extractValue("minBlue", BLUE_UPPER_BOUND);
+		ctx.extractValue("minBlue", BLUE_LOWER_BOUND);
 		ctx.extractValue("maxRed", RED_UPPER_BOUND);
 
 		//extract threshold
@@ -192,8 +192,7 @@ public:
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
 				 pit != cluster_indices->indices.end(); pit++) {
 			temp = cloud_ptr->points[*pit];
-			if ((int) temp.x > (int) highest.x && pcl::geometry::distance(temp, dist) < MAX_DISTANCE
-			{
+			if ((int) temp.x > (int) highest.x && pcl::geometry::distance(temp, dist) < MAX_DISTANCE)	{
 				highest = temp;
 			}
 		}
