@@ -14,6 +14,9 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/point_types_conversion.h>
+#include <pcl/common/geometry.h>
+
+#include <cmath>
 
 //surface matching
 #include <pcl/console/print.h>
@@ -27,10 +30,11 @@ class KnifeAnnotator : public DrawingAnnotator
 {
 private:
 	PCR::Ptr cloud_r = PCR::Ptr(new PCR);
-	float GREEN_UPPER_BOUND = 140;
-	float BLUE_LOWER_BOUND = 20;
-	float RED_UPPER_BOUND = 150;
-	int POINT_THRESHOLD = 50;
+	int GREEN_UPPER_BOUND = 80;
+	int BLUE_LOWER_BOUND = 20;
+	int RED_UPPER_BOUND = 80;
+	int POINT_THRESHOLD = 10;
+	float MAX_DISTANCE = 0.2f;
 
 public:
 
@@ -66,16 +70,17 @@ public:
 		bool found = false;
 
 		for (auto cluster : clusters) {
-			found = checkCluster(cluster, cloud_r);
+			std::vector<float> orientation = checkCluster(cluster, cloud_r);
 			
-			if (found) {
+			if (orientation[0] != 0 && orientation[1] != 0 && orientation[2] != 0) {
 				outInfo("found knife");
-				
-				PointR highest = getHandle(cluster, cloud_r);
+				found = true;
+
+				PointR highest = getHandle(cluster, cloud_r, orientation);
 
 				//can't give tcas to function, so have to do it here
 				percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
-				tf::Transform transform = publishResults(cluster, highest, o);
+				tf::Transform transform = publishResults(cluster, highest, orientation, o);
 				
 				rs::PoseAnnotation poseAnnotation = rs::create<rs::PoseAnnotation>(tcas);
 				tf::StampedTransform camToWorld;
@@ -106,11 +111,12 @@ public:
     return UIMA_ERR_NONE;
   }
 
-	bool checkCluster(rs::Cluster cluster, PCR::Ptr cloud_ptr) {
+	std::vector<float> checkCluster(rs::Cluster cluster, PCR::Ptr cloud_ptr) {
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
 		rs::ReferenceClusterPoints clusterpoints(cluster.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 		int colorCounter = 0;
+		std::vector<float> orientation(3);
 		PointR temp;
 		outInfo("Cluster size: " << cluster_indices->indices.size());
 
@@ -119,27 +125,41 @@ public:
 			temp = cloud_ptr->points[*pit];
 			if ((int) temp.g > GREEN_UPPER_BOUND && (int) temp.b < BLUE_LOWER_BOUND && (int) temp.r > RED_UPPER_BOUND) {
 				colorCounter++;
+				orientation[0] += temp.x;
+				orientation[1] += temp.y;
+				orientation[2] += temp.z;
+				//outInfo("RGB: " << (int) temp.r << "/" << (int) temp.g << "/" << (int) temp.b);
 			}
 		}
 		
 		if (colorCounter > POINT_THRESHOLD) {
-			return true;
+			orientation[0] /= colorCounter;
+			orientation[1] /= colorCounter;
+			orientation[2] /= colorCounter;
 		} else {
-			return false;
+			orientation[0] = 0;
+			orientation[1] = 0;
+			orientation[2] = 0;
 		}
+
+		return orientation;
 	}
 
-	PointR getHandle(rs::Cluster cluster, PCR::Ptr cloud_ptr) {
+	PointR getHandle(rs::Cluster cluster, PCR::Ptr cloud_ptr, std::vector<float> orientation) {
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
 		rs::ReferenceClusterPoints clusterpoints(cluster.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 		PointR temp;
 		PointR highest = cloud_ptr->points[0];
+		PointR dist;
+		dist.x = orientation[0];
+		dist.y = orientation[1];
+		dist.z = orientation[2];
 
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
 				 pit != cluster_indices->indices.end(); pit++) {
 			temp = cloud_ptr->points[*pit];
-			if ((int) temp.x > (int) highest.x) {
+			if ((int) temp.x > (int) highest.x && pcl::geometry::distance(temp, dist) < MAX_DISTANCE) {
 				highest = temp;
 			}
 		}
@@ -147,14 +167,32 @@ public:
 		return highest;
 	}
 
-	tf::Transform publishResults(rs::Cluster cluster, PointR highest, percepteros::RecognitionObject o) {
+	tf::Transform publishResults(rs::Cluster cluster, PointR highest, std::vector<float> orientation, percepteros::RecognitionObject o) {
 		tf::Transform transform;
 		
-		tf::Vector3 trans(highest.x, highest.y, highest.z);
-		tf::Matrix3x3 rot;
-		rot.setValue(1, 0, 0, 0, 1, 0, 0, 0, 1);
-
+		tf::Vector3 trans(highest.x, highest.y, highest.z);		
 		transform.setOrigin(trans);
+		
+		//see http://math.stackexchange.com/a/476311
+		tf::Vector3 up(highest.x, highest.y, highest.z);
+		tf::Vector3 down(orientation[0], orientation[1], orientation[2]);
+		up.normalize();
+		down.normalize();
+	
+		tf::Vector3 cross = up.cross(down);
+		float cos = 1 / (1 + up.dot(down));
+		
+		tf::Matrix3x3 vx;
+		vx.setValue(0, -cross[2], cross[1],
+								cross[2], 0, -cross[0],
+								-cross[1], cross[0], 0);
+		tf::Matrix3x3 vx2 = (vx * vx); 
+		
+		tf::Matrix3x3 rot;
+		rot.setValue(	1, vx[0][1] + vx2[0][1] * cos, vx[0][2] + vx2[0][2] * cos, 
+									vx[1][0] + vx2[1][0] * cos,	1, vx[1][2] + vx2[1][2] * cos, 
+									vx[2][0] + vx2[2][0] * cos, vx[2][0] + vx2[2][0] * cos, 1);
+
 		transform.setBasis(rot);
 
 		o.name.set("Knife");
