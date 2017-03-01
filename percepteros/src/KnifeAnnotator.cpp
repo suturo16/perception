@@ -34,11 +34,7 @@ class KnifeAnnotator : public DrawingAnnotator
 private:
 	PCR::Ptr cloud_r = PCR::Ptr(new PCR);
 	PCN::Ptr cloud_n = PCN::Ptr(new PCN);
-	int GREEN_UPPER_BOUND = 80;
-	int BLUE_LOWER_BOUND = 20;
-	int RED_UPPER_BOUND = 80;
-	int POINT_THRESHOLD = 10;
-	float MAX_DISTANCE = 0.2f;
+	float GREEN_UPPER_BOUND, BLUE_LOWER_BOUND, RED_UPPER_BOUND, POINT_THRESHOLD, MAX_DISTANCE;
 
 public:
 
@@ -48,6 +44,16 @@ public:
   TyErrorId initialize(AnnotatorContext &ctx)
   {
     outInfo("initialize");
+		
+		//extract color parameters
+		ctx.extractValue("maxGreen", GREEN_UPPER_BOUND);
+		ctx.extractValue("minBlue", BLUE_UPPER_BOUND);
+		ctx.extractValue("maxRed", RED_UPPER_BOUND);
+
+		//extract threshold
+		ctx.extractValue("minPoints", POINT_THRESHOLD);
+		ctx.extractValue("maxDistance", MAX_DISTANCE);
+
     return UIMA_ERR_NONE;
   }
 
@@ -186,7 +192,8 @@ public:
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
 				 pit != cluster_indices->indices.end(); pit++) {
 			temp = cloud_ptr->points[*pit];
-			if ((int) temp.x > (int) highest.x && pcl::geometry::distance(temp, dist) < MAX_DISTANCE) {
+			if ((int) temp.x > (int) highest.x && pcl::geometry::distance(temp, dist) < MAX_DISTANCE
+			{
 				highest = temp;
 			}
 		}
