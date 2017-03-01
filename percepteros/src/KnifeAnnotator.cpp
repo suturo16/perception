@@ -200,11 +200,12 @@ public:
 		tf::Vector3 trans(highest.x, highest.y, highest.z);		
 		transform.setOrigin(trans);
 		
-		outInfo("Median normal: " << orientation[3] << "," << orientation[4] << "," << orientation[5]);
+		//outInfo("Median normal: " << orientation[3] << "," << orientation[4] << "," << orientation[5]);
 
-		tf::Vector3 x(orientation[3], orientation[4], orientation[5]);
-		tf::Vector3 z(highest.x - orientation[0], highest.y - orientation[1], highest.z - orientation[2]);
-		tf::Vector3 y = x.cross(z);
+		tf::Vector3 z(orientation[3], orientation[4], orientation[5]);
+		tf::Vector3 x(orientation[0] - highest.x, orientation[1] - highest.y, orientation[2] - highest.z);
+		tf::Vector3 y = z.cross(x);
+		z = x.cross(y);
 
 		x.normalize();
 		y.normalize();
