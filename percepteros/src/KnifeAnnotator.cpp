@@ -218,9 +218,9 @@ public:
 		z.normalize();
 
 		tf::Matrix3x3 rot;
-		rot.setValue(x[0], x[1], x[2],
-								 y[0], y[1], y[2],
-								 z[0], z[1], z[2]);
+		rot.setValue(-z[0], -z[1],-z[2],
+								 x[0], x[1], x[2],
+								 -y[0], -y[1], -y[2]);
 		transform.setBasis(rot);
 
 		o.name.set("Knife");
