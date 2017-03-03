@@ -21,7 +21,7 @@ class Updater:
         
         
    def cleanup(self):
-        rospy.loginfo("Shutting down server node...")
+        rospy.loginfo("Shutting down netparamupdater node...")
  
    
    def getIP(self):
@@ -29,12 +29,12 @@ class Updater:
             self.INTERFACE = rospy.get_param("INTERFACE", "wlan0")
 	    self.ADDR=str(socket.inet_ntoa(fcntl.ioctl(self.SOCKET.fileno(), 0x8915, struct.pack('256s', self.INTERFACE[:15]))[20:24]))
             self.SOCKET.close()
-            return self.ADDR
+            return str(self.ADDR)
 
    def getPORT(self):
        return str(rospy.get_param("RPCSERVERPORT", "8000"))
-
-
+   
+   
 	   
    def test(self):
        #rospy.set_param("INTERFACE", "welan0")
@@ -45,6 +45,7 @@ class Updater:
 	 try:
            port=self.getPORT()
            ip=self.getIP()
+           
            if((self.RPCSERVERPORT!=port) or (self.RPCSERVERIP!=ip)):
                self.RPCSERVERPORT=port
                self.RPCSERVERIP=ip
@@ -55,6 +56,9 @@ class Updater:
 	       self.pr2.updateObserverClient(self,clientID,self.RPCSERVERIP, self.RPCSERVERPORT)
 	 except:
 	   pass
+        
+         rospy.loginfo('The new addresses are:'+self.RPCSERVERPORT+' and '+self.RPCSERVERIP)
+         rospy.loginfo('The old addresses are:'+port+' and '+ip)
          rospy.sleep(5) #sleep 10s
       
                      
@@ -77,3 +81,4 @@ if __name__=="__main__":
          Updater().run()
     except:
         rospy.loginfo("Shutting down netparamupdater...")
+
