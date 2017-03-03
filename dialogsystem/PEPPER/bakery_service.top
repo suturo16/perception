@@ -1,0 +1,162 @@
+
+concept: ~EXCEPTION [UNKNOWNQUESTION UNKNOWNPARAMETER REQUESTFAILED REQUESTFINALFAILED REQUESTDONE PROCESSINGREQUESTSHORT
+                    PROCESSINGREQUESTLONG]             
+topic: ~bakery_service keep repeat (~bakery cake ~eat ~yesanswer ~eatery  ~noanswer ~beverage ~drink ~help ~want 
+                                     ~food ~act  ~EXCEPTION ~qwords ~occupation menu)
+
+#! requesters as HELP
+
+t: HELP ()
+  
+   [what can I do for you]
+   [can I help you]
+   [how can I help you]
+   [do  you need something]
+   [may I do something for you]
+                                                                                        
+   a: CAKEHELP ([ ~bakery cake ~eat ~yesanswer ~eatery menu])
+       [may I offer you cake]
+       [can I offer you cake]
+       [we have cake. would you like to get a piece]
+       [we have cake. would you like to have a piece]
+       [we have cake. would you like to order a piece]
+       [can I offer you some pieces of cake]
+       b: (~yesanswer)
+         $REQUEST=CUTCAKE
+         $REQUEST 
+       b: (~noanswer)
+          do you want something else
+          c: (~yesanswer)
+             sorry. For the moment we just offer cake
+          c: (~noanswer)
+             so let talk
+
+
+    a: ([ ~beverage ~drink] )
+       [sorry. we just have cake]
+       ^reuse(CAKEHELP) 
+
+    a: ( ~noanswer)
+       so let talk 
+          
+             
+          
+
+      
+#! responders as HELP
+ 
+u: ([~help ~want ~bakery cake ~eat ~eatery ~food ~beverage ~drink menu])    
+   ^reuse(HELP)  
+
+u: (<<!how ~act>>)
+   [we are specialized in the baking]
+   [for the moment we just bake]
+
+
+u: (_~EXCEPTION)
+   $STATUS='_0
+   if($UNKNOWN_QUESTION==$STATUS){
+   [I am sorry I dont get you]
+   [can you be clear a little bit more please]
+   [could you please repeat]
+   }else if($UNKNOWN_PARAMETER==$STATUS){
+              Why dont you answer my question
+          }else  if($PROCESSING_REQUEST_SHORT==$STATUS){
+                    $NBERODER = $NBERODER + 1
+		    ok 
+		    [just wait for a few minutes.]
+		    [just have a sit]
+		    [your cake will be ready very soon]
+		    [I let you know when it is ready] 
+		    [I let you know when your cake is ready]    
+		  } else if($REQUEST_FAILED==$STATUS){
+			    sorry. 
+			    [I cannot get the cake right now. the bakery is actually closed]
+			    [the bakery is inaccessible]   
+			    [I found some problems. I cannot provide you this service right now].
+			
+			   }else if($PROCESSING_REQUEST_LONG==$STATUS){
+                                 
+                                  $NBERODER = $NBERODER + 1 
+                                   
+				   ok 
+				   [just wait]
+				   [just have a sit] 
+				   [I let you know when your cake is ready]
+				   [I let you know when it is done].
+				   it may take some time. 
+				    
+				  }else if($REQUEST_DONE==$STATUS){
+                                         $NBERODER = $NBERODER - 1
+                                         ok your cake is [ready][done][coming][on the way].
+                                         if($NBERODER>0){
+                                            but it remains $NBERODER piece.
+                                         }else if($NBERODER<0){
+                                             $NBERODER = 0
+                                         }
+
+                                          else{
+                                          it was your last [piece][order]
+                                         }
+                                  }else if($REQUEST_FINAL_FAILED==$STATUS)){
+                                           $NBERODER = $NBERODER - 1
+                                           sorry.
+                                           [the baker cannot complete the baking]
+                                           [the baker cannot provide your cake]
+                                           [the baking failed]
+                                           [the baking was unsuccessful].
+                                           if($NBERODER>0){
+                                            but it remains $NBERODER piece.
+                                         }else if($NBERODER<0){
+                                             $NBERODER = 0
+                                             
+                                           }
+
+                                          else{
+                                          it was your last [piece][order]
+                                         }
+                                          }
+
+    if($username){
+         $username
+        }
+
+   a: (~qwords)
+      if($PROCESSING_REQUEST_LONG==$STATUS)
+         {[the bakery is full of orders]
+          [the baker is too busy].
+          you ordered $NBERODER piece of cake
+         }
+      else if($REQUEST_FAILED==$STATUS){
+	      [I cannot join the baker]
+	      [there is no one in the bakery]
+	      [the baker does not answer my call]
+           }else if($REQUEST_FINAL_FAILED==$STATUS)){
+		   [I dont know exactly what happened]
+		   [it may be a technical issue]
+		  }
+
+
+#! requesters for TASTECAKE
+
+t: TASTECAKE ()
+   [you will like our delicious cake][our cake tastes really good].
+   a: (~yesanswer)
+      [I promise you]
+      [really]
+      [dont worry. it is delicious]
+
+
+t: FEEDBACK ()
+   [just give me feedback after eating][just appreciate the cake after eating].
+
+
+t: SERVICE ()
+   [how can we improve our services][is there any drink food or service you will wish from us ne] next time
+   a: (_[~beverage ~foods ~occupation ])
+      $service = '_0
+      dont worry. next time we provide you with $service
+   a: (![~beverage ~food ~occupation ])
+      sorry. I cannot get your [preoccupation][wish][need]
+
+

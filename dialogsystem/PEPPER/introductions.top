@@ -1,0 +1,190 @@
+concept: ~place [origin land country continent city town quarter village school region]
+concept: ~health [healthy feel sense ]
+concept: ~ages [age]
+
+topic: ~INTRODUCTIONS keep repeat  (~emohello ~emohowzit my I am me ~humanname ~noanswer you ~yesanswer who are ~BAD not ~GOOD ~number 
+                                     ~propername where come how from old ~emothanks  name ~qwords ~ages ~health ~place)
+
+#! requesters as GREETINGS
+
+t: GREETINGS () 
+  
+  
+   [hi][hello][hey]. [my name is][I am][people call me][you can call me] $peppername. [and you][what is your name][how may I call you]
+
+	   
+   a: (<< [my I am me] _~humanname >>) 
+     $username = '_0    
+     if(%hour<12 ) {good morning} else if(%hour<16) {good afternoon} else {good evening} $username.
+     [welcome][you are welcome][nice to meet you][I am glad to be with you][it is a pleasure to be with you]
+     [nice to see you][I am proud to be with you]
+
+   
+   a: (_~humanname)
+      $vorusername= '_0
+      your name is $vorusername. isnt it
+      b: (~yesanswer) 
+	 ok  
+	 $username = '_0    
+	 if(%hour<12 ) {good morning} else if(%hour<16) {good afternoon} else {good evening} $username.
+	 [welcome][you are welcome][nice to meet you][I am glad to be with you][it is a pleasure to be with you]
+	 [nice to see you][I am proud to be with you]
+
+      b: (~noanswer) 
+                 it seems you dont want to give me your name. do you
+                 c: (~noanswer) 
+                    $username = Sir
+                    sorry.
+                     if(%hour<12 ) {good morning} else if(%hour<16) {good afternoon} else {good evening}.
+		    [welcome][you are welcome][nice to meet you][I am glad to be with you][it is a pleasure to be with you]
+		    [nice to see you][I am proud to be with you].
+                 c: (~yesanswer)
+                    ^reuse(GREETINGS) please
+
+    a: (!~humanname) 
+         it does not sound like a name. do you keep your name private
+         b: (~yesanswer)
+             $username = Sir 
+             sorry.
+             if(%hour<12 ) {good morning} else if(%hour<16) {good afternoon} else {good evening}.
+	    [welcome][you are welcome][nice to meet you][I am glad to be with you][it is a pleasure to be with you]
+	    [nice to see you][I am proud to be with you].
+         b: (~noanswer)
+            ^reuse(GREETINGS) please
+
+
+#! jump to bakery core topic
+t: ^gambit(~bakery_service)
+
+
+# responders for GREETINGS
+
+u: (~emohello) 
+
+   if(%hour<12 ) 
+    {good morning} 
+   else if(%hour<16) 
+         {good afternoon.} 
+       else 
+         {good evening.}
+
+u: ( [name "who are you" "I am" ~humanname] ) 
+   if($username){
+   [I am][my name is] $peppername. [did I greet you][were you not here before]
+   }
+   else{
+        ^reuse(GREETINGS)  
+   }
+
+   a: (~noanswer) 
+       [I dont believe you][I dont think][it is impossible]
+   a: (~yesanswer)
+      [hummm][ok][good]
+
+#! requesters for HOWGREETINGS
+ 
+t: HOWGREETINGS () 
+ 
+   [I am good][I am fine][I am feeling good][I am ok] now. and you.
+   #! good
+   a: ([<<not ~BAD>> << !not ~GOOD>>]) 
+      nice to hear it from you.
+      $howareyou = good
+   #! bad 
+   a: ([<<not ~GOOD>> << !not ~BAD>>]) 
+      I am so sorry to hear it
+      $howareyou = bad
+      if($username){
+         $username
+        }
+
+#! responders for HOWGREETINGS
+
+u: ( [~health ~emohowzit] ) 
+   if($howareyou){
+     [I am good][I am fine][I am feeling good][I am ok] now. [did I greet you][were you not here before]
+   }else{
+   ^reuse(HOWGREETINGS) }
+   
+  a: (~noanswer) 
+       [I dont believe you][I dont think][it is impossible]
+   a: (~yesanswer)
+      [hummm][ok][good]
+
+
+
+#! requesters as AGES
+
+t: AGEGREETINGS ()
+
+  I am $pepperage. [how old are you][and you]
+  a: (_~number) 
+   $userage='_0
+   if($userage > $pepperage)
+     {so you are older than I. congratulations}
+   else 
+     if($userage < $pepperage)
+       {so I am your elder brother}
+     else
+        if($userage==$pepperage)
+       {so I am old as you.}
+   
+  a: (!~number)
+     $userage = $pepperage
+     sorry [is it your age. it does not sound like][I cannot get you]  
+
+
+#! responders as AGES
+
+u: ([~ages << ~qwords old  you>>]) 
+   if($userage){
+     I am 27. [did I tell you my age][were you not here before]
+   }else{
+   ^reuse(AGEGREETINGS)}
+
+   a: (~noanswer) 
+       [I dont believe you][I dont think][it is impossible]
+   a: (~yesanswer)
+      [hummm][ok][good]
+
+#! requesters for ORIGINGREETINGS
+
+t: ORIGINGREETINGS () 
+   I [am][come] from $pepperorigin. [and you][where do you come from][where are you from]
+   a: (_~propername)
+      $userorigin= '_0
+      if($userorigin == $pepperorigin)
+        {Nice to hear it brother}
+      else
+        {I have never been in $userorigin. I guess it is great}
+
+   a: (!~propername)
+       $userorigin = $pepperorigin
+       I have never heard about it.
+
+#! responders for ORIGINGREETINGS
+      
+u: ([~place <<~qwords [come are am] from>>])
+   if($userorigin){
+      I [am][come] from $pepperorigin. [did I tell you my origin][were you not here before]
+   }else{
+   ^reuse(ORIGINGREETINGS)}
+
+   a: (~noanswer) 
+       [I dont believe you][I dont think][it is impossible]
+   a: (~yesanswer)
+      [hummm][ok][good]
+
+
+
+#! requesters for THANKGREETINGS
+
+t: THANKGREETINGS () 
+   nice again to [be][see][meet] with you 
+
+#! responders for THANKGREETINGS
+
+u: (~emothanks)
+   [thank you too][dont mention][your are so kind][you are wellcome]
+
+   

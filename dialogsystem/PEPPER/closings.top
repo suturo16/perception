@@ -1,0 +1,64 @@
+
+
+topic: ~closings keep repeat (~emogoodbye  ~emohowzit ~BAD not ~GOOD ~emothanks ~emohappy  ~good_quality_adjectives ~yesanswer ~noanswer
+                              ~bad_quality_adjectives ~emosad ~emoangry how meeting service talk discussion debate conversation speech later  
+                               go away leave exit wish
+                               )
+
+
+#! requesters for farewell
+
+t: FAREWELL ()
+   if($username){$username} it was a pleasure to be with you
+
+t: RESULTFAREWELL () how did you find our conversation and service
+   a: ([<<not ~BAD>> << !not ~GOOD>>])
+      [nice to hear it]
+      [I am so proud of that]
+
+   a: ([<<not ~GOOD>> << !not ~BAD>>])
+     sorry. it will be better next time
+
+t: FORFAREWELL ()
+   [I am looking forward to see you again]
+   [I hope to see you soon again]
+   
+   a: ([~yesanswer ([<<not ~BAD>> << !not ~GOOD>>]) ~emothanks ~emohappy  ~good_quality_adjectives ])
+      ok
+
+   a: ([~noanswer ([<<not ~GOOD>> << !not ~BAD>>]) ~emosad ~emoangry  ~bad_quality_adjectives ])
+      sorry
+
+t: ENDFAREWELL ()
+   good bye if($username){$username} 
+
+#! responders for farewell
+
+u: (<<!how  [~emogoodbye later go away leave exit wish]>>) 
+   are you [leaving][going]
+   a: (~yesanswer)
+      ^reuse(ENDFAREWELL)
+   a: (~noanswer)
+      sorry
+
+u: ([ ~bad_quality_adjectives  ([<<not ~GOOD>> << !not ~BAD>>]) ~emosad ~emoangry])
+   sorry. it will be better next time
+
+u: ([ ~good_quality_adjectives  ([<<not ~BAD>> << !not ~GOOD>>]) ~emothanks ~emohappy])
+   [nice to hear it]
+   [I am so proud of that]
+
+u: (~yesanswer)
+   ok
+
+u: (~noanswer)
+   sorry
+
+u: (<< how [meeting service talk discussion debate conversation speech]>>) 
+   you mean how the conversation was
+   a: (~yesanswer)
+      I found it really interesting
+   a: (~noanswer)
+      [I am sorry I dont get you]
+      [can you be clear a little bit more please]
+      [could you please repeat]
