@@ -12,6 +12,8 @@ catkin_install_python(PROGRAMS ./nodes/rpc_server.py
                                ./nodes/speechRecognizer.py
                                ./nodes/nao_speech.py 
                                ./nodes/dialogManager.py
+                               ./nodes/netparamupdater.py
+                               ./nodes/dialogCoreServerManager.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

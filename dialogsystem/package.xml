@@ -22,6 +22,12 @@
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>numpy</run_depend>
+  <run_depend>socket</run_depend>
+  <run_depend>fcntl</run_depend>
+  <run_depend>struct</run_depend>
+  <run_depend>time</run_depend>
+  <run_depend>subprocess</run_depend>
+  <!-- For integration of ChatScript see readme.md -->
  
 
   
