@@ -35,6 +35,8 @@ private:
 	PCR::Ptr cloud_r = PCR::Ptr(new PCR);
 	PCN::Ptr cloud_n = PCN::Ptr(new PCN);
 	float GREEN_UPPER_BOUND, BLUE_LOWER_BOUND, RED_UPPER_BOUND, POINT_THRESHOLD, MAX_DISTANCE;
+	std::vector<float> orientation;
+	tf::Vector3 x, y, z;
 
 public:
 
@@ -81,7 +83,7 @@ public:
 		bool found = false;
 
 		for (auto cluster : clusters) {
-			std::vector<float> orientation = checkCluster(cluster, cloud_r, cloud_n);
+			orientation = checkCluster(cluster, cloud_r, cloud_n);
 			
 			if (orientation[0] != 0 && orientation[1] != 0 && orientation[2] != 0
 					&& orientation[3] != 0 && orientation[4] != 0 && orientation[5] != 0) {
@@ -106,7 +108,7 @@ public:
 
 				poseAnnotation.camera.set(rs::conversion::to(tcas, camera));
 				poseAnnotation.world.set(rs::conversion::to(tcas, world));
-				poseAnnotation.source.set("Estimate");
+				poseAnnotation.source.set("3DEstimate");
 
 				cluster.annotations.append(o);
 				cluster.annotations.append(poseAnnotation);
@@ -129,7 +131,7 @@ public:
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 		int colorCounter = 0;
 		int normalCounter = 0;
-		std::vector<float> orientation(6);
+		std::vector<float> ori(6);
 		PointR temp;
 		PointN tempN;
 		//outInfo("Cluster size: " << cluster_indices->indices.size());
@@ -141,16 +143,16 @@ public:
 			if ((int) temp.g > GREEN_UPPER_BOUND && (int) temp.b < BLUE_LOWER_BOUND && (int) temp.r > RED_UPPER_BOUND) {
 				colorCounter++;
 				//middle value for location
-				orientation[0] += temp.x;
-				orientation[1] += temp.y;
-				orientation[2] += temp.z;
+				ori[0] += temp.x;
+				ori[1] += temp.y;
+				ori[2] += temp.z;
 				//middle value for normal
 				if (tempN.normal_x == tempN.normal_x &&
 						tempN.normal_y == tempN.normal_y &&
 						tempN.normal_z == tempN.normal_z) {
-					orientation[3] += tempN.normal_x;
-					orientation[4] += tempN.normal_y;
-					orientation[5] += tempN.normal_z;
+					ori[3] += tempN.normal_x;
+					ori[4] += tempN.normal_y;
+					ori[5] += tempN.normal_z;
 					normalCounter++;
 				}
 				//outInfo("RGB: " << (int) temp.r << "/" << (int) temp.g << "/" << (int) temp.b);
@@ -159,23 +161,23 @@ public:
 		
 		if (colorCounter > POINT_THRESHOLD) {
 			//middle value for location
-			orientation[0] /= colorCounter;
-			orientation[1] /= colorCounter;
-			orientation[2] /= colorCounter;
+			ori[0] /= colorCounter;
+			ori[1] /= colorCounter;
+			ori[2] /= colorCounter;
 			//middle value for normal
-			orientation[3] /= normalCounter;
-			orientation[4] /= normalCounter;
-			orientation[5] /= normalCounter;
+			ori[3] /= normalCounter;
+			ori[4] /= normalCounter;
+			ori[5] /= normalCounter;
 		} else {
-			orientation[0] = 0;
-			orientation[1] = 0;
-			orientation[2] = 0;
-			orientation[3] = 0;
-			orientation[4] = 0;
-			orientation[5] = 0;
+			ori[0] = 0;
+			ori[1] = 0;
+			ori[2] = 0;
+			ori[3] = 0;
+			ori[4] = 0;
+			ori[5] = 0;
 		}
 
-		return orientation;
+		return ori;
 	}
 
 	PointR getHandle(rs::Cluster cluster, PCR::Ptr cloud_ptr, std::vector<float> orientation) {
@@ -207,22 +209,22 @@ public:
 		transform.setOrigin(trans);
 		
 		//outInfo("Median normal: " << orientation[3] << "," << orientation[4] << "," << orientation[5]);
-
-		tf::Vector3 z(orientation[3], orientation[4], orientation[5]);
-		tf::Vector3 x(orientation[0] - highest.x, orientation[1] - highest.y, orientation[2] - highest.z);
-		tf::Vector3 y = z.cross(x);
+		
+		y.setValue(-orientation[3], -orientation[4], -orientation[5]);
+		x.setValue(orientation[0] - highest.x, orientation[1] - highest.y, orientation[2] - highest.z);
 		z = x.cross(y);
+		y = z.cross(x);
 
 		x.normalize();
 		y.normalize();
 		z.normalize();
-
+			
 		tf::Matrix3x3 rot;
-		rot.setValue(-z[0], -z[1],-z[2],
-								 x[0], x[1], x[2],
-								 -y[0], -y[1], -y[2]);
+		rot.setValue(x[0], x[1], x[2],
+								 y[0], y[1], y[2],
+								 z[0], z[1], z[2]);
 		transform.setBasis(rot);
-
+	
 		o.name.set("Knife");
 		o.type.set(6);
 		o.width.set(0.28f);
@@ -230,6 +232,40 @@ public:
 		o.depth.set(0.03f);
 		
 		return transform;
+	}
+
+	void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun) {
+		if (firstRun) {
+			visualizer.addPointCloud(cloud_r, "Scene Points");
+		} else {
+			visualizer.updatePointCloud(cloud_r, "Scene Points");
+		}
+
+		visualizer.addCone(getCoefficients(x, orientation), "x");
+		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 
+																					 1, 0, 0, "x");
+		visualizer.addCone(getCoefficients(y, orientation), "y");
+		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 
+																					 0, 1, 0, "y");
+		visualizer.addCone(getCoefficients(z, orientation), "z");
+		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 
+																					 0, 0, 1, "z");
+	}
+
+	pcl::ModelCoefficients getCoefficients(tf::Vector3 axis, std::vector<float> point) {
+		pcl::ModelCoefficients coeffs;
+		//point
+		coeffs.values.push_back(point[0]);
+		coeffs.values.push_back(point[1]);
+		coeffs.values.push_back(point[2]);
+		//direction
+		coeffs.values.push_back(axis[0]);
+		coeffs.values.push_back(axis[1]);
+		coeffs.values.push_back(axis[2]);
+		//radius
+		coeffs.values.push_back(1.0f);	
+
+		return coeffs;
 	}
 };
 

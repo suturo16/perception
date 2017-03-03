@@ -50,13 +50,13 @@
 			<nameValuePair>
 				<name>minBlue</name>
 				<value>
-					<float>20</float>
+					<float>40</float>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
 				<name>maxRed</name>
 				<value>
-					<float>100</float>
+					<float>120</float>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
