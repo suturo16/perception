@@ -8,7 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 )
 
-catkin_install_python(PROGRAMS ./nodes/rpc_server.py 
+catkin_install_python(PROGRAMS ./nodes/rpc_server.py
+                               ./nodes/speechRecognizer.py
+                               ./nodes/nao_speech.py 
+                               ./nodes/dialogManager.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
