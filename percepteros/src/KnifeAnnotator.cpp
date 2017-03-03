@@ -155,7 +155,7 @@ public:
 					ori[5] += tempN.normal_z;
 					normalCounter++;
 				}
-				//outInfo("RGB: " << (int) temp.r << "/" << (int) temp.g << "/" << (int) temp.b);
+				outInfo("RGB: " << (int) temp.r << "/" << (int) temp.g << "/" << (int) temp.b);
 			}
 		}
 		
