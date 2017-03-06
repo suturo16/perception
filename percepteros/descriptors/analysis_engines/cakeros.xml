@@ -166,6 +166,7 @@
       <node>PointCloudFilter</node>
       <node>NormalEstimator</node>
       <node>PlaneAnnotator</node>
+      <node>TrayAnnotator</node>
       <node>PointCloudClusterExtractor</node>
       <node>CakeAnnotator</node>
       <node>ROSPublisher</node>
