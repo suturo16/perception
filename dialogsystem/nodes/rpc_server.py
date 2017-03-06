@@ -15,25 +15,44 @@ class Server:
         rospy.on_shutdown(self.cleanup)
         rospy.loginfo("Starting server node...")
         #read the parameter
-        self.IP = rospy.get_param("~SERVER_IP", "127.0.0.1")
-        self.PORT = rospy.get_param("~SERVER_PORT", "8000") 
+        self.RPCSERVERIP = rospy.get_param("RPCSERVERIP", "127.0.0.1")
+        self.RPCSERVERPORT = rospy.get_param("RPCSERVERPORT", "8000") 
         #Publisher
         self.pub=rospy.Publisher('~status',String,queue_size=1000)
         #rpc server
         rospy.loginfo("Starting rpc server ...")
-        self.server = SimpleXMLRPCServer((self.IP, int(self.PORT)))
-        self.server.register_function(self.setStatus)
-   
+	#make sure the right address ip is stored in launch file, otherwise it failed
+        self.server = SimpleXMLRPCServer((self.RPCSERVERIP, int(self.RPCSERVERPORT)))
+        self.server.register_function(self.notify)
+        self.server.register_function(self.updateObserverClient)
 
-   # Set the status of the central system(PR2)
+   # notify the completion of the work by the central system(PR2)
    # status is a string integer
-   # status "1" if the work was successful completed
+   # status "1" if the work was successful completed: default
    # status "-1" if the work was unsuccessful
-   # return standard string integer for status successful received: "0"
+   # return standard string integer for status successful received: "0" defaullt, -1 otherwise
      
-   def setStatus(self,status):
+   def notify(self):
        #publish status of PR2
-       self.pub.publish(String(status))
+       status=1
+       self.pub.publish(String(str(status)))
+       return self.confirmation
+
+
+   #update connection parameters
+   #clientID is the ID of the machine, whose parameters changed(pepper=0, pr2=1 and turtle=2)
+   
+   def updateObserverClient(self,clientID, host, port):
+       #for the moment I am only interested in pr2ID
+       if(clientID==1):
+         if(str(rospy.get_param('PR2IP','127.0.0.1'))!=str(host)):
+            #update
+            rospy.set_param('PR2IP',str(host))
+
+         if(str(rospy.get_param('PR2PORT','8000'))!=str(port)):
+            #update
+            rospy.set_param('PR2PORT',str(port))
+        
        return self.confirmation
 
    def cleanup(self):
@@ -46,12 +65,21 @@ class Server:
                      
                     
 
+
+
+
+
+
+
+
+
+
+
 if __name__=="__main__":
     
     try:
         Server().run()
     except:
         rospy.loginfo("Shutting down rpc server...")
-
 
 

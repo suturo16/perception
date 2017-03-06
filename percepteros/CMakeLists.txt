@@ -10,6 +10,7 @@ set(TYPESYSTEM_XML_PATH ${PROJECT_SOURCE_DIR}/descriptors/typesystem)
 set(ANNOTATOR_PATH      ${PROJECT_SOURCE_DIR}/descriptors/annotators)
 set(ENGINE_PATH         ${PROJECT_SOURCE_DIR}/descriptors/analysis_engines)
 set(CMAKE_MODULE_PATH   ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 ################################################################################
 ## Configure project configuration files                                      ##
 ################################################################################
@@ -67,3 +68,7 @@ target_link_libraries(rs_kinectFusion ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_incrementalPointRegistration src/IncrementalPointRegistration.cpp)
 target_link_libraries(rs_incrementalPointRegistration ${CATKIN_LIBRARIES})
+
+rs_add_executable(caterrosRun src/CaterrosRun.cpp src/CaterrosPipelineManager.cpp src/CaterrosControlledAnalysisEngine.cpp)
+target_link_libraries(caterrosRun ${CATKIN_LIBRARIES})
+
