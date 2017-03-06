@@ -61,11 +61,11 @@
     <delegateAnalysisEngine key="KNNClassifier">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/KNNClassifier.xml"/>
     </delegateAnalysisEngine>
-    <delegateAnalysisEngine key="KnifeAnnotator">
-      <import location="../annotators/KnifeAnnotator.xml"/>
-    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="KinectFusion">
       <import location="../annotators/KinectFusion.xml"/>
+    </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="KnifeAnnotator">
+      <import location="../annotators/KnifeAnnotator.xml"/>
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="LinemodAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/LinemodAnnotator.xml"/>
