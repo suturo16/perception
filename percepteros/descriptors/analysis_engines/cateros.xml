@@ -154,7 +154,7 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot_not_loc.ini</string>
+            <string>config_mongodb_playback.ini</string>
           </array>
         </value>
       </nameValuePair>
@@ -165,6 +165,7 @@
       <node>ImagePreprocessor</node>
       <node>PointCloudFilter</node>
       <node>NormalEstimator</node>
+      <node>PlaneAnnotator</node>
       <node>PointCloudClusterExtractor</node>
       <node>CakeAnnotator</node>
       <node>KnifeAnnotator</node>
