@@ -34,11 +34,13 @@ class KnifeAnnotator : public DrawingAnnotator
 private:
 	PCR::Ptr cloud_r = PCR::Ptr(new PCR);
 	PCN::Ptr cloud_n = PCN::Ptr(new PCN);
+	PCR::Ptr blade = PCR::Ptr(new PCR);
+	PCN::Ptr blade_n = PCN::Ptr(new PCN);
 	float GREEN_UPPER_BOUND, BLUE_LOWER_BOUND, RED_UPPER_BOUND, POINT_THRESHOLD, MAX_DISTANCE;
-	std::vector<float> orientation;
-	tf::Vector3 x, y, z;
 
 public:
+	tf::Vector3 x, y, z;
+	PointR highest, lowest;
 
   KnifeAnnotator(): DrawingAnnotator(__func__){
   }
@@ -83,19 +85,51 @@ public:
 		bool found = false;
 
 		for (auto cluster : clusters) {
-			orientation = checkCluster(cluster, cloud_r, cloud_n);
+			blade = PCR::Ptr(new PCR);
+			blade_n = PCN::Ptr(new PCN);
+			found = checkCluster(cluster, cloud_r, cloud_n, blade, blade_n);
 			
-			if (orientation[0] != 0 && orientation[1] != 0 && orientation[2] != 0
-					&& orientation[3] != 0 && orientation[4] != 0 && orientation[5] != 0) {
+			if (found) {
 				outInfo("found knife");
-				found = true;
 
-				PointR highest = getHandle(cluster, cloud_r, orientation);
+				std::vector<PointR> endpoints = getX(blade);
+				y = getY(blade_n);
 
-				//can't give tcas to function, so have to do it here
+				if (endpoints[0].x + endpoints[0].y + endpoints[0].z <
+						endpoints[1].x + endpoints[1].y + endpoints[1].z) {
+					highest = endpoints[0];
+					lowest = endpoints[1];
+				} else {
+					highest = endpoints[1];
+					lowest = endpoints[0];
+				}
+				x.setValue(lowest.x - highest.x, lowest.y - highest.y, lowest.z - highest.z);
+
 				percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
-				tf::Transform transform = publishResults(cluster, highest, orientation, o);
+				tf::Transform transform;
+		
+				tf::Vector3 trans(highest.x, highest.y, highest.z);		
+				transform.setOrigin(trans);
 				
+				z = x.cross(y);
+				y = z.cross(x);
+
+				x.normalize();
+				y.normalize();
+				z.normalize();
+			
+				tf::Matrix3x3 rot;
+				rot.setValue(x[0], x[1], x[2],
+										 y[0], y[1], y[2],
+										 z[0], z[1], z[2]);
+				transform.setBasis(rot);
+	
+				o.name.set("Knife");
+				o.type.set(6);
+				o.width.set(0.28f);
+				o.height.set(0.056f);
+				o.depth.set(0.03f);
+
 				rs::PoseAnnotation poseAnnotation = rs::create<rs::PoseAnnotation>(tcas);
 				tf::StampedTransform camToWorld;
 				camToWorld.setIdentity();
@@ -112,7 +146,7 @@ public:
 
 				cluster.annotations.append(o);
 				cluster.annotations.append(poseAnnotation);
-				//scene.identifiables.append(cluster);
+
 				break;
 			}
 			outInfo("Finished recognition in: " << clock.getTime() << "ms.");
@@ -125,113 +159,68 @@ public:
     return UIMA_ERR_NONE;
   }
 
-	std::vector<float> checkCluster(rs::Cluster cluster, PCR::Ptr cloud_ptr, PCN::Ptr normal_ptr) {
+	bool checkCluster(rs::Cluster cluster, PCR::Ptr cloud_ptr, PCN::Ptr normal_ptr, PCR::Ptr blade, PCN::Ptr blade_n) {
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
 		rs::ReferenceClusterPoints clusterpoints(cluster.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
-		int colorCounter = 0;
-		int normalCounter = 0;
-		std::vector<float> ori(6);
 		PointR temp;
 		PointN tempN;
-		//outInfo("Cluster size: " << cluster_indices->indices.size());
 
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
 				 pit != cluster_indices->indices.end(); pit++) {
 			temp = cloud_ptr->points[*pit];
 			tempN = normal_ptr->points[*pit];
 			if ((int) temp.g > GREEN_UPPER_BOUND && (int) temp.b < BLUE_LOWER_BOUND && (int) temp.r > RED_UPPER_BOUND) {
-				colorCounter++;
-				//middle value for location
-				ori[0] += temp.x;
-				ori[1] += temp.y;
-				ori[2] += temp.z;
+				blade->push_back(temp);
 				//middle value for normal
 				if (tempN.normal_x == tempN.normal_x &&
 						tempN.normal_y == tempN.normal_y &&
 						tempN.normal_z == tempN.normal_z) {
-					ori[3] += tempN.normal_x;
-					ori[4] += tempN.normal_y;
-					ori[5] += tempN.normal_z;
-					normalCounter++;
+					blade_n->push_back(tempN);
 				}
-				outInfo("RGB: " << (int) temp.r << "/" << (int) temp.g << "/" << (int) temp.b);
+				//outInfo("RGB: " << (int) temp.r << "/" << (int) temp.g << "/" << (int) temp.b);
 			}
 		}
 		
-		if (colorCounter > POINT_THRESHOLD) {
-			//middle value for location
-			ori[0] /= colorCounter;
-			ori[1] /= colorCounter;
-			ori[2] /= colorCounter;
-			//middle value for normal
-			ori[3] /= normalCounter;
-			ori[4] /= normalCounter;
-			ori[5] /= normalCounter;
+		if (blade->size() > POINT_THRESHOLD) {
+			return true;
 		} else {
-			ori[0] = 0;
-			ori[1] = 0;
-			ori[2] = 0;
-			ori[3] = 0;
-			ori[4] = 0;
-			ori[5] = 0;
+			return false;
 		}
-
-		return ori;
 	}
 
-	PointR getHandle(rs::Cluster cluster, PCR::Ptr cloud_ptr, std::vector<float> orientation) {
-		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
-		rs::ReferenceClusterPoints clusterpoints(cluster.points());
-		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
-		PointR temp;
-		PointR highest = cloud_ptr->points[0];
-		PointR dist;
-		dist.x = orientation[0];
-		dist.y = orientation[1];
-		dist.z = orientation[2];
+	std::vector<PointR> getX(PCR::Ptr blade) {
+		PointR begin, end;
+		std::vector<PointR> endpoints(2);
+		float currDistance = 0;
+		int size = blade->size();
 
-		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
-				 pit != cluster_indices->indices.end(); pit++) {
-			temp = cloud_ptr->points[*pit];
-			if ((int) temp.x > (int) highest.x && pcl::geometry::distance(temp, dist) < MAX_DISTANCE)	{
-				highest = temp;
+		for (int i = 0; i < size; i++) {
+			begin = blade->points[i];
+			for (int j = 0; j < size; j++) {
+				end = blade->points[j];
+				if (pcl::geometry::distance(begin, end) > currDistance) {
+					endpoints[0] = begin;
+					endpoints[1] = end;
+					currDistance = pcl::geometry::distance(begin, end);
+				}
 			}
 		}
-
-		return highest;
+		
+		return endpoints;
 	}
 
-	tf::Transform publishResults(rs::Cluster cluster, PointR highest, std::vector<float> orientation, percepteros::RecognitionObject o) {
-		tf::Transform transform;
-		
-		tf::Vector3 trans(highest.x, highest.y, highest.z);		
-		transform.setOrigin(trans);
-		
-		//outInfo("Median normal: " << orientation[3] << "," << orientation[4] << "," << orientation[5]);
-		
-		y.setValue(-orientation[3], -orientation[4], -orientation[5]);
-		x.setValue(orientation[0] - highest.x, orientation[1] - highest.y, orientation[2] - highest.z);
-		z = x.cross(y);
-		y = z.cross(x);
+	tf::Vector3 getY(PCN::Ptr blade_n) {
+		tf::Vector3 blade_normal(0, 0, 0);
+		int size = blade_n->size();
 
-		x.normalize();
-		y.normalize();
-		z.normalize();
-			
-		tf::Matrix3x3 rot;
-		rot.setValue(x[0], x[1], x[2],
-								 y[0], y[1], y[2],
-								 z[0], z[1], z[2]);
-		transform.setBasis(rot);
-	
-		o.name.set("Knife");
-		o.type.set(6);
-		o.width.set(0.28f);
-		o.height.set(0.056f);
-		o.depth.set(0.03f);
-		
-		return transform;
+		for (int i = 0; i < size; i++) {
+			blade_normal[0] -= blade_n->points[i].normal_x / size;
+			blade_normal[1] -= blade_n->points[i].normal_y / size;
+			blade_normal[2] -= blade_n->points[i].normal_z / size;
+		}
+
+		return blade_normal;
 	}
 
 	void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun) {
@@ -241,23 +230,23 @@ public:
 			visualizer.updatePointCloud(cloud_r, "Scene Points");
 		}
 
-		visualizer.addCone(getCoefficients(x, orientation), "x");
+		visualizer.addCone(getCoefficients(x, highest), "x");
 		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 
 																					 1, 0, 0, "x");
-		visualizer.addCone(getCoefficients(y, orientation), "y");
+		visualizer.addCone(getCoefficients(y, highest), "y");
 		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 
 																					 0, 1, 0, "y");
-		visualizer.addCone(getCoefficients(z, orientation), "z");
+		visualizer.addCone(getCoefficients(z, highest), "z");
 		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 
 																					 0, 0, 1, "z");
 	}
 
-	pcl::ModelCoefficients getCoefficients(tf::Vector3 axis, std::vector<float> point) {
+	pcl::ModelCoefficients getCoefficients(tf::Vector3 axis, PointR highest) {
 		pcl::ModelCoefficients coeffs;
 		//point
-		coeffs.values.push_back(point[0]);
-		coeffs.values.push_back(point[1]);
-		coeffs.values.push_back(point[2]);
+		coeffs.values.push_back(highest.x);
+		coeffs.values.push_back(highest.y);
+		coeffs.values.push_back(highest.z);
 		//direction
 		coeffs.values.push_back(axis[0]);
 		coeffs.values.push_back(axis[1]);
