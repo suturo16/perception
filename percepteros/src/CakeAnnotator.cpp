@@ -383,7 +383,7 @@ public:
         */
 
         Eigen::Matrix3f mat;
-        mat << v1, v2, v3;
+        mat << v2, -v1, v3;
         Eigen::Quaternionf qua(mat);
         qua.normalize();
 
