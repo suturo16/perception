@@ -25,7 +25,11 @@ class Synthetiser:
 	except Exception,e:
 	    rospy.loginfo("Could not create proxy to ALTextToSpeech")
 	    rospy.loginfo("Error was: ",e)
-	    return 1
+	try:
+            #Changes the volume
+            tts.setVolume(0.3)
+        except:
+            rospy.loginfo("Could not set the volume")
         #speak
         rospy.set_param('busy',1)
 	tts.say(msg.data)
