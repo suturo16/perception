@@ -151,8 +151,10 @@ class DialogManager:
     def callPr2(self):
         try:
            pepper = xmlrpclib.ServerProxy('http://'+str(rospy.get_param('PR2IP','127.0.0.1'))+':'+str(rospy.get_param('PR2PORT','8000')))
-           self.contactStatusPr2=pepper.cutCake()
-        except:
+           self.contactStatusPr2=pepper.cutCake('cut cake')
+        except Exception,e:
+           rospy.logwarn(str(e))
+           rospy.logwarn('The new pr2 addresses are:'+str(rospy.get_param('PR2IP','127.0.0.1'))+' and '+str(rospy.get_param('PR2PORT','8000')))
            self.contactStatusPr2=-1
         
     #on close
