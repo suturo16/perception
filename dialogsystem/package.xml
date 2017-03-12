@@ -27,7 +27,7 @@
   <run_depend>struct</run_depend>
   <run_depend>time</run_depend>
   <run_depend>subprocess</run_depend>
-  <!-- For integration of ChatScript see readme.md -->
+  <!-- For integration of ChatScript:git https://github.com/bwilcox-1234/ChatScript -->
  
 
   
