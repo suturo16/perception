@@ -36,6 +36,7 @@ class Server:
        #publish status of PR2
        status='1'
        self.pub.publish(String(status))
+       rospy.loginfo('NOTIFICATION OF WORK DONE..............')
        return self.confirmation
 
 
