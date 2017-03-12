@@ -12,7 +12,7 @@
  <param name="RPCSERVERIP" value="localhost"/>
 
  <param name="PR2PORT" value="8005"/>
- <param name="PR2IP" value="192.168.101.249"/>
+ <param name="PR2IP" value="192.168.102.60"/>
 
  <param name="CORESERVERPORT" value="1024"/>
  <param name="CORESERVERIP" value="localhost"/>
