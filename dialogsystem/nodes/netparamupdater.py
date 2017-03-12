@@ -51,15 +51,15 @@ class Updater:
                self.RPCSERVERIP=ip
                rospy.set_param("RPCSERVERIP", self.RPCSERVERIP)
                rospy.set_param("RPCSERVERPORT", self.RPCSERVERPORT) 
-	       self.pr2 = xmlrpclib.ServerProxy('http://'+str(self.RPCSERVERIP)+':'+str(self.RPCSERVERPORT))
+	       self.pr2 = xmlrpclib.ServerProxy('http://'+str(rospy.get_param('PR2IP','127.0.0.1'))+':'+str(rospy.get_param('PR2PORT','8000')))
                clientID=0 #about pepper-robot's parameters
-	       self.pr2.updateObserverClient(self,clientID,self.RPCSERVERIP, self.RPCSERVERPORT)
+	       self.pr2.updateObserverClient(self.clientID,self.RPCSERVERIP, self.RPCSERVERPORT)
 	 except:
-	   pass
+	       rospy.logwarn('network parameters update failed')
         
-         rospy.loginfo('The new addresses are:'+self.RPCSERVERPORT+' and '+self.RPCSERVERIP)
-         rospy.loginfo('The old addresses are:'+port+' and '+ip)
-         rospy.sleep(5) #sleep 10s
+         rospy.loginfo('The new pepper addresses are:'+self.RPCSERVERPORT+' and '+self.RPCSERVERIP)
+         rospy.loginfo('The new pr2 addresses are:'+str(rospy.get_param('PR2IP','127.0.0.1'))+' and '+str(rospy.get_param('PR2PORT','8000')))
+         rospy.sleep(5) #sleep 5s
       
                      
                                    
