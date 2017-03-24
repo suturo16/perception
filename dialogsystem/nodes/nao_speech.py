@@ -32,7 +32,9 @@ class Synthetiser:
             rospy.loginfo("Could not set the volume")
         #speak
         rospy.set_param('busy',1)
-	tts.say(msg.data)
+        speech=msg.data.split('.')
+        for i in range(len(speech)):
+	    tts.say(speech[i])
         # Print the recognized words on the screen
         rospy.loginfo(msg.data)
         rospy.sleep(1)
