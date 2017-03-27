@@ -40,6 +40,9 @@
     <delegateAnalysisEngine key="CollectionReader">
       <import location="../../../../robosherlock/descriptors/annotators/io/CollectionReader.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="ColorClusterer">
+      <import location="../annotators/ColorClusterer.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="CylinderAnnotator">
       <import location="../annotators/CylinderAnnotator.xml"/>
     </delegateAnalysisEngine>

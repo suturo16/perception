@@ -40,6 +40,9 @@
     <delegateAnalysisEngine key="CollectionReader">
       <import location="../../../../robosherlock/descriptors/annotators/io/CollectionReader.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="ColorClusterer">
+      <import location="../annotators/ColorClusterer.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="CylinderAnnotator">
       <import location="../annotators/CylinderAnnotator.xml"/>
     </delegateAnalysisEngine>
@@ -148,28 +151,43 @@
           <parameter>CollectionReader/camera_config_files</parameter>
         </overrides>
       </configurationParameter>
+      <configurationParameter>
+        <name>cluster_max_size</name>
+        <description></description>
+        <type>Integer</type>
+        <multiValued>false</multiValued>
+        <mandatory>false</mandatory>
+        <overrides>
+          <parameter>PointCloudClusterExtractor/cluster_max_size</parameter>
+        </overrides>
+      </configurationParameter>
     </configurationParameters>
     <configurationParameterSettings>
       <nameValuePair>
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot_not_loc.ini</string>
+            <string>config_mongodb_playback.ini</string>
           </array>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>cluster_max_size</name>
+        <value>
+            <integer>50000</integer>
         </value>
       </nameValuePair>
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
+			<node>Trigger</node>
       <node>CollectionReader</node>
       <node>ImagePreprocessor</node>
-      <node>PointCloudFilter</node>
-      <node>NormalEstimator</node>
-      <node>PlaneAnnotator</node>
+			<node>PointCloudFilter</node>
+			<node>NormalEstimator</node>
+			<node>PlaneAnnotator</node>
       <node>PointCloudClusterExtractor</node>
-      <node>CakeAnnotator</node>
-      <node>KnifeAnnotator</node>
-      <node>ROSPublisher</node>
+      <node>ColorClusterer</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>
