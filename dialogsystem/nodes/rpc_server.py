@@ -34,8 +34,9 @@ class Server:
      
    def notify(self):
        #publish status of PR2
-       status=1
-       self.pub.publish(String(str(status)))
+       status='1'
+       self.pub.publish(String(status))
+       rospy.loginfo('NOTIFICATION OF WORK DONE..............')
        return self.confirmation
 
 
@@ -81,5 +82,6 @@ if __name__=="__main__":
         Server().run()
     except:
         rospy.loginfo("Shutting down rpc server...")
+
 
 
