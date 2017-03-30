@@ -188,6 +188,7 @@
 			<node>PlaneAnnotator</node>
       <node>PointCloudClusterExtractor</node>
       <node>ColorClusterer</node>
+			<node>KnifeAnnotator</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>

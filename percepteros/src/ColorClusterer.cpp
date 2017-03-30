@@ -136,6 +136,13 @@ public:
 
 					uimaCluster.points.set(rcp);
 					uimaCluster.source.set("HueClustering");
+
+					percepteros::RecognitionObject colorblob = rs::create<percepteros::RecognitionObject>(tcas);
+					colorblob.name.set("Colorblob");
+					//outInfo("Average hue: " << getAverageColor(cloud, indices));
+					colorblob.color.set(getAverageColor(cloud, indices));
+					uimaCluster.annotations.append(colorblob);
+
 					scene.identifiables.append(uimaCluster);
 				}
 
@@ -150,6 +157,17 @@ public:
 
     return UIMA_ERR_NONE;
   }
+
+	float getAverageColor(PCH::Ptr cloud, pcl::PointIndices indices) {
+		float average = 0;
+		int size = indices.indices.size();
+
+		for (size_t i = 0; i < size; i++) {
+			average += cloud->points[indices.indices[i]].h / size;
+		}
+
+		return average;
+	}
 
 	void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun) {
 		const std::string &cloudname = this->name;

@@ -31,6 +31,11 @@
         <description></description>
         <rangeTypeName>rs.tf.StampedPose</rangeTypeName>
       </featureDescription>
+			<featureDescription>
+				<name>color</name>
+				<description>Average Hue value for color clusters.</description>
+				<rangeTypeName>uima.cas.Integer</rangeTypeName>
+			</featureDescription>
       <featureDescription>
         <name>depth</name>
         <description></description>
