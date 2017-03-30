@@ -8,7 +8,6 @@
 #include <rs/DrawingAnnotator.h>
 #include <rs/utils/common.h>
 
-
 #include <pcl/filters/extract_indices.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/sample_consensus/method_types.h>
@@ -384,7 +383,7 @@ public:
         */
 
         Eigen::Matrix3f mat;
-        mat << v1, v2, v3;
+        mat << v2, -v1, v3;
         Eigen::Quaternionf qua(mat);
         qua.normalize();
 
