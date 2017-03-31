@@ -2,27 +2,39 @@
 <taeDescription xmlns="http://uima.apache.org/resourceSpecifier">
   <frameworkImplementation>org.apache.uima.cpp</frameworkImplementation>
   <primitive>true</primitive>
-  <annotatorImplementationName>rs_cakeAnnotator</annotatorImplementationName>
+  <annotatorImplementationName>rs_knifeAnnotator</annotatorImplementationName>
   <analysisEngineMetaData>
-    <name>CakeAnnotator</name>
+    <name>KnifeAnnotator</name>
     <description/>
     <version>1.0</version>
     <vendor/>
     <configurationParameters>
-        <configurationParameter>
-            <name>test_param</name>
-            <type>Float</type>
-            <multiValued>false</multiValued>
-            <mandatory>false</mandatory>
-        </configurationParameter>
+			<configurationParameter>
+				<name>minHue</name>
+				<type>Integer</type>
+				<multiValued>false</multiValued>
+				<mandatory>true</mandatory>
+			</configurationParameter>
+			<configurationParameter>
+				<name>maxHue</name>
+				<type>Integer</type>
+				<multiValued>false</multiValued>
+				<mandatory>true</mandatory>
+			</configurationParameter>
     </configurationParameters>
     <configurationParameterSettings>
-        <nameValuePair>
-            <name>test_param</name>
-            <value>
-                <float>0.01</float>
-            </value>
-        </nameValuePair>
+			<nameValuePair>
+				<name>minHue</name>
+				<value>
+					<integer>40</integer>
+				</value>
+			</nameValuePair>
+			<nameValuePair>
+				<name>maxHue</name>
+				<value>
+					<integer>60</integer>
+				</value>
+			</nameValuePair>
     </configurationParameterSettings>
     <typeSystemDescription>
         <imports>

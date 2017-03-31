@@ -28,6 +28,7 @@ private:
     name.init(this, "name");
     type.init(this, "type");
     pose.init(this, "pose");
+    color.init(this, "color");
     depth.init(this, "depth");
     height.init(this, "height");
     width.init(this, "width");
@@ -39,6 +40,8 @@ public:
   rs::FeatureStructureEntry<int> type;
   // No description given
   rs::ComplexFeatureStructureEntry<rs::StampedPose> pose;
+  // Average Hue value for color clusters.
+  rs::FeatureStructureEntry<int> color;
   // No description given
   rs::FeatureStructureEntry<float> depth;
   // No description given

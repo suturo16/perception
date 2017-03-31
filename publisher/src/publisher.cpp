@@ -5,6 +5,7 @@
 #include <tf/transform_broadcaster.h>
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "visualization_msgs/Marker.h"
+#include <iostream>
 
 ros::Publisher vis_pub1;
 ros::Publisher vis_pub2;
@@ -121,7 +122,42 @@ void subscriber(const suturo_perception_msgs::ObjectDetection& msg)
 
       vis_pub1.publish(marker);
       vis_pub2.publish(markerCyl);
-    } /*else if (msg.type==5) {
+    } 
+	if(msg.type==6){
+      geometry_msgs::PoseStamped pose;
+
+      pose = msg.pose;
+
+      //tf::Transform transform;
+
+      tf::Stamped<tf::Pose> transform;
+      //tf2::convert
+
+      tf::poseStampedMsgToTF(pose, transform);
+
+      br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), pose.header.frame_id, msg.name));
+
+      visualization_msgs::Marker marker;
+      marker.header = pose.header;
+      marker.ns = "percepteros";
+      marker.id = 0;
+      marker.type = visualization_msgs::Marker::ARROW;
+      marker.action = visualization_msgs::Marker::ADD;
+      marker.pose = pose.pose;
+      // Set the scale of the marker -- 1x1x1 here means 1m on a side
+      marker.scale.x = 0.1;
+      marker.scale.y = 0.01;
+      marker.scale.z = 0.01;
+
+      // Set the color -- be sure to set alpha to something non-zero!
+      marker.color.r = 0.0f;
+      marker.color.g = 1.0f;
+      marker.color.b = 0.0f;
+      marker.color.a = 1.0;
+      std::cout<<"Publishing";
+
+      vis_pub1.publish(marker);
+    }/*else if (msg.type==5) {
     	geometry_msgs::PoseStamped pose;
 
       	pose = msg.pose;

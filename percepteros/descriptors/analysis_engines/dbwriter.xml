@@ -40,6 +40,9 @@
     <delegateAnalysisEngine key="CollectionReader">
       <import location="../../../../robosherlock/descriptors/annotators/io/CollectionReader.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="ColorClusterer">
+      <import location="../annotators/ColorClusterer.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="CylinderAnnotator">
       <import location="../annotators/CylinderAnnotator.xml"/>
     </delegateAnalysisEngine>
@@ -63,6 +66,9 @@
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="KinectFusion">
       <import location="../annotators/KinectFusion.xml"/>
+    </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="KnifeAnnotator">
+      <import location="../annotators/KnifeAnnotator.xml"/>
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="LinemodAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/recognition/LinemodAnnotator.xml"/>

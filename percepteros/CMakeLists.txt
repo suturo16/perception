@@ -69,6 +69,12 @@ target_link_libraries(rs_kinectFusion ${CATKIN_LIBRARIES})
 rs_add_library(rs_incrementalPointRegistration src/IncrementalPointRegistration.cpp)
 target_link_libraries(rs_incrementalPointRegistration ${CATKIN_LIBRARIES})
 
+rs_add_library(rs_knifeAnnotator src/KnifeAnnotator.cpp)
+target_link_libraries(rs_knifeAnnotator ${CATKIN_LIBRARIES})
+
+rs_add_library(rs_colorClusterer src/ColorClusterer.cpp)
+target_link_libraries(rs_colorClusterer ${CATKIN_LIBRARIES})
+
 rs_add_executable(caterrosRun src/CaterrosRun.cpp src/CaterrosPipelineManager.cpp src/CaterrosControlledAnalysisEngine.cpp)
 target_link_libraries(caterrosRun ${CATKIN_LIBRARIES})
 
