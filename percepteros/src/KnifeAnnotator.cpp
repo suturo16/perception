@@ -16,6 +16,7 @@
 #include <pcl/point_types_conversion.h>
 #include <pcl/common/geometry.h>
 #include <iostream>
+#include <pcl/filters/voxel_grid.h>
 
 #include <cmath>
 
@@ -91,6 +92,12 @@ public:
 				cluster.annotations.filter(objects);
 				
 				outInfo("Average hue: " << objects[0].color.get());
+				pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
+				rs::ReferenceClusterPoints clusterpoints(cluster.points());
+				rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+				
+				outInfo("Point amount: " << cluster_indices->indices.size());
+
 				if (objects.size() > 0 && objects[0].color.get() > HUE_LOWER_BOUND && objects[0].color.get() < HUE_UPPER_BOUND) {
 					outInfo("Found knife cluster.");
 					found = true;
@@ -166,7 +173,7 @@ public:
 			}
 		}
 
-		if ((endpoints[0].x + endpoints[0].y + endpoints[0].z) < (endpoints[1].x + endpoints[1].y + endpoints[1].z)) {
+		if (endpoints[0].x + endpoints[0].y + endpoints[0].z < endpoints[1].x + endpoints[1].y + endpoints[1].z) {
 			highest = endpoints[0];
 			lowest = endpoints[1];
 		} else {
@@ -174,12 +181,10 @@ public:
 			lowest = endpoints[0];
 		}
 
-		outInfo("Determined endpoints");
 }
 
 	tf::Vector3 getX(PC::Ptr blade) {
 		setEndpoints(blade);
-		tf::Vector3 x;
 		x.setValue(lowest.x - highest.x, lowest.y - highest.y, lowest.z - highest.z);
 		return x;
 	}
@@ -193,12 +198,15 @@ public:
 
 	tf::Vector3 getY(PC::Ptr blade) {
 		tf::Vector3 blade_normal(0, 0, 0);
-		int size = blade->size();
+		PC::Ptr temp = PC::Ptr(new PC);
+		std::vector<int> indices;
+		pcl::removeNaNNormalsFromPointCloud(*blade, *temp, indices);
+		int size = temp->size();
 
 		for (size_t i = 0; i < size; i++) {
-			blade_normal[0] -= blade->points[i].normal_x / size;
-			blade_normal[1] -= blade->points[i].normal_y / size;
-			blade_normal[2] -= blade->points[i].normal_z / size;
+			blade_normal[0] += temp->points[i].normal_x / size;
+			blade_normal[1] -= temp->points[i].normal_y / size;
+			blade_normal[2] -= temp->points[i].normal_z / size;
 		}
 
 		return blade_normal;
@@ -212,10 +220,15 @@ public:
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin(); pit != cluster_indices->indices.end(); pit++) {
 			blade->push_back(cloud->points[*pit]);
 		}
+		
+		pcl::VoxelGrid<PointN> filter;
+		filter.setLeafSize(0.01f, 0.01f, 0.01f);
+		filter.setInputCloud(blade);
+		filter.filter(*blade);
 	}
 
-	void fillvisualizerwithlock(pcl::visualization::PCLVisualizer &visualizer, const bool firstrun) {
-		if (firstrun) {
+	void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun) {
+		if (firstRun) {
 			visualizer.addPointCloud(cloud_r, "scene points");
 		} else {
 			visualizer.updatePointCloud(cloud_r, "scene points");
@@ -223,7 +236,7 @@ public:
 		
 		visualizer.addCone(getCoefficients(x, highest), "x");
 		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
-
+		
 		visualizer.addCone(getCoefficients(y, highest), "y");
 		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
 
