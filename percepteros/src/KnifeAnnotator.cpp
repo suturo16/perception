@@ -39,6 +39,7 @@ private:
 	PCN::Ptr cloud_n = PCN::Ptr(new PCN);
 	PC::Ptr cloud = PC::Ptr(new PC);
 	PC::Ptr blade = PC::Ptr(new PC);
+	PC::Ptr rack = PC::Ptr(new PC);
 	int HUE_UPPER_BOUND, HUE_LOWER_BOUND;
 
 public:
@@ -83,10 +84,12 @@ public:
 
 		//helpers
 		rs::StopWatch clock;
-		bool found = false;
-		
+		bool foundKnife = false;
+		bool foundRack = false;
+
 		std::vector<percepteros::RecognitionObject> objects;
-		for (auto cluster : clusters) {
+		for (auto it = clusters.begin(); it != clusters.end(); ++it) {
+			auto cluster = *it;
 			if (cluster.source.get().compare("HueClustering") == 0) {
 				objects.clear();
 				cluster.annotations.filter(objects);
@@ -97,12 +100,20 @@ public:
 				rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 				
 				outInfo("Point amount: " << cluster_indices->indices.size());
-
+				
 				if (objects.size() > 0 && objects[0].color.get() > HUE_LOWER_BOUND && objects[0].color.get() < HUE_UPPER_BOUND) {
 					outInfo("Found knife cluster.");
-					found = true;
-					extractPoints(cloud, cluster);
+					foundKnife = true;
+					extractPoints(cloud, cluster, blade);
+				}
 
+				if (objects.size() > 0 && objects[0].color.get() > 210 && objects[0].color.get() < 230) {
+					outInfo("Found rack cluster");
+					foundRack = true;
+					extractPoints(cloud, cluster, rack);
+				}
+
+				if ((foundKnife && foundRack) || (foundKnife && std::next(it) == clusters.end())) {
 					rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
 					tf::StampedTransform camToWorld;
 					camToWorld.setIdentity();
@@ -111,7 +122,11 @@ public:
 					}
 					
 					x = getX(blade);
-					y = getY(blade);
+					if (foundRack) {
+						y = getY(rack);
+					} else {
+						y = getY(blade);
+					}
 	
 					tf::Transform transform;
 					transform.setOrigin(getOrigin(blade));
@@ -147,7 +162,7 @@ public:
 			} 	
 		}
 
-		if (!found) {
+		if (!foundKnife) {
 			outInfo("No knife found.");
 			return UIMA_ERR_NONE;
 		}
@@ -196,35 +211,35 @@ public:
 		return origin;
 	}
 
-	tf::Vector3 getY(PC::Ptr blade) {
-		tf::Vector3 blade_normal(0, 0, 0);
+	tf::Vector3 getY(PC::Ptr object) {
+		tf::Vector3 object_normal(0, 0, 0);
 		PC::Ptr temp = PC::Ptr(new PC);
 		std::vector<int> indices;
-		pcl::removeNaNNormalsFromPointCloud(*blade, *temp, indices);
+		pcl::removeNaNNormalsFromPointCloud(*object, *temp, indices);
 		int size = temp->size();
 
 		for (size_t i = 0; i < size; i++) {
-			blade_normal[0] += temp->points[i].normal_x / size;
-			blade_normal[1] -= temp->points[i].normal_y / size;
-			blade_normal[2] -= temp->points[i].normal_z / size;
+			object_normal[0] -= temp->points[i].normal_x / size;
+			object_normal[1] -= temp->points[i].normal_y / size;
+			object_normal[2] -= temp->points[i].normal_z / size;
 		}
 
-		return blade_normal;
+		return object_normal;
 	}
 
-	void extractPoints(PC::Ptr cloud, rs::Cluster knife) {
+	void extractPoints(PC::Ptr cloud, rs::Cluster cluster, PC::Ptr container) {
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
-		rs::ReferenceClusterPoints clusterpoints(knife.points());
+		rs::ReferenceClusterPoints clusterpoints(cluster.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin(); pit != cluster_indices->indices.end(); pit++) {
-			blade->push_back(cloud->points[*pit]);
+			container->push_back(cloud->points[*pit]);
 		}
 		
 		pcl::VoxelGrid<PointN> filter;
 		filter.setLeafSize(0.01f, 0.01f, 0.01f);
-		filter.setInputCloud(blade);
-		filter.filter(*blade);
+		filter.setInputCloud(container);
+		filter.filter(*container);
 	}
 
 	void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun) {
@@ -232,8 +247,9 @@ public:
 			visualizer.addPointCloud(cloud_r, "scene points");
 		} else {
 			visualizer.updatePointCloud(cloud_r, "scene points");
+			visualizer.removeAllShapes();
 		}
-		
+				
 		visualizer.addCone(getCoefficients(x, highest), "x");
 		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
 		
