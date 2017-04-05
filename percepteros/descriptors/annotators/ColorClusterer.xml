@@ -62,13 +62,13 @@
 			<nameValuePair>
 				<name>diffHue</name>
 				<value>
-					<integer>5</integer>
+					<integer>30</integer>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
 				<name>diffDist</name>
 				<value>
-					<float>0.005</float>
+					<float>0.1</float>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
