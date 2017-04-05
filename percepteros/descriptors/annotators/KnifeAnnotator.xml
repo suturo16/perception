@@ -26,13 +26,13 @@
 			<nameValuePair>
 				<name>minHue</name>
 				<value>
-					<integer>50</integer>
+					<integer>40</integer>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
 				<name>maxHue</name>
 				<value>
-					<integer>60</integer>
+					<integer>70</integer>
 				</value>
 			</nameValuePair>
     </configurationParameterSettings>
