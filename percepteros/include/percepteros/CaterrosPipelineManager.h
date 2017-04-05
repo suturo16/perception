@@ -14,7 +14,7 @@ private:
 
   CaterrosControlledAnalysisEngine engine;
   ros::NodeHandle nh_;
-  const bool waitForServiceCall_;
+  bool waitForServiceCall_;
   rs::Visualizer visualizer_;
 	const bool useVisualizer_;
   bool useIdentityResolution_;
@@ -105,6 +105,7 @@ public:
 
   bool setPipelineCallback(suturo_perception_msgs::RunPipeline::Request &req,
                        suturo_perception_msgs::RunPipeline::Response &res){
+      waitForServiceCall_ = false;
       std::vector<std::string> objects = req.objects;
       std::string pipelineName = "";
       //TODO multiple objects can be given, decide on annotators depending on given objects
