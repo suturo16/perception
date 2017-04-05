@@ -110,11 +110,13 @@ public:
       //TODO multiple objects can be given, decide on annotators depending on given objects
       for(std::string object : objects){
           if(object == "cake"){
-            pipelineName="cake";
-          } else if(object =="cylinder"){
+            pipelineName = "cake";
+          } else if(object == "cylinder"){
             pipelineName = "cylinder";
-          } else {
-              pipelineName= "config";
+          } else if(object == "knife"){
+            pipelineName = "knife";
+          } else{
+            pipelineName = "config";
           }
       }
       std::string configFile_ = ros::package::getPath("percepteros") +"/config/"+pipelineName+".yaml";
