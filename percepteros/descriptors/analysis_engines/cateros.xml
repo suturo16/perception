@@ -188,8 +188,8 @@
 			<node>PlaneAnnotator</node>
 			<node>PointCloudClusterExtractor</node>
 			<node>CakeAnnotator</node>
-			<node>PointCloudColorSegmentation</node>
-			<node>TrayAnnotator</node>
+			<node>ColorClusterer</node>
+			<node>KnifeAnnotator</node>
 			<node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
