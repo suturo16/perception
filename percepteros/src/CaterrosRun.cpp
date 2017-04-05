@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 
       if(arg == "-visualizer")
       {
-        useVisualizer = false;
+        useVisualizer = true;
       }
       else if(arg == "-wait")
       {

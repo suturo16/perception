@@ -14,12 +14,9 @@ private:
 
   CaterrosControlledAnalysisEngine engine;
 
-  ros::NodeHandle nh_;
   ros::Publisher desig_pub_;
   ros::ServiceServer service, singleService, setContextService, jsonService;
-
-  const bool waitForServiceCall_;
-  const bool useVisualizer_;
+	
   bool useIdentityResolution_;
   bool pause_;
 
@@ -30,6 +27,10 @@ private:
 
   std::string configFile;
   std::vector<std::string> lowLvlPipeline_;
+	
+	const bool useVisualizer_;
+  const bool waitForServiceCall_;
+  ros::NodeHandle nh_;
 
 public:
 
