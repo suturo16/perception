@@ -186,10 +186,10 @@
 			<node>PointCloudFilter</node>
 			<node>NormalEstimator</node>
 			<node>PlaneAnnotator</node>
-			<node>CakeAnnotator</node>
 			<node>PointCloudClusterExtractor</node>
-			<node>ColorClusterer</node>
-			<node>KnifeAnnotator</node>
+			<node>CakeAnnotator</node>
+			<node>PointCloudColorSegmentation</node>
+			<node>TrayAnnotator</node>
 			<node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>

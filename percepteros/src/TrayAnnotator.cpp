@@ -102,10 +102,9 @@ private:
 		seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
 		seg.setMethodType(pcl::SAC_RANSAC);
 		seg.setMaxIterations(2000);
-		seg.setDistanceThreshold(0.01);
+		seg.setDistanceThreshold(0.1);
 		seg.setAxis(Eigen::Vector3f(1,0,0));
-		seg.setEpsAngle(0.1);
-		seg.setOptimizeCoefficients(true);
+		seg.setEpsAngle(0.01);
 
 		for (auto cluster : clusters) {
 			if (cluster.source.get().compare(0, 13, "HueClustering") == 0) {
