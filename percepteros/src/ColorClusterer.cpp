@@ -139,8 +139,9 @@ public:
 
 					percepteros::RecognitionObject colorblob = rs::create<percepteros::RecognitionObject>(tcas);
 					colorblob.name.set("Colorblob");
-					//outInfo("Average hue: " << getAverageColor(cloud, indices));
-					colorblob.color.set(getAverageColor(cloud, indices));
+					float average = getAverageColor(cloud, indices);
+					outInfo("Average hue: " << average);
+					colorblob.color.set(average);
 					uimaCluster.annotations.append(colorblob);
 
 					scene.identifiables.append(uimaCluster);
@@ -148,13 +149,13 @@ public:
 
 				break;
 			}
-			outInfo("Finished clustering in: " << clock.getTime() << "ms.");
 		}
 		
 		if (!found) {
 			outInfo("No matching cluster");
 		}
 
+		outInfo("Finished clustering in: " << clock.getTime() << "ms.");
     return UIMA_ERR_NONE;
   }
 
