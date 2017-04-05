@@ -136,6 +136,13 @@ public:
 		
 					x.normalize(); y.normalize(); z.normalize();
 
+					if (std::isnan(x[0]) || std::isnan(x[1]) || std::isnan(x[2]) ||
+							std::isnan(y[0]) || std::isnan(y[1]) || std::isnan(x[2]) ||
+							std::isnan(z[0]) || std::isnan(z[1]) || std::isnan(z[2])) {
+						outInfo("Found wrong orientation. Abort.");
+						break;
+					}
+
 					tf::Matrix3x3 rot;
 					rot.setValue(	x[0], x[1], x[2],
 												y[0], y[1], y[2],
