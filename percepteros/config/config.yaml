@@ -6,8 +6,7 @@ annotators:
     - NormalEstimator
     - PlaneAnnotator
     - PointCloudClusterExtractor
-    - TrayAnnotator
     - CakeAnnotator
-    - CylinderAnnotator
+    - ColorClusterer
     - KnifeAnnotator
     - ROSPublisher
