@@ -50,19 +50,19 @@
 			<nameValuePair>
 				<name>minHue</name>
 				<value>
-					<integer>170</integer>
+					<integer>180</integer>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
 				<name>maxHue</name>
 				<value>
-					<integer>220</integer>
+					<integer>230</integer>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
 				<name>diffHue</name>
 				<value>
-					<integer>3</integer>
+					<integer>5</integer>
 				</value>
 			</nameValuePair>
 			<nameValuePair>

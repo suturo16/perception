@@ -13,24 +13,21 @@ class CaterrosPipelineManager
 private:
 
   CaterrosControlledAnalysisEngine engine;
-
-  ros::Publisher desig_pub_;
-  ros::ServiceServer service, singleService, setContextService, jsonService;
-	
+  ros::NodeHandle nh_;
+  const bool waitForServiceCall_;
+  rs::Visualizer visualizer_;
+	const bool useVisualizer_;
   bool useIdentityResolution_;
   bool pause_;
 
+  ros::Publisher desig_pub_;
+  ros::ServiceServer service, singleService, setContextService, jsonService;
 
   std::mutex processing_mutex_;
-
-  rs::Visualizer visualizer_;
 
   std::string configFile;
   std::vector<std::string> lowLvlPipeline_;
 	
-	const bool useVisualizer_;
-  const bool waitForServiceCall_;
-  ros::NodeHandle nh_;
 
 public:
 
