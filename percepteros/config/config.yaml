@@ -7,6 +7,6 @@ annotators:
     - PlaneAnnotator
     - PointCloudClusterExtractor
     - CakeAnnotator
-		- ColorClusterer
+    - ColorClusterer
     - KnifeAnnotator
     - ROSPublisher
