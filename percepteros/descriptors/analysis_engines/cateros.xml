@@ -180,7 +180,6 @@
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
-			<node>Trigger</node>
       <node>CollectionReader</node>
       <node>ImagePreprocessor</node>
 			<node>PointCloudFilter</node>
