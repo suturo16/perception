@@ -170,6 +170,7 @@
 			<node>NormalEstimator</node>
 			<node>PlaneAnnotator</node>
 			<node>PointCloudClusterExtractor</node>
+			<node>ColorClusterer</node>
       <node>KnifeAnnotator</node>
 			<node>ROSPublisher</node>
       </fixedFlow>
