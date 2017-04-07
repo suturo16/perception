@@ -161,13 +161,23 @@
           <parameter>PointCloudClusterExtractor/cluster_max_size</parameter>
         </overrides>
       </configurationParameter>
+			<configurationParameter>
+        <name>maxPoints</name>
+        <description></description>
+        <type>Integer</type>
+        <multiValued>false</multiValued>
+        <mandatory>false</mandatory>
+        <overrides>
+          <parameter>PointCloudColorSegmentation/maxPoints</parameter>
+        </overrides>
+      </configurationParameter>
     </configurationParameters>
     <configurationParameterSettings>
       <nameValuePair>
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot_not_loc.ini</string>
+            <string>config_mongodb_playback.ini</string>
           </array>
         </value>
       </nameValuePair>
@@ -184,12 +194,8 @@
       <node>CollectionReader</node>
       <node>ImagePreprocessor</node>
 			<node>PointCloudFilter</node>
-			<node>NormalEstimator</node>
-			<node>PlaneAnnotator</node>
-			<node>CakeAnnotator</node>
-			<node>PointCloudClusterExtractor</node>
-			<node>ColorClusterer</node>
-			<node>KnifeAnnotator</node>
+			<node>PointCloudColorSegmentation</node>
+			<node>TrayAnnotator</node>
 			<node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
