@@ -157,7 +157,7 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot_not_loc.ini</string>
+            <string>config_mongodb_continual.ini</string>
           </array>
         </value>
       </nameValuePair>

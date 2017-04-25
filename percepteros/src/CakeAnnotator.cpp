@@ -24,6 +24,9 @@
 #include <pcl/point_types.h>
 #include <pcl/ModelCoefficients.h>
 
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
+
 #include <pcl/visualization/pcl_visualizer.h>
 
 
@@ -34,6 +37,20 @@ typedef pcl::PointXYZRGBA PointT;
 class CakeAnnotator : public DrawingAnnotator
 {
 private:
+
+  struct box_object{
+
+    pcl::PointIndices clusterInSzene;
+    pcl::PointIndices plane1InCluster;
+    pcl::PointIndices plane2InCluster;
+    pcl::PointIndices plane3InCluster;
+
+    //lange Seite
+    Eigen::Vector3f xVector;
+    Eigen::Vector3f yVector;
+    Eigen::Vector3f zVector;
+  };
+
   float test_param;
   tf::Transform transform;
 
@@ -42,10 +59,9 @@ private:
   pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_rem2;
   pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_rem3;
 
-  std::vector<pcl::PointIndices> clusterIndices;
-  std::vector<pcl::PointIndices> clusterIndices1;
-  std::vector<pcl::PointIndices> clusterIndices2;
-  std::vector<pcl::PointIndices> clusterIndices3;
+  std::vector<box_object> box_objects;
+
+  tf::StampedTransform camToWorld, worldToCam;
 
   double pointSize = 1;
 
@@ -58,11 +74,11 @@ private:
   constexpr static double BOX_MAX_SIZE_RATIO_PLANE1 = 0.75;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE1 = 0.2;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE2 = 0.25;
-  constexpr static double BOX_MIN_SIZE_RATIO_PLANE3 = 0.35;
+  constexpr static double BOX_MIN_SIZE_RATIO_PLANE3 = 0.15;
   //constexpr static double PLANE2_TO_BOX_MIN_RATIO = 0.20;
-  constexpr static double BOX_MIN_MATCHED_POINTS_RATIO = 0.3;
+  constexpr static double BOX_MIN_MATCHED_POINTS_RATIO = 0.4;
   constexpr static int MAX_SEGMENTATION_ITERATIONS = 2000;
-  constexpr static double EPSILON_ANGLE = 0.3;
+  constexpr static double EPSILON_ANGLE = 0.1;
   constexpr static int MIN_CLOUD_SIZE = 50;
 
 
@@ -86,6 +102,15 @@ public:
     return UIMA_ERR_NONE;
   }
 
+  void lookupIndicesInPointcloud(pcl::PointIndices target_indices, pcl::PointIndices cluster_indices,
+                           pcl::PointIndices::Ptr out_indices)
+  {
+    out_indices->indices.resize(cluster_indices.indices.size());
+    for(int i = 0 ; i < cluster_indices.indices.size(); i ++){
+        out_indices->indices[i] = target_indices.indices[cluster_indices.indices[i]];
+    }
+  }
+
   TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec)
   {
     outInfo("process start");
@@ -102,11 +127,20 @@ public:
     cas.get(VIEW_CLOUD, *cloud_ptr);
     cas.get(VIEW_NORMALS, *normal_ptr);
 
-    clusterIndices.clear();
-    clusterIndices1.clear();
-    clusterIndices2.clear();
-    clusterIndices3.clear();
+    camToWorld.setIdentity();
+    if(scene.viewPoint.has())
+    {
+      rs::conversion::from(scene.viewPoint.get(), camToWorld);
+    }
+    else
+    {
+      outInfo("No camera to world transformation!!!");
+    }
+    worldToCam = tf::StampedTransform(camToWorld.inverse(), camToWorld.stamp_, camToWorld.child_frame_id_, camToWorld.frame_id_);
+    Eigen::Affine3d eigenTransform;
+    tf::transformTFToEigen(camToWorld, eigenTransform);
 
+    box_objects.clear();
 
     for(auto cluster : clusters)
     {
@@ -146,9 +180,15 @@ public:
       geometry_msgs::PoseStamped pose;
       percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
       tf::Transform transform;
-      int box = isBox(cloud_cluster_normal, pose, o, transform, cluster_indices);
+      box_object bo;
+      bo.clusterInSzene = *cluster_indices;
+
+
+      int box = isBox(cloud_cluster_normal, pose, o, transform, bo);
       if(box){
-          clusterIndices.push_back(*cluster_indices);
+
+          box_objects.push_back(bo);
+
           outInfo("Box");
           cluster.annotations.append(o);
 
@@ -257,13 +297,31 @@ public:
                            coefficients->values[begin_index+2]);
   }
 
+  void removeIndicesfromPointcloud(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object, pcl::PointIndices::Ptr inliers){
+      for(int i = 0; i < inliers->indices.size(); i++){
+          const float badPoint = std::numeric_limits<float>::quiet_NaN();
+          pcl::PointXYZRGBNormal& invalidPoint = cloud_object->points[inliers->indices[i]];
+          invalidPoint.x = badPoint;
+          invalidPoint.y = badPoint;
+          invalidPoint.z = badPoint;
+      }
+  }
+
 
   int isBox(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object,
                              geometry_msgs::PoseStamped &pose,
                              percepteros::RecognitionObject& o,
                              tf::Transform& transform,
-                             pcl::PointIndices::Ptr cluster_indices)
+                             box_object& bo)
   {
+        tf::Vector3 sceneUpTf;
+        tf::Matrix3x3 matrix = worldToCam.getBasis();
+        sceneUpTf = matrix*tf::Vector3(0,0,1);
+
+        int remaining_size_2 = cloud_object->points.size();
+
+        Eigen::Vector3f sceneUp(sceneUpTf.getX(),sceneUpTf.getY(), sceneUpTf.getZ());
+
         cloud_rem1 = pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
         cloud_rem2 = pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
         cloud_rem3 = pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
@@ -272,20 +330,24 @@ public:
         pcl::ModelCoefficients::Ptr coefficients_plane2(new pcl::ModelCoefficients ());
         pcl::ModelCoefficients::Ptr coefficients_plane3(new pcl::ModelCoefficients ());
 
-        pcl::PointIndices::Ptr inliers1(new pcl::PointIndices());
-        pcl::PointIndices::Ptr inliers2(new pcl::PointIndices());
-        pcl::PointIndices::Ptr inliers3(new pcl::PointIndices());
+        pcl::PointIndices::Ptr inliers1(new pcl::PointIndices ());
+        pcl::PointIndices::Ptr inliers2(new pcl::PointIndices ());
+        pcl::PointIndices::Ptr inliers3(new pcl::PointIndices ());
 
+        //int matched_points = segmentPlaneFromNormals(cloud_object, pcl::SACMODEL_NORMAL_PLANE, BOX_NORMAL_WEIGHT,
+        //                                             BOX_DISTANCE_THRESHOLD_NORMALPLANE, coefficients_plane1, inliers1, cloud_rem1);
 
-        int matched_points = segmentPlaneFromNormals(cloud_object, pcl::SACMODEL_NORMAL_PLANE, BOX_NORMAL_WEIGHT,
-                                                     BOX_DISTANCE_THRESHOLD_NORMALPLANE, coefficients_plane1, inliers1, cloud_rem1);
-        clusterIndices1.push_back(*inliers1);
-
-        Eigen::Vector3f norm_plane1 = vectorFromCoeff(coefficients_plane1,0);
+        //up
+        //Eigen::Vector3f norm_plane1 = vectorFromCoeff(coefficients_plane1,0);
+        bo.zVector = sceneUp;
 
         pcl::ModelCoefficients::Ptr co(new pcl::ModelCoefficients ());
-        int plane_size = segmentPlane(cloud_object, pcl::SACMODEL_PERPENDICULAR_PLANE, BOX_DISTANCE_THRESHOLD_PLANE1,
-                                      co, inliers1, cloud_rem1,norm_plane1, BOX_EPSILON_PLANE1);
+        int matched_points = segmentPlane(cloud_object, pcl::SACMODEL_PERPENDICULAR_PLANE, BOX_DISTANCE_THRESHOLD_PLANE1,
+                                      co, inliers1, cloud_rem1, sceneUp, BOX_EPSILON_PLANE1);
+        int plane_size = matched_points;
+        bo.plane1InCluster = *inliers1;
+
+        removeIndicesfromPointcloud(cloud_object, inliers1);
 
         // return false if the plane is too small
         if ((double) matched_points / (double) cloud_object->points.size() < BOX_MIN_SIZE_RATIO_PLANE1)
@@ -299,14 +361,16 @@ public:
           return 0;
         }
 
-        plane_size = segmentPlane(cloud_rem1, pcl::SACMODEL_PARALLEL_PLANE, BOX_DISTANCE_THRESHOLD_PLANE2,
-                                   coefficients_plane2, inliers2, cloud_rem2, norm_plane1, EPSILON_ANGLE);
-        clusterIndices2.push_back(*inliers2);
+        plane_size = segmentPlane(cloud_object, pcl::SACMODEL_PARALLEL_PLANE, BOX_DISTANCE_THRESHOLD_PLANE2,
+                                   coefficients_plane2, inliers2, cloud_rem2, sceneUp, EPSILON_ANGLE);
+        bo.plane2InCluster = *inliers2;
+        removeIndicesfromPointcloud(cloud_object, inliers2);
 
-
+        remaining_size_2 -= matched_points;
         matched_points += plane_size;
 
         Eigen::Vector3f norm_plane2 = vectorFromCoeff(coefficients_plane2,0);
+        bo.xVector = norm_plane2;
 
         /*if((double) plane_size / (double) cloud_object->points.size() < PLANE2_TO_BOX_MIN_RATIO) {
             return 0;
@@ -317,7 +381,7 @@ public:
           return 0;
         }
 
-        if ((double) matched_points / (double) cloud_object->points.size() < BOX_MIN_MATCHED_POINTS_RATIO)
+        if ((double) matched_points / (double) cloud_object->points.size() > BOX_MIN_MATCHED_POINTS_RATIO)
         {
 
           if(cloud_rem2->points.size() < MIN_CLOUD_SIZE)
@@ -325,16 +389,15 @@ public:
             return 0;
           }
 
-          plane_size = segmentPlane(cloud_rem2, pcl::SACMODEL_PARALLEL_PLANE,
-                                    BOX_DISTANCE_THRESHOLD_PLANE3, coefficients_plane3, inliers3, cloud_rem3, norm_plane1, EPSILON_ANGLE);
-          clusterIndices3.push_back(*inliers3);
-
+          plane_size = segmentPlane(cloud_object, pcl::SACMODEL_PARALLEL_PLANE,
+                                    BOX_DISTANCE_THRESHOLD_PLANE3, coefficients_plane3, inliers3, cloud_rem3, norm_plane2, EPSILON_ANGLE);
+          bo.plane3InCluster = *inliers3;
           matched_points += plane_size;
 
           Eigen::Vector3f norm_plane3 = vectorFromCoeff(coefficients_plane3,0);
 
 
-          if ((double) plane_size / (double) cloud_rem2->points.size() < BOX_MIN_SIZE_RATIO_PLANE3)
+          if ((double) plane_size / (double) remaining_size_2 < BOX_MIN_SIZE_RATIO_PLANE3)
           {
             return 0;
           }
@@ -352,9 +415,12 @@ public:
         float max_v1, max_v2, max_v3, min_v1, min_v2, min_v3;
 
 
-        v1 = norm_plane1.normalized();
-        v2 = v1.cross(norm_plane2).normalized();
+        v1 = bo.zVector.normalized();
+        v2 = v1.cross(bo.xVector).normalized();
         v3 = v1.cross(v2).normalized();
+        bo.zVector = v1;
+        bo.yVector = v3;
+        bo.xVector = v2;
 
         max_v1 = min_v1 = dot(cloud_object->points.at(0), v1);
         max_v2 = min_v2 = dot(cloud_object->points.at(0), v2);
@@ -420,58 +486,85 @@ public:
         return matched_points;
   }
 
+  pcl::ModelCoefficients getCoefficients(Eigen::Vector3f axis, PointT highest) {
+      pcl::ModelCoefficients coeffs;
+      //point
+      coeffs.values.push_back(highest.x);
+      coeffs.values.push_back(highest.y);
+      coeffs.values.push_back(highest.z);
+      //direction
+      coeffs.values.push_back(axis[0]);
+      coeffs.values.push_back(axis[1]);
+      coeffs.values.push_back(axis[2]);
+      //radius
+      coeffs.values.push_back(1.0f);
+
+      return coeffs;
+}
+
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
   {
+
+    outInfo("amout of boxes: "<< box_objects.size());
+    for(box_object bo: box_objects){
+        pcl::PointIndices::Ptr plane1(new pcl::PointIndices ());
+        pcl::PointIndices::Ptr plane2(new pcl::PointIndices ());
+        pcl::PointIndices::Ptr plane3(new pcl::PointIndices ());
+
+        lookupIndicesInPointcloud(bo.clusterInSzene, bo.plane1InCluster, plane1);
+        lookupIndicesInPointcloud(bo.clusterInSzene, bo.plane2InCluster, plane2);
+        lookupIndicesInPointcloud(bo.clusterInSzene, bo.plane3InCluster, plane3);
+        for(int i = 0; i < plane1->indices.size(); i++){
+            size_t index = plane1->indices[i];
+            cloud_ptr->points[index].rgba = rs::common::colors[0];
+        }
+        for(int i = 0; i < plane2->indices.size(); i++){
+            size_t index = plane2->indices[i];
+            cloud_ptr->points[index].rgba = rs::common::colors[1];
+        }
+        for(int i = 0; i < plane3->indices.size(); i++){
+            size_t index = plane3->indices[i];
+            cloud_ptr->points[index].rgba = rs::common::colors[2];
+        }
+    }
     const std::string &cloudname = this->name;
-    for(size_t i = 0; i < clusterIndices.size(); ++i)
-    {
-      const pcl::PointIndices &indices = clusterIndices[i];
-      for(size_t j = 0; j < indices.indices.size(); ++j)
-      {
-        size_t index = indices.indices[j];
-        cloud_ptr->points[index].rgba = rs::common::colors[i % rs::common::numberOfColors];
-      }
-    }
-    for(size_t i = 0; i < clusterIndices1.size(); ++i)
-    {
-      outInfo("clusters:" << clusterIndices1.size());
-      const pcl::PointIndices &indices = clusterIndices1[i];
-      for(size_t j = 0; j < indices.indices.size(); ++j)
-      {
-        size_t index = indices.indices[j];
-        cloud_ptr->points[index].rgba = rs::common::colors[1];
-      }
-    }
-
-    for(size_t i = 0; i < clusterIndices2.size(); ++i)
-    {
-      const pcl::PointIndices &indices = clusterIndices2[i];
-      for(size_t j = 0; j < indices.indices.size(); ++j)
-      {
-        size_t index = indices.indices[j];
-        cloud_ptr->points[index].rgba = rs::common::colors[2];
-      }
-    }
-
-    for(size_t i = 0; i < clusterIndices3.size(); ++i)
-    {
-      const pcl::PointIndices &indices = clusterIndices3[i];
-      for(size_t j = 0; j < indices.indices.size(); ++j)
-      {
-        size_t index = indices.indices[j];
-        cloud_ptr->points[index].rgba = rs::common::colors[3];
-      }
-    }
     if(firstRun)
     {
       visualizer.addPointCloud(cloud_ptr, cloudname);
       visualizer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
+      if(box_objects.size() == 0){
+          return;
+      }
+      visualizer.addCone(getCoefficients(box_objects[0].xVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"x");
+      visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
+
+      visualizer.addCone(getCoefficients(box_objects[0].yVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"y");
+      visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
+
+      visualizer.addCone(getCoefficients(box_objects[0].zVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"z");
+      visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
     }
     else
     {
+      visualizer.removeAllShapes();
       visualizer.updatePointCloud(cloud_ptr, cloudname);
       visualizer.getPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
+
+      if(box_objects.size() == 0){
+          return;
+      }
+
+      visualizer.addCone(getCoefficients(box_objects[0].xVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"x");
+      visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
+
+      visualizer.addCone(getCoefficients(box_objects[0].yVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"y");
+      visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
+
+      visualizer.addCone(getCoefficients(box_objects[0].zVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"z");
+      visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
+
     }
+
   }
 };
 
