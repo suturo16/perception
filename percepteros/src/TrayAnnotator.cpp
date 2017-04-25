@@ -35,10 +35,13 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/common/pca.h>
+#include <pcl/common/transforms.h>
 
 // OTHER
 #include <percepteros/types/all_types.h>
 #include <rs/segmentation/ImageSegmentation.h>
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
 
 using namespace uima;
 
@@ -53,8 +56,8 @@ private:
 	PCR::Ptr tray = PCR::Ptr(new PCR);
 	PCR::Ptr proj = PCR::Ptr(new PCR);
 
-	tf::Matrix3x3 rot;
 	tf::Vector3 origin;
+	Eigen::Matrix3f ev;
 
 public:
   TrayAnnotator() : DrawingAnnotator(__func__)
@@ -98,6 +101,17 @@ private:
 	
 		pcl::PCA<PointR> pca; 
 
+		tf::StampedTransform camToWorld, worldToCam;
+		camToWorld.setIdentity();
+		if (scene.viewPoint.has()) {
+			rs::conversion::from(scene.viewPoint.get(), camToWorld);
+		} else {
+			outInfo("No camera to world transformation!!!");
+		}
+		worldToCam = tf::StampedTransform(camToWorld.inverse(), camToWorld.stamp_, camToWorld.child_frame_id_, camToWorld.frame_id_);
+		Eigen::Affine3d eigenTransform;
+		tf::transformTFToEigen(camToWorld, eigenTransform);
+
 		for (auto cluster : clusters) {
 			if (cluster.source.get().compare(0, 13, "HueClustering") == 0) {
 				pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
@@ -105,6 +119,8 @@ private:
 				rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 
 				extractPoints(cloud, tray, cluster_indices);
+
+				pcl::transformPointCloud<PointR>(*tray, *tray, eigenTransform);
 
 				pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
 				pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
@@ -118,34 +134,35 @@ private:
 					if (hue < 10 || hue > 320 || (hue > 40 && hue < 80)) {
 						pca.setInputCloud(tray);
 
-						auto ev = pca.getEigenVectors();
-
 						percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
+						
+						tf::Transform objectToWorld;
+
+						Eigen::Vector3d translation = pca.getMean().head(3).cast<double>();
+						tf::vectorEigenToTF(translation, origin);
+						objectToWorld.setOrigin(origin);
+						
+						ev = pca.getEigenVectors();
+
+						Eigen::Quaterniond quaternion(pca.getEigenVectors().cast<double>());
+						tf::Quaternion quat;
+						tf::quaternionEigenToTF(quaternion, quat);
+						objectToWorld.setRotation(quat);
+
+						tf::Stamped<tf::Pose> poseCam, poseWorld;
+						poseCam = tf::Stamped<tf::Pose>(worldToCam * objectToWorld, camToWorld.stamp_, camToWorld.child_frame_id_);
+						poseWorld = tf::Stamped<tf::Pose>(objectToWorld, camToWorld.stamp_, camToWorld.frame_id_);
+
 						rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
-						tf::StampedTransform camToWorld;
-						if (scene.viewPoint.has()) {
-							rs::conversion::from(scene.viewPoint.get(), camToWorld);
-						}
-
-						tf::Transform transform;
-						origin = getOrigin(tray);
-						transform.setOrigin(getOrigin(tray));
-
-						rot.setValue(ev(0,0), ev(0,1), ev(0,2), ev(1,0), ev(1,1), ev(1,2), ev(2,0), ev(2,1), ev(2,2));
-						transform.setBasis(rot);
+						poseA.source.set("TrayAnnotator");
+						poseA.camera.set(rs::conversion::to(tcas, poseCam));
+						poseA.world.set(rs::conversion::to(tcas, poseWorld));
 
 						o.name.set("DropZone");
 						o.type.set(5);
 						o.width.set(0.21);
 						o.height.set(0.29);
 						o.depth.set(0);
-						
-						tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
-						tf::Stamped<tf::Pose> world(camToWorld * transform, camToWorld.stamp_, camToWorld.frame_id_);
-
-						poseA.source.set("TrayAnnotator");
-						poseA.camera.set(rs::conversion::to(tcas, camera));
-						poseA.world.set(rs::conversion::to(tcas, world));
 
 						cluster.annotations.append(poseA);
 						cluster.annotations.append(o);
@@ -163,19 +180,6 @@ private:
 		}
 	}
 
-	tf::Vector3 getOrigin(PCR::Ptr tray) {
-		tf::Vector3 origin(0, 0, 0);
-		int size = tray->points.size();
-
-		for (int i = 0; i < tray->points.size(); i++) {
-			origin[0] += tray->points[i].x / size;
-			origin[1] += tray->points[i].y / size;
-			origin[2] += tray->points[i].z / size;
-		}
-
-		return origin;
-	}
-
 	void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &vis, const bool firstRun) {
 		if (firstRun) {
 			vis.addPointCloud(cloud, "scene points");
@@ -184,27 +188,27 @@ private:
 			vis.removeAllShapes();
 		}
 
-		vis.addCone(getCoefficients(0, rot, origin), "x");
+		vis.addCone(getCoefficients(0, ev, origin), "x");
 		vis.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
 
 
-		vis.addCone(getCoefficients(1, rot, origin), "y");
+		vis.addCone(getCoefficients(1, ev, origin), "y");
 		vis.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
 
-		vis.addCone(getCoefficients(2, rot, origin), "z");
+		vis.addCone(getCoefficients(2, ev, origin), "z");
 		vis.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
 	}
 
-	pcl::ModelCoefficients getCoefficients(int start, tf::Matrix3x3 rot, tf::Vector3 origin) {
+	pcl::ModelCoefficients getCoefficients(int start, Eigen::Matrix3f rot, tf::Vector3 origin) {
 		pcl::ModelCoefficients co;
 
 		co.values.push_back(origin[0]);
 		co.values.push_back(origin[1]);
 		co.values.push_back(origin[2]);
 
-		co.values.push_back(rot.getRow(start).getX());
-		co.values.push_back(rot.getRow(start).getY());
-		co.values.push_back(rot.getRow(start).getZ());
+		co.values.push_back(rot(start,0));
+		co.values.push_back(rot(start,1));
+		co.values.push_back(rot(start,2));
 
 		co.values.push_back(1.0f);
 
