@@ -126,8 +126,6 @@ public:
       return true;
   }
 
-
-
   bool resetAECallback(suturo_perception_msgs::RunPipeline::Request &req,
                        suturo_perception_msgs::RunPipeline::Response &res){
       std::vector<std::string> objects = req.objects;
