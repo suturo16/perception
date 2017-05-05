@@ -124,6 +124,9 @@
     <delegateAnalysisEngine key="SuperVoxelAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/SupervoxelAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="SzeneRecorder">
+      <import location="../annotators/SzeneRecorder.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="TFBroadcaster">
       <import location="../../../../robosherlock/descriptors/annotators/io/TFBroadcaster.xml"/>
     </delegateAnalysisEngine>

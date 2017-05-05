@@ -2,6 +2,7 @@
 annotators:
     - CollectionReader
     - ImagePreprocessor
+    - SzeneRecorder
     - PointCloudFilter
     - NormalEstimator
     - PlaneAnnotator
