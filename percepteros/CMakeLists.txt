@@ -10,6 +10,8 @@ set(TYPESYSTEM_XML_PATH ${PROJECT_SOURCE_DIR}/descriptors/typesystem)
 set(ANNOTATOR_PATH      ${PROJECT_SOURCE_DIR}/descriptors/annotators)
 set(ENGINE_PATH         ${PROJECT_SOURCE_DIR}/descriptors/analysis_engines)
 set(CMAKE_MODULE_PATH   ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/local/lib/cmake/") # this is where Findaruco.cmake is located
+find_package(aruco REQUIRED)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 set(CMAKE_BUILD_TYPE debug)
 ################################################################################
@@ -79,6 +81,9 @@ target_link_libraries(rs_plateAnnotator ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_colorClusterer src/ColorClusterer.cpp)
 target_link_libraries(rs_colorClusterer ${CATKIN_LIBRARIES})
+
+rs_add_library(rs_aRMarkerAnnotator src/ARMarkerAnnotator.cpp)
+target_link_libraries(rs_aRMarkerAnnotator ${CATKIN_LIBRARIES})
 
 rs_add_executable(caterrosRun src/CaterrosRun.cpp src/CaterrosPipelineManager.cpp src/CaterrosControlledAnalysisEngine.cpp)
 target_link_libraries(caterrosRun ${CATKIN_LIBRARIES})
