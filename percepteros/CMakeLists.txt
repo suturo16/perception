@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(percepteros)
-find_package(catkin REQUIRED robosherlock suturo_perception_msgs)
+find_package(catkin REQUIRED PCL REQUIRED robosherlock suturo_perception_msgs)
 ################################################################################
 ## Constants for project                                                      ##
 ################################################################################
@@ -36,6 +36,7 @@ catkin_package()
 include_directories(
         ${RS_INCLUDE_DIRS_LIST}
         ${catkin_INCLUDE_DIRS}
+				${PCL_INCLUDE_DIRS}
         )
 ################################################################################
 ## Update analysis engines, typesystem and include all relevant files         ##
@@ -72,6 +73,9 @@ target_link_libraries(rs_incrementalPointRegistration ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_knifeAnnotator src/KnifeAnnotator.cpp)
 target_link_libraries(rs_knifeAnnotator ${CATKIN_LIBRARIES})
+
+rs_add_library(rs_plateAnnotator src/PlateAnnotator.cpp)
+target_link_libraries(rs_plateAnnotator ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_colorClusterer src/ColorClusterer.cpp)
 target_link_libraries(rs_colorClusterer ${CATKIN_LIBRARIES})

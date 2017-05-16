@@ -91,6 +91,9 @@
     <delegateAnalysisEngine key="PlaneAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/detection/PlaneAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="PlateAnnotator">
+      <import location="../annotators/PlateAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="PointCloudClusterExtractor">
       <import location="../../../../robosherlock/descriptors/annotators/segmentation/PointCloudClusterExtractor.xml"/>
     </delegateAnalysisEngine>
@@ -194,9 +197,9 @@
       <node>CollectionReader</node>
       <node>ImagePreprocessor</node>
 			<node>PointCloudFilter</node>
+			<node>NormalEstimator</node>
+			<node>PlaneAnnotator</node>
 			<node>PointCloudColorSegmentation</node>
-			<node>TrayAnnotator</node>
-			<node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>
