@@ -32,6 +32,7 @@ private:
     depth.init(this, "depth");
     height.init(this, "height");
     width.init(this, "width");
+    markerID.init(this, "markerID");
   }
 public:
   // No description given
@@ -48,6 +49,8 @@ public:
   rs::FeatureStructureEntry<float> height;
   // No description given
   rs::FeatureStructureEntry<float> width;
+  // No description given
+  rs::FeatureStructureEntry<int>markerID;
 
   RecognitionObject(const RecognitionObject &other) :
       rs::Annotation(other)

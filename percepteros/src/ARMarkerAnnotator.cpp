@@ -1,6 +1,8 @@
 #include <uima/api.hpp>
 
 #include <pcl/point_types.h>
+#include <pcl/common/centroid.h>
+#include <pcl/common/geometry.h>
 #include <rs/types/all_types.h>
 //RS
 #include <rs/scene_cas.h>
@@ -12,6 +14,13 @@
 #include <aruco/aruco.h>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <percepteros/types/all_types.h>
+
+
+#include <suturo_perception_msgs/ObjectDetection.h>
+
+#include <limits>
+
 using namespace uima;
 
 
@@ -19,6 +28,8 @@ class ARMarkersDetector : public DrawingAnnotator
 {
 
   typedef pcl::PointXYZRGBA  PointT;
+private:
+  pcl::PointCloud<pcl::Normal>::Ptr normal_ptr;
 
 public:
   cv::Mat image, cameraMatrix, distCoefficients;
@@ -62,6 +73,67 @@ public:
   }
 private:
 
+  bool getCorrespondingCluster(CAS &tcas, rs::Scene& scene, int markerID, tf::Vector3 mp){
+    pcl::PointXYZ markerPoint;
+    markerPoint.x = mp.x();
+    markerPoint.y = mp.y();
+    markerPoint.z = mp.z();
+    std::vector<rs::Cluster> clusters;
+    scene.identifiables.filter(clusters);
+
+    pcl::PointCloud<pcl::Normal>::Ptr normal_ptr(new pcl::PointCloud<pcl::Normal>);
+    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_cluster_normal (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+    
+    rs::Cluster &nearest = clusters[0];
+    float minMarkerClusterDist = std::numeric_limits<float>::max();
+    for (auto cluster: clusters) {
+      pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
+      rs::ReferenceClusterPoints clusterpoints(cluster.points());
+      rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+
+      pcl::PointCloud<PointT>::Ptr cluster_cloud(new pcl::PointCloud<PointT>());
+      pcl::PointCloud<pcl::Normal>::Ptr cluster_normal(new pcl::PointCloud<pcl::Normal>());
+      for(std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
+          pit != cluster_indices->indices.end(); pit++)
+      {
+        cluster_cloud->points.push_back(cloud_ptr->points[*pit]);
+        cluster_normal->points.push_back(normal_ptr->points[*pit]);
+      }
+      cluster_cloud->width = cluster_cloud->points.size();
+      cluster_cloud->height = 1;
+      cluster_cloud->is_dense = true;
+      cluster_normal->width = cluster_normal->points.size();
+      cluster_normal->height = 1;
+      cluster_normal->is_dense = true;
+
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_clusterRGB (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+      pcl::copyPointCloud(*cluster_cloud,*cloud_clusterRGB);
+      pcl::concatenateFields (*cloud_clusterRGB, *cluster_normal, *cloud_cluster_normal);
+      
+      pcl::PointXYZ clusterCentroid;
+      pcl::computeCentroid(*cloud_cluster_normal, clusterCentroid);
+      float tempDist = pcl::geometry::distance(markerPoint, clusterCentroid);
+      if (tempDist<minMarkerClusterDist) {
+        nearest = cluster;
+        minMarkerClusterDist = tempDist;
+      } 
+    }
+
+    std::vector<percepteros::RecognitionObject> recognObjs;
+    nearest.annotations.filter(recognObjs);
+    if (recognObjs.empty()){
+      //TODO new recognition obj
+      percepteros::RecognitionObject newRO = rs::create<percepteros::RecognitionObject>(tcas);
+      newRO.markerID.set(markerID);
+      nearest.annotations.append(newRO);
+    } else {
+      recognObjs[0].markerID.set(markerID);
+    }
+
+    return true;
+  }
+
   TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec)
   {
     outInfo("process begins");
@@ -70,7 +142,8 @@ private:
     rs::Scene scene = cas.getScene();
     cas.get(VIEW_COLOR_IMAGE_HD,image);
     cas.get(VIEW_CAMERA_INFO_HD, cam_info);
-    cas.get(VIEW_CLOUD,*cloud_ptr);
+    cas.get(VIEW_CLOUD, *cloud_ptr);
+    cas.get(VIEW_NORMALS, *normal_ptr);
 
     readCameraInfo(cam_info);
     camParams.setParams(cameraMatrix, distCoefficients,cv::Size(cam_info.width,cam_info.height));
@@ -102,7 +175,11 @@ private:
       marker_annotation.pose.set(rs::conversion::to(tcas,pose));
       scene.annotations.append(marker_annotation);
       marker_poses_cam_frame.push_back(pose);
+ 
+      getCorrespondingCluster(tcas, scene, m.id, pose.getOrigin());
     }
+
+ 
     outInfo("took: " << clock.getTime() << " ms.");
     return UIMA_ERR_NONE;
   }
