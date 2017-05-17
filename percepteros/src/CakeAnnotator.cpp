@@ -442,6 +442,17 @@ public:
           min_v2 = fminf(min_v2, value_v2);
           min_v3 = fminf(min_v3, value_v3);
         }
+        float height, width, depth;
+        height = max_v3 - min_v3;
+        width = max_v1 - min_v1;
+        depth = max_v2 - min_v2;
+        if( height < 0.04 || width < 0.04 || depth < 0.04){
+
+            return 0;
+        }
+        if(height > 0.5 || width > 0.5 || depth > 0.5){
+            return 0;
+        }
 
         /*min_v1 = -coefficients_plane1->values[3];
         min_v2 += 0.005;
