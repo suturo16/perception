@@ -19,11 +19,23 @@
 #include <pcl/registration/transforms.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_representation.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <rs/DrawingAnnotator.h>
+#include <rs/utils/common.h>
+
+#include <pcl/point_cloud.h>
+#include <pcl/octree/octree.h>
+
+#include <pcl/io/pcd_io.h>
+
+#include <iostream>
+#include <vector>
+#include <ctime>
 
 using namespace uima;
 
 
-class SzeneRecorder : public Annotator
+class SzeneRecorder : public DrawingAnnotator
 {
 private:
 
@@ -31,15 +43,19 @@ private:
     typedef pcl::PointCloud<PointT> PointCloud;
     typedef pcl::PointNormal PointNormalT;
     typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
+    double pointSize = 1;
+
+
+    pcl::PointIndices clusterIndices;
 
     struct SavedSzene{
 
         cv::Mat beforeDepthImage;
-        PointCloud::Ptr beforeAction;
+        PointCloud::Ptr beforeActionPC;
         ros::Time beforeTime;
 
         cv::Mat afterDepthImage;
-        PointCloud::Ptr afterAction;
+        PointCloud::Ptr afterActionPC;
         ros::Time afterTime;
     };
 
@@ -55,28 +71,7 @@ private:
 
 public:
 
-    // Define a new point representation for < x, y, z, curvature >
-    class MyPointRepresentation : public pcl::PointRepresentation <PointNormalT>
-    {
-    using pcl::PointRepresentation<PointNormalT>::nr_dimensions_;
-    public:
-        MyPointRepresentation ()
-        {
-        // Define the number of dimensions
-         nr_dimensions_ = 4;
-        }
-
-        // Override the copyToFloatArray method to define our feature vector
-        virtual void copyToFloatArray (const PointNormalT &p, float * out) const
-        {
-            // < x, y, z, curvature >
-            out[0] = p.x;
-            out[1] = p.y;
-            out[2] = p.z;
-            out[3] = p.curvature;
-        }
-    };
-
+  SzeneRecorder() :DrawingAnnotator(__func__){}
 
   TyErrorId initialize(AnnotatorContext &ctx)
   {
@@ -86,6 +81,12 @@ public:
 
     beforeActionService = nh_.advertiseService("before_action", &SzeneRecorder::beforeActionCallback, this);
     actionEndedService = nh_.advertiseService("perceive_action_effect", &SzeneRecorder::perceiveActionEffectCallback, this);
+
+    savedSzene.beforeActionPC = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
+    savedSzene.afterActionPC = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
+    pcl::io::loadPCDFile("/home/surxz/pcds/beforeGood/testbefore2.pcd",*savedSzene.beforeActionPC);
+    pcl::io::loadPCDFile("/home/surxz/pcds/afterGood/testafter2.pcd",*savedSzene.afterActionPC);
     return UIMA_ERR_NONE;
   }
 
@@ -95,11 +96,13 @@ public:
     return UIMA_ERR_NONE;
   }
 
-  TyErrorId process(CAS &tcas, ResultSpecification const &res_spec)
+  TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec)
   {
     outInfo("process start");
     rs::StopWatch clock;
     rs::SceneCas cas(tcas);
+    rs::Scene scene = cas.getScene();
+
     cv::Mat depth_image;
 
     cas.get(VIEW_DEPTH_IMAGE, depth_image);
@@ -113,18 +116,73 @@ public:
         queueSaveImage = false;
         if(firstRun){
             firstRun = false;
-            savedSzene.beforeAction = cloud_ptr;
+            savedSzene.beforeActionPC = cloud_ptr;
             savedSzene.beforeDepthImage = depth_image;
+            pcl::io::savePCDFileASCII ("testbefore.pcd", *cloud_ptr);
         }
         else{
-            savedSzene.afterAction = cloud_ptr;
+            savedSzene.afterActionPC = cloud_ptr;
             savedSzene.afterDepthImage = depth_image;
-            startAlignment();
+            pcl::io::savePCDFileASCII ("testafter.pcd", *cloud_ptr);
+
+
+
         }
+
     }
+    pcl::PointIndices indices = detectChange();
+    clusterIndices = indices;
+
+    rs::Cluster uimaCluster = rs::create<rs::Cluster>(tcas);
+    rs::ReferenceClusterPoints rcp = rs::create<rs::ReferenceClusterPoints>(tcas);
+    rs::PointIndices uimaIndices = rs::conversion::to(tcas, indices);
+
+    rcp.indices.set(uimaIndices);
+
+    uimaCluster.points.set(rcp);
+    uimaCluster.source.set("ChangeDetection");
+
+    scene.identifiables.append(uimaCluster);
     return UIMA_ERR_NONE;
   }
 
+  pcl::PointIndices detectChange(){
+      srand ((unsigned int) time (NULL));
+
+      // Octree resolution - side length of octree voxels
+      float resolution = 0.05f;
+
+      // Instantiate octree-based point cloud change detection class
+      pcl::octree::OctreePointCloudChangeDetector<pcl::PointXYZRGBA> octree (resolution);
+
+      // Add points from cloudA to octree
+      octree.setInputCloud (savedSzene.beforeActionPC);
+      octree.addPointsFromInputCloud ();
+
+      // Switch octree buffers: This resets octree but keeps previous tree structure in memory.
+      octree.switchBuffers ();
+
+      // Add points from cloudB to octree
+      octree.setInputCloud (savedSzene.afterActionPC);
+      octree.addPointsFromInputCloud ();
+
+      std::vector<int> newPointIdxVector;
+
+      // Get vector of point indices from octree voxels which did not exist in previous buffer
+      octree.getPointIndicesFromNewVoxels (newPointIdxVector,60);
+
+      pcl::PointIndices indices;
+      indices.indices = newPointIdxVector;
+
+      // Output points
+      std::cout << "Output from getPointIndicesFromNewVoxels:" << std::endl;
+      /*for (size_t i = 0; i < newPointIdxVector.size (); ++i)
+        std::cout << i << "# Index:" << newPointIdxVector[i]
+                  << "  Point:" << savedSzene.afterActionPC->points[newPointIdxVector[i]].x << " "
+                  << savedSzene.afterActionPC->points[newPointIdxVector[i]].y << " "
+                  << savedSzene.afterActionPC->points[newPointIdxVector[i]].z << std::endl;*/
+      return indices;
+  }
 
 
 
@@ -142,124 +200,29 @@ public:
       return true;
   }
 
-  void startAlignment(){
-    PointCloud::Ptr target;
-    Eigen::Matrix4f pairTransform;
-
-    pairAlign(savedSzene.afterAction, savedSzene.beforeAction, target, pairTransform, true);
+  void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
+  {
+  const std::string &cloudname = this->name;
+  const pcl::PointIndices &indices = clusterIndices;
+  for(size_t j = 0; j < indices.indices.size(); ++j)
+  {
+    size_t index = indices.indices[j];
+    savedSzene.afterActionPC->points[index].rgba = rs::common::colors[0];
   }
 
-  ////////////////////////////////////////////////////////////////////////////////
-  /** \brief Align a pair of PointCloud datasets and return the result
-    * \param cloud_src the source PointCloud
-    * \param cloud_tgt the target PointCloud
-    * \param output the resultant aligned source PointCloud
-    * \param final_transform the resultant transform between source and target
-    */
-  void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt, PointCloud::Ptr output, Eigen::Matrix4f &final_transform, bool downsample = false)
-  {
-    //
-    // Downsample for consistency and speed
-    // \note enable this for large datasets
-    PointCloud::Ptr src (new PointCloud);
-    PointCloud::Ptr tgt (new PointCloud);
-    pcl::VoxelGrid<PointT> grid;
-    if (downsample)
-    {
-      grid.setLeafSize (0.05, 0.05, 0.05);
-      grid.setInputCloud (cloud_src);
-      grid.filter (*src);
-
-      grid.setInputCloud (cloud_tgt);
-      grid.filter (*tgt);
+    if(savedSzene.afterActionPC && savedSzene.afterActionPC->points.size()!=0){
+        if(firstRun)
+        {
+          visualizer.addPointCloud(savedSzene.afterActionPC, cloudname);
+          visualizer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
+        }
+        else
+        {
+          visualizer.updatePointCloud(savedSzene.afterActionPC, cloudname);
+          visualizer.getPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
+        }
     }
-    else
-    {
-      src = cloud_src;
-      tgt = cloud_tgt;
-    }
-
-
-    // Compute surface normals and curvature
-    PointCloudWithNormals::Ptr points_with_normals_src (new PointCloudWithNormals);
-    PointCloudWithNormals::Ptr points_with_normals_tgt (new PointCloudWithNormals);
-
-    pcl::NormalEstimation<PointT, PointNormalT> norm_est;
-    pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
-    norm_est.setSearchMethod (tree);
-    norm_est.setKSearch (30);
-
-    norm_est.setInputCloud (src);
-    norm_est.compute (*points_with_normals_src);
-    pcl::copyPointCloud (*src, *points_with_normals_src);
-
-    norm_est.setInputCloud (tgt);
-    norm_est.compute (*points_with_normals_tgt);
-    pcl::copyPointCloud (*tgt, *points_with_normals_tgt);
-
-    //
-    // Instantiate our custom point representation (defined above) ...
-    MyPointRepresentation point_representation;
-    // ... and weight the 'curvature' dimension so that it is balanced against x, y, and z
-    float alpha[4] = {1.0, 1.0, 1.0, 1.0};
-    point_representation.setRescaleValues (alpha);
-
-    //
-    // Align
-    pcl::IterativeClosestPointNonLinear<PointNormalT, PointNormalT> reg;
-    reg.setTransformationEpsilon (1e-6);
-    // Set the maximum distance between two correspondences (src<->tgt) to 10cm
-    // Note: adjust this based on the size of your datasets
-    reg.setMaxCorrespondenceDistance (0.1);
-    // Set the point representation
-    reg.setPointRepresentation (boost::make_shared<const MyPointRepresentation> (point_representation));
-
-    reg.setInputSource (points_with_normals_src);
-    reg.setInputTarget (points_with_normals_tgt);
-
-
-
-    //
-    // Run the same optimization in a loop and visualize the results
-    Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
-    PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
-    reg.setMaximumIterations (2);
-    for (int i = 0; i < 30; ++i)
-    {
-      PCL_INFO ("Iteration Nr. %d.\n", i);
-
-      // save cloud for visualization purpose
-      points_with_normals_src = reg_result;
-
-      // Estimate
-      reg.setInputSource (points_with_normals_src);
-      reg.align (*reg_result);
-
-          //accumulate transformation between each Iteration
-      Ti = reg.getFinalTransformation () * Ti;
-
-          //if the difference between this transformation and the previous one
-          //is smaller than the threshold, refine the process by reducing
-          //the maximal correspondence distance
-      if (fabs ((reg.getLastIncrementalTransformation () - prev).sum ()) < reg.getTransformationEpsilon ())
-        reg.setMaxCorrespondenceDistance (reg.getMaxCorrespondenceDistance () - 0.001);
-
-      prev = reg.getLastIncrementalTransformation ();
-    }
-
-      //
-    // Get the transformation from target to source
-    targetToSource = Ti.inverse();
-
-    //
-    // Transform target back in source frame
-    pcl::transformPointCloud (*cloud_tgt, *output, targetToSource);
-
-    //add the source to the transformed target
-    *output += *cloud_src;
-
-    final_transform = targetToSource;
-   }
+  }
 
 };
 

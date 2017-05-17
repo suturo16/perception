@@ -63,7 +63,7 @@ private:
         if(objects.size()!=0 && objects.size() == poses.size()){
             for(int i = 0; i < objects.size(); i++){
             	percepteros::RecognitionObject recObj  = objects[i];
-            	rs::StampedPose pose = poses[i].world.get();
+                rs::StampedPose pose = poses[i].camera.get();
             	std::vector<double> translation = pose.translation.get();
             	std::vector<double> rotation = pose.rotation.get();
             	Eigen::Matrix3d mat;

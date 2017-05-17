@@ -149,7 +149,7 @@ public:
 												z[0], z[1], z[2]);
 					transform.setBasis(rot);
 
-					objects[0].name.set("Knife");
+                    objects[0].name.set("knife");
 					objects[0].type.set(6);
 					objects[0].width.set(0.28f);
 					objects[0].height.set(0.056f);
