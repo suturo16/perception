@@ -68,8 +68,8 @@ private:
   constexpr static double BOX_NORMAL_WEIGHT = 0.04;
   constexpr static double BOX_DISTANCE_THRESHOLD_NORMALPLANE = 0.015;
   constexpr static double BOX_DISTANCE_THRESHOLD_PLANE1 = 0.004;
-  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE2 = 0.01;
-  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE3 = 0.01;
+  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE2 = 0.005;
+  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE3 = 0.005;
   constexpr static double BOX_EPSILON_PLANE1 = 0.1;
   constexpr static double BOX_MAX_SIZE_RATIO_PLANE1 = 0.75;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE1 = 0.2;
