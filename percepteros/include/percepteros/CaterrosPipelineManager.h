@@ -113,6 +113,8 @@ public:
             pipelineName="cake";
           } else if(object =="cylinder"){
             pipelineName = "cylinder";
+          } else if(object =="knife"){
+              pipelineName = "knife";
           } else {
               pipelineName= "config";
           }

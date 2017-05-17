@@ -449,7 +449,7 @@ public:
         */
 
         Eigen::Matrix3f mat;
-        mat << v2, -v1, v3;
+        mat << bo.xVector, bo.yVector, bo.zVector;
         Eigen::Quaternionf qua(mat);
         qua.normalize();
 
@@ -477,7 +477,7 @@ public:
         transform.setOrigin(trans);
         transform.setBasis(rot);
 
-        o.name.set("Box");
+        o.name.set("box");
         o.type.set(1);
         o.width.set(max_v1 - min_v1);
         o.height.set(max_v3 - min_v3);
