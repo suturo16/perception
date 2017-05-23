@@ -73,6 +73,9 @@ target_link_libraries(rs_incrementalPointRegistration ${CATKIN_LIBRARIES})
 rs_add_library(rs_knifeAnnotator src/KnifeAnnotator.cpp)
 target_link_libraries(rs_knifeAnnotator ${CATKIN_LIBRARIES})
 
+rs_add_library(rs_spatulAnnotator src/SpatulAnnotator.cpp)
+target_link_libraries(rs_spatulAnnotator ${CATKIN_LIBRARIES})
+
 rs_add_library(rs_colorClusterer src/ColorClusterer.cpp)
 target_link_libraries(rs_colorClusterer ${CATKIN_LIBRARIES})
 

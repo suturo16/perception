@@ -15,6 +15,8 @@
 
 #include <pcl/segmentation/organized_connected_component_segmentation.h>
 #include <percepteros/HueClusterComparator.h>
+#include <percepteros/ValueClusterComparator.h>
+#include <pcl/filters/extract_indices.h>
 
 #include <algorithm>
 #include <limits>
@@ -38,7 +40,7 @@ private:
 	std::vector<pcl::PointIndices> cluster_indices;
 
 	float DISTANCE_THRESHOLD;
-	int HUE_LOWER_BOUND, HUE_UPPER_BOUND, HUE_THRESHOLD, POINT_THRESHOLD, CLUSTER_THRESHOLD;
+	int HUE_LOWER_BOUND, HUE_UPPER_BOUND, HUE_THRESHOLD, VALUE_THRESHOLD, POINT_THRESHOLD, CLUSTER_THRESHOLD;
 
 public:
   ColorClusterer(): DrawingAnnotator(__func__){
@@ -52,6 +54,7 @@ public:
 		ctx.extractValue("minHue", HUE_LOWER_BOUND);
 		ctx.extractValue("maxHue", HUE_UPPER_BOUND);
 		ctx.extractValue("diffHue", HUE_THRESHOLD);
+		ctx.extractValue("diffVal", VALUE_THRESHOLD);
 
 		//extract threshold
 		ctx.extractValue("diffDist", DISTANCE_THRESHOLD);
@@ -121,7 +124,44 @@ public:
 						cluster_indices.push_back(cluster_i.at(i));
 					}
 				}
-				outInfo("Found " << cluster_indices.size() << " clusters.");
+				outInfo("Found " << cluster_indices.size() << " hue clusters.");
+				
+				//remove clusters from rack
+				PCH::Ptr cloud_b(new PCH());
+				pcl::copyPointCloud(*cloud, *cloud_b);
+
+				pcl::ExtractIndices<PointH> ex;
+				ex.setNegative(true);
+				ex.setKeepOrganized(true);
+				pcl::PointIndices::Ptr clust(new pcl::PointIndices());
+
+				for (size_t i = 0; i < cluster_indices.size(); i++) {		
+					clust->indices = cluster_indices[i].indices;
+					ex.setInputCloud(cloud_b);
+					ex.setIndices(clust);
+					ex.filterDirectly(cloud_b);
+				}
+				
+				pcl::ValueClusterComparator<PointH, pcl::Normal, pcl::Label>::Ptr vcc(new pcl::ValueClusterComparator<PointH, pcl::Normal, pcl::Label>());
+				vcc->setInputCloud(cloud_b);
+				vcc->setLabels(input_labels);
+				vcc->setExcludeLabels(ignore_labels);
+				vcc->setDistanceThreshold(DISTANCE_THRESHOLD, true);
+				vcc->setInputNormals(normals);
+				vcc->setValueThreshold(VALUE_THRESHOLD);
+				
+				cluster_i.clear();
+				pcl::PointCloud<pcl::Label>::Ptr output_l(new pcl::PointCloud<pcl::Label>);
+				pcl::OrganizedConnectedComponentSegmentation<PointH, pcl::Label> segmenterV(vcc);
+				segmenterV.setInputCloud(cloud_b);
+				segmenterV.segment(*output_l, cluster_i);
+					
+				for (size_t i = 0; i < cluster_i.size(); i++) {
+					if (cluster_i.at(i).indices.size() > CLUSTER_THRESHOLD) {
+						cluster_indices.push_back(cluster_i.at(i));
+					}
+				}
+				outInfo("Found " << cluster_indices.size() << " value clusters.");
 				
 				//append clusters to scene
 				//TODO: Add rois for 2d
