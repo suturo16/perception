@@ -53,9 +53,9 @@ public:
   {
     outInfo("initialize");
 		
-		//extract color parameters
-		ctx.extractValue("minHue", HUE_LOWER_BOUND);
-		ctx.extractValue("maxHue", HUE_UPPER_BOUND);
+	//extract color parameters
+	ctx.extractValue("minHue", HUE_LOWER_BOUND);
+	ctx.extractValue("maxHue", HUE_UPPER_BOUND);
 
     return UIMA_ERR_NONE;
   }
@@ -69,113 +69,108 @@ public:
   TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec)
   {
     outInfo("process start\n");
-		//get clusters
+	//get clusters
     rs::SceneCas cas(tcas);
-		rs::Scene scene = cas.getScene();
-		std::vector<rs::Cluster> clusters;
-		scene.identifiables.filter(clusters);
+	rs::Scene scene = cas.getScene();
+	std::vector<rs::Cluster> clusters;
+	scene.identifiables.filter(clusters);
 
-		//get scene points
-		cas.get(VIEW_CLOUD, *cloud_r);
-		cas.get(VIEW_NORMALS, *cloud_n);
-		pcl::PointCloud<pcl::PointXYZ>::Ptr temp(new pcl::PointCloud<pcl::PointXYZ>);
-		pcl::copyPointCloud(*cloud_r, *temp);
-		pcl::concatenateFields(*temp, *cloud_n, *cloud);
+	//get scene points
+	cas.get(VIEW_CLOUD, *cloud_r);
+	cas.get(VIEW_NORMALS, *cloud_n);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr temp(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::copyPointCloud(*cloud_r, *temp);
+	pcl::concatenateFields(*temp, *cloud_n, *cloud);
 
-		//helpers
-		rs::StopWatch clock;
-		bool foundKnife = false;
-		bool foundRack = false;
+	//helpers
+	rs::StopWatch clock;
+	bool foundKnife = false;
+	bool foundRack = false;
 
-		std::vector<percepteros::RecognitionObject> objects;
-		for (auto it = clusters.begin(); it != clusters.end(); ++it) {
-			auto cluster = *it;
-			if (cluster.source.get().compare("HueClustering") == 0) {
-				objects.clear();
-				cluster.annotations.filter(objects);
-				
-				outInfo("Average hue: " << objects[0].color.get());
-				pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
-				rs::ReferenceClusterPoints clusterpoints(cluster.points());
-				rs::conversion::from(clusterpoints.indices(), *cluster_indices);
-				
-				outInfo("Point amount: " << cluster_indices->indices.size());
-				
-				if (objects.size() > 0 && objects[0].color.get() > HUE_LOWER_BOUND && objects[0].color.get() < HUE_UPPER_BOUND) {
-					outInfo("Found knife cluster.");
-					foundKnife = true;
-					extractPoints(cloud, cluster, blade);
-				}
-
-				if (objects.size() > 0 && objects[0].color.get() > 210 && objects[0].color.get() < 230) {
-					outInfo("Found rack cluster");
-					foundRack = true;
-					extractPoints(cloud, cluster, rack);
-				}
-
-				if ((foundKnife && foundRack) || (foundKnife && std::next(it) == clusters.end())) {
-					rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
-					tf::StampedTransform camToWorld;
-					camToWorld.setIdentity();
-					if (scene.viewPoint.has()) {
-						rs::conversion::from(scene.viewPoint.get(), camToWorld);
-					}
-					
-					x = getX(blade);
-					if (foundRack) {
-						y = getY(rack);
-					} else {
-						y = getY(blade);
-					}
-	
-					tf::Transform transform;
-					transform.setOrigin(getOrigin(blade));
-
-					z = x.cross(y);
-					y = z.cross(x);
-		
-					x.normalize(); y.normalize(); z.normalize();
-
-					if (std::isnan(x[0]) || std::isnan(x[1]) || std::isnan(x[2]) ||
-							std::isnan(y[0]) || std::isnan(y[1]) || std::isnan(x[2]) ||
-							std::isnan(z[0]) || std::isnan(z[1]) || std::isnan(z[2])) {
-						outInfo("Found wrong orientation. Abort.");
-						break;
-					}
-
-					tf::Matrix3x3 rot;
-					rot.setValue(	x[0], x[1], x[2],
-												y[0], y[1], y[2],
-												z[0], z[1], z[2]);
-					transform.setBasis(rot);
-
-					objects[0].name.set("Knife");
-					objects[0].type.set(6);
-					objects[0].width.set(0.28f);
-					objects[0].height.set(0.056f);
-					objects[0].depth.set(0.03f);
-		
-					tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
-					tf::Stamped<tf::Pose> world(camToWorld * transform, camToWorld.stamp_, camToWorld.frame_id_);
-
-					poseA.source.set("KnifeAnnotator");
-					poseA.camera.set(rs::conversion::to(tcas, camera));
-					poseA.world.set(rs::conversion::to(tcas, world));
+	std::vector<percepteros::ToolObject> tools;
+	std::vector<percepteros::RackObject> racks;
+	for (auto it = clusters.begin(); it != clusters.end(); ++it) {
+		auto cluster = *it;
+		tools.clear();
+		racks.clear();
+		cluster.annotations.filter(tools);
+		cluster.annotations.filter(racks);
+		if (racks.size() > 0) {
+			outInfo("Found rack!");
+			foundRack = true;
+			std::vector<float> yv = racks[0].normal.get();
+			y.setX(yv[0]);
+			y.setY(yv[1]);
+			y.setZ(yv[2]);
+		}
+		if (tools.size() > 0) {
+			percepteros::ToolObject tool = tools[0];
+			if (tool.hue.get() > HUE_LOWER_BOUND && tool.hue.get() < HUE_UPPER_BOUND) {
+				outInfo("Found knife cluster!");
+				extractPoints(cloud, cluster, blade);
+				foundKnife = true;
+			}
+		}
+		if ((foundKnife && foundRack) || (foundKnife && std::next(it) == clusters.end())) {
+			rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
+			percepteros::RecognitionObject recA = rs::create<percepteros::RecognitionObject>(tcas);
+			tf::StampedTransform camToWorld;
+			camToWorld.setIdentity();
+			if (scene.viewPoint.has()) {
+				rs::conversion::from(scene.viewPoint.get(), camToWorld);
+			}
 			
-					cluster.annotations.append(poseA);
-					outInfo("Finished");
-					break;
-				}
-			} 	
-		}
+			x = getX(blade);
+			if (!foundRack) {
+				y = getY(blade);
+			}
 
-		if (!foundKnife) {
-			outInfo("No knife found.");
-			return UIMA_ERR_NONE;
+			tf::Transform transform;
+			transform.setOrigin(getOrigin(blade));
+
+			z = x.cross(y);
+			y = z.cross(x);
+
+			x.normalize(); y.normalize(); z.normalize();
+			if (std::isnan(x[0]) || std::isnan(x[1]) || std::isnan(x[2]) ||
+				std::isnan(y[0]) || std::isnan(y[1]) || std::isnan(x[2]) ||
+				std::isnan(z[0]) || std::isnan(z[1]) || std::isnan(z[2])) {
+				outInfo("Found wrong orientation. Abort.");
+				break;
+			}
+
+			tf::Matrix3x3 rot;
+			rot.setValue(	x[0], x[1], x[2],
+							y[0], y[1], y[2],
+							z[0], z[1], z[2]);
+			transform.setBasis(rot);
+			recA.name.set("Knife");
+			recA.type.set(6);
+			recA.width.set(0.28f);
+			recA.height.set(0.056f);
+			recA.depth.set(0.03f);
+
+			tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
+			tf::Stamped<tf::Pose> world(camToWorld * transform, camToWorld.stamp_, camToWorld.frame_id_);
+
+			poseA.source.set("KnifeAnnotator");
+			poseA.camera.set(rs::conversion::to(tcas, camera));
+			poseA.world.set(rs::conversion::to(tcas, world));
+		
+			cluster.annotations.append(poseA);
+			cluster.annotations.append(recA);
+			outInfo("Finished");
+			break;
 		}
+	} 	
+
+	if (!foundKnife) {
+		outInfo("No knife found.");
+		return UIMA_ERR_NONE;
+	}
 		
     return UIMA_ERR_NONE;
-  }
+}
 
 	void setEndpoints(PC::Ptr blade) {
 		PointN begin, end;

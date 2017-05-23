@@ -18,6 +18,12 @@
 #include <percepteros/ValueClusterComparator.h>
 #include <pcl/filters/extract_indices.h>
 
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+
 #include <algorithm>
 #include <limits>
 
@@ -37,7 +43,8 @@ private:
 	PCH::Ptr cloud = PCH::Ptr(new PCH);
 	PCN::Ptr normals = PCN::Ptr(new PCN);
 
-	std::vector<pcl::PointIndices> cluster_indices;
+	std::vector<pcl::PointIndices> hue_indices;
+	std::vector<pcl::PointIndices> value_indices;
 
 	float DISTANCE_THRESHOLD;
 	int HUE_LOWER_BOUND, HUE_UPPER_BOUND, HUE_THRESHOLD, VALUE_THRESHOLD, POINT_THRESHOLD, CLUSTER_THRESHOLD;
@@ -74,7 +81,7 @@ public:
   {
     outInfo("process start\n");
 		//get clusters
-    rs::SceneCas cas(tcas);
+    	rs::SceneCas cas(tcas);
 		rs::Scene scene = cas.getScene();
 		std::vector<rs::Cluster> clusters;
 		scene.identifiables.filter(clusters);
@@ -103,7 +110,7 @@ public:
 			found = checkCluster(clust, cloud, input_labels);
 			if (found) {
 				outInfo("Found rack!"); found = true;
-				
+				annotateCluster(clust, cloud, tcas);				
 				pcl::PointCloud<pcl::Label>::Ptr output_labels(new pcl::PointCloud<pcl::Label>);
 
 				pcl::HueClusterComparator<PointH, pcl::Normal, pcl::Label>::Ptr hcc(new pcl::HueClusterComparator<PointH, pcl::Normal, pcl::Label>());
@@ -121,10 +128,10 @@ public:
 				
 				for (size_t i = 0; i < cluster_i.size(); i++) {
 					if (cluster_i.at(i).indices.size() > CLUSTER_THRESHOLD) {
-						cluster_indices.push_back(cluster_i.at(i));
+						hue_indices.push_back(cluster_i.at(i));
 					}
 				}
-				outInfo("Found " << cluster_indices.size() << " hue clusters.");
+				outInfo("Found " << hue_indices.size() << " hue clusters.");
 				
 				//remove clusters from rack
 				PCH::Ptr cloud_b(new PCH());
@@ -135,8 +142,8 @@ public:
 				ex.setKeepOrganized(true);
 				pcl::PointIndices::Ptr clust(new pcl::PointIndices());
 
-				for (size_t i = 0; i < cluster_indices.size(); i++) {		
-					clust->indices = cluster_indices[i].indices;
+				for (size_t i = 0; i < hue_indices.size(); i++) {		
+					clust->indices = hue_indices[i].indices;
 					ex.setInputCloud(cloud_b);
 					ex.setIndices(clust);
 					ex.filterDirectly(cloud_b);
@@ -158,15 +165,15 @@ public:
 					
 				for (size_t i = 0; i < cluster_i.size(); i++) {
 					if (cluster_i.at(i).indices.size() > CLUSTER_THRESHOLD) {
-						cluster_indices.push_back(cluster_i.at(i));
+						value_indices.push_back(cluster_i.at(i));
 					}
 				}
-				outInfo("Found " << cluster_indices.size() << " value clusters.");
+				outInfo("Found " << value_indices.size() << " value clusters.");
 				
 				//append clusters to scene
 				//TODO: Add rois for 2d
-				for	(size_t i = 0; i < cluster_indices.size(); ++i) {
-					const pcl::PointIndices &indices = cluster_indices[i];
+				for	(size_t i = 0; i < hue_indices.size(); ++i) {
+					const pcl::PointIndices &indices = hue_indices[i];
 
 					rs::Cluster uimaCluster = rs::create<rs::Cluster>(tcas);
 					rs::ReferenceClusterPoints rcp = rs::create<rs::ReferenceClusterPoints>(tcas);
@@ -177,16 +184,39 @@ public:
 					uimaCluster.points.set(rcp);
 					uimaCluster.source.set("HueClustering");
 
-					percepteros::RecognitionObject colorblob = rs::create<percepteros::RecognitionObject>(tcas);
-					colorblob.name.set("Colorblob");
-					float average = getAverageColor(cloud, indices);
-					outInfo("Average hue: " << average);
-					colorblob.color.set(average);
-					uimaCluster.annotations.append(colorblob);
+					percepteros::ToolObject tool = rs::create<percepteros::ToolObject>(tcas);
+					tool.name.set("HueClustering");
+					int averageHue = getAverageHue(cloud, indices);
+					float averageValue = getAverageValue(cloud, indices);
+					tool.hue.set(averageHue);
+					tool.value.set(averageValue);
+					uimaCluster.annotations.append(tool);
 
 					scene.identifiables.append(uimaCluster);
 				}
 
+				for	(size_t i = 0; i < value_indices.size(); ++i) {
+					const pcl::PointIndices &indices = value_indices[i];
+
+					rs::Cluster uimaCluster = rs::create<rs::Cluster>(tcas);
+					rs::ReferenceClusterPoints rcp = rs::create<rs::ReferenceClusterPoints>(tcas);
+					rs::PointIndices uimaIndices = rs::conversion::to(tcas, indices);
+
+					rcp.indices.set(uimaIndices);
+
+					uimaCluster.points.set(rcp);
+					uimaCluster.source.set("ValueClustering");
+
+					percepteros::ToolObject tool = rs::create<percepteros::ToolObject>(tcas);
+					tool.name.set("ValueClustering");
+					int averageHue = getAverageHue(cloud, indices);
+					float averageValue = getAverageValue(cloud, indices);
+					tool.hue.set(averageHue);
+					tool.value.set(averageValue);
+					uimaCluster.annotations.append(tool);
+
+					scene.identifiables.append(uimaCluster);
+				}
 				break;
 			}
 		}
@@ -199,7 +229,7 @@ public:
     return UIMA_ERR_NONE;
   }
 
-	float getAverageColor(PCH::Ptr cloud, pcl::PointIndices indices) {
+	int getAverageHue(PCH::Ptr cloud, pcl::PointIndices indices) {
 		float average = 0;
 		int size = indices.indices.size();
 
@@ -207,19 +237,38 @@ public:
 			average += cloud->points[indices.indices[i]].h / size;
 		}
 
+		return (int) average;
+	}
+
+	float getAverageValue(PCH::Ptr cloud, pcl::PointIndices indices) {
+		float average = 0;
+		int size = indices.indices.size();
+
+		for (size_t i = 0; i < size; i++) {
+			average += cloud->points[indices.indices[i]].v / size;
+		}
+
 		return average;
 	}
 
 	void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun) {
 		const std::string &cloudname = this->name;
-		for (size_t i = 0; i < cluster_indices.size(); ++i) {
-			const pcl::PointIndices &indices = cluster_indices[i];
+		for (size_t i = 0; i < hue_indices.size(); ++i) {
+			const pcl::PointIndices &indices = hue_indices[i];
 			for (size_t j = 0; j < indices.indices.size(); ++j) {
 				size_t index = indices.indices[j];
 				temp->points[index].rgba = rs::common::colors[i % rs::common::numberOfColors];
 			}
 		}
-		
+
+		for (size_t i = 0; i < value_indices.size(); ++i) {
+			const pcl::PointIndices &indices = value_indices[i];
+			for (size_t j = 0; j < indices.indices.size(); ++j) {
+				size_t index = indices.indices[j];
+				temp->points[index].rgba = rs::common::colors[(i + hue_indices.size()) % rs::common::numberOfColors];
+			}
+		}
+
 		double pointSize = 1;
 
 		if (firstRun) {
@@ -235,6 +284,7 @@ public:
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
 		rs::ReferenceClusterPoints clusterpoints(clust.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+		
 		PointH temp;
 		int count = 0;
 		
@@ -256,6 +306,41 @@ public:
 		} else {
 			return false;
 		}
+	}
+
+	void annotateCluster(rs::Cluster clust, PCH::Ptr cloud_ptr, CAS &tcas) {
+		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
+		rs::ReferenceClusterPoints clusterpoints(clust.points());
+		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+		
+		PCH::Ptr rack = PCH::Ptr(new PCH);
+		pcl::ModelCoefficients::Ptr coeffs(new pcl::ModelCoefficients);
+		pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+
+		pcl::ExtractIndices<PointH> ex;
+		ex.setKeepOrganized(true);
+		ex.setInputCloud(cloud_ptr);
+		ex.setIndices(cluster_indices);
+		ex.filter(*rack);
+
+        //prepare segmenter
+		pcl::SACSegmentation<PointH> seg;
+		seg.setOptimizeCoefficients(true);
+		seg.setMethodType(pcl::SAC_RANSAC);
+		seg.setMaxIterations(1000);
+		seg.setModelType(pcl::SACMODEL_PLANE);
+		seg.setDistanceThreshold(0.1);
+		seg.setInputCloud(rack);
+
+		seg.segment(*inliers, *coeffs);
+		outInfo("came here");	
+		//add rack annotation
+		percepteros::RackObject rA = rs::create<percepteros::RackObject>(tcas);
+		rA.name.set("Rack");
+		std::vector<float> normal; normal.push_back(coeffs->values[0]); normal.push_back(coeffs->values[1]); normal.push_back(coeffs->values[2]);
+		rA.normal.set(normal);
+		clust.annotations.append(rA);
+		outInfo("came here");
 	}
 
 

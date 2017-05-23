@@ -204,7 +204,7 @@
 			<node>PlaneAnnotator</node>
 			<node>PointCloudClusterExtractor</node>
 			<node>ColorClusterer</node>
-      		<node>SpatulAnnotator</node>
+			<node>SpatulAnnotator</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>

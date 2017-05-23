@@ -75,45 +75,45 @@ public:
     outInfo("process start\n");
 		//get clusters
     rs::SceneCas cas(tcas);
-		rs::Scene scene = cas.getScene();
-		std::vector<rs::Cluster> clusters;
-		scene.identifiables.filter(clusters);
+	rs::Scene scene = cas.getScene();
+	std::vector<rs::Cluster> clusters;
+	scene.identifiables.filter(clusters);
 
-		//get scene points
-		cas.get(VIEW_CLOUD, *cloud_r);
-		cas.get(VIEW_NORMALS, *cloud_n);
-		pcl::PointCloud<pcl::PointXYZ>::Ptr temp(new pcl::PointCloud<pcl::PointXYZ>);
-		pcl::copyPointCloud(*cloud_r, *temp);
-		pcl::concatenateFields(*temp, *cloud_n, *cloud);
-		
-		//prepare segmenter
-		pcl::SACSegmentation<PointN> seg;
-		seg.setOptimizeCoefficients(true);
-		seg.setMethodType(pcl::SAC_RANSAC);
-		seg.setMaxIterations(500);
-		seg.setModelType(pcl::SACMODEL_CIRCLE3D);
-		seg.setDistanceThreshold(0.005);
-		seg.setRadiusLimits(0.025, 0.13);
+	//get scene points
+	cas.get(VIEW_CLOUD, *cloud_r);
+	cas.get(VIEW_NORMALS, *cloud_n);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr temp(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::copyPointCloud(*cloud_r, *temp);
+	pcl::concatenateFields(*temp, *cloud_n, *cloud);
+	
+	//prepare segmenter
+	pcl::SACSegmentation<PointN> seg;
+	seg.setOptimizeCoefficients(true);
+	seg.setMethodType(pcl::SAC_RANSAC);
+	seg.setMaxIterations(500);
+	seg.setModelType(pcl::SACMODEL_CIRCLE3D);
+	seg.setDistanceThreshold(0.005);
+	seg.setRadiusLimits(0.025, 0.13);
 
-		//prepare extractor
-		pcl::ExtractIndices<PointN> ex;
-		ex.setNegative(true);
-		
-		std::vector<rs::Shape> shapes;
-		for (auto it = clusters.begin(); it != clusters.end(); ++it) {
-			auto cluster = *it;
-			shapes.clear();
-			cluster.annotations.filter(shapes);
-			if (cluster.source.get().compare("HueClustering") > -1 &&
-					shapes.size() > 0 &&
-					shapes[0].shape.get().compare("round") > -1) {
+	//prepare extractor
+	pcl::ExtractIndices<PointN> ex;
+	ex.setNegative(true);
+	
+	std::vector<rs::Shape> shapes;
+	for (auto it = clusters.begin(); it != clusters.end(); ++it) {
+		auto cluster = *it;
+		shapes.clear();
+		cluster.annotations.filter(shapes);
+		if (cluster.source.get().compare("HueClustering") > -1 &&
+				shapes.size() > 0 &&
+				shapes[0].shape.get().compare("round") > -1) {
 				//could be a plate - check for two circles
 				//extract cluster
 				extractCluster(clust, cloud, cluster);
 				//variables
 				pcl::PointIndices::Ptr cin1(new pcl::PointIndices());
 				pcl::PointIndices::Ptr cin2(new pcl::PointIndices());
-
+	
 				pcl::ModelCoefficients::Ptr cco1(new pcl::ModelCoefficients());
 				pcl::ModelCoefficients::Ptr cco2(new pcl::ModelCoefficients());
 				//first circle
@@ -121,7 +121,7 @@ public:
 				seg.segment(*cin1, *cco1);
 				
 				//printCoefficients("First circle", cco1);
-
+	
 				ex.setInputCloud(clust);
 				ex.setIndices(cin1);
 				ex.filter(*clust_filtered);
@@ -131,17 +131,18 @@ public:
 				seg.segment(*cin2, *cco2);
 				
 				//printCoefficients("Second circle", cco2);
-
-				if (isPlate(cco1, cco2)) {
+	
+				if 	(isPlate(cco1, cco2)) {
 					outInfo("found plate");
 					plates.push_back(*cco1);
 					addAnnotation(tcas, cluster, *cco1, clust->points[cin1->indices[0]]);
 				}
 			}
 		}
-    return UIMA_ERR_NONE;
-  }
-	
+		return UIMA_ERR_NONE;
+	}
+  
+
 	void addAnnotation(CAS &tcas, rs::Cluster cluster, pcl::ModelCoefficients co, PointN circ) {
 		//calculate values
 		std::vector<tf::Vector3> po;
@@ -154,16 +155,16 @@ public:
 		
 		po.push_back(x); po.push_back(y); po.push_back(z); po.push_back(origin);
 		poses.push_back(po);
-
+	
 		tf::Matrix3x3 rot;
 		rot.setValue(	x[0], x[1], x[2],
 						y[0], y[1], y[2],
 						z[0], z[1], z[2]);
-
-		tf::Transform trans;
+	
+	tf::Transform trans;
 		trans.setOrigin(origin);
 		trans.setBasis(rot);
-		
+			
 		//create annotation
 		rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
 		tf::StampedTransform camToWorld;
@@ -171,21 +172,21 @@ public:
 		
 		tf::Stamped<tf::Pose> camera(trans, camToWorld.stamp_, camToWorld.child_frame_id_);
 		tf::Stamped<tf::Pose> world(camToWorld * trans, camToWorld.stamp_, camToWorld.frame_id_);
-
+		
 		poseA.source.set("PlateAnnotator");
 		poseA.camera.set(rs::conversion::to(tcas, camera));
 		poseA.world.set(rs::conversion::to(tcas, world));
-
+	
 		//adjust recognition object
 		percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
-		
+	
 		o.name.set("Plate");
 		o.type.set(7);
 		o.color.set(std::stoi(cluster.source.get().substr(15)));
 		o.width.set(co.values[3]);
 		o.height.set(0);
 		o.depth.set(0);
-		
+	
 		cluster.annotations.append(o);
 		cluster.annotations.append(poseA);
 	}
