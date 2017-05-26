@@ -98,15 +98,18 @@ public:
 	//prepare extractor
 	pcl::ExtractIndices<PointN> ex;
 	ex.setNegative(true);
-	
+
 	std::vector<rs::Shape> shapes;
 	for (auto it = clusters.begin(); it != clusters.end(); ++it) {
 		auto cluster = *it;
 		shapes.clear();
 		cluster.annotations.filter(shapes);
-		if (cluster.source.get().compare("HueClustering") > -1 &&
+		outInfo(cluster.source.get());
+		outInfo(cluster.source.get().compare(0, 13, "HueClustering"));
+		if (cluster.source.get().compare(0, 13, "HueClustering") > -1 &&
 				shapes.size() > 0 &&
 				shapes[0].shape.get().compare("round") > -1) {
+				outInfo("Found a cluster");
 				//could be a plate - check for two circles
 				//extract cluster
 				extractCluster(clust, cloud, cluster);
@@ -131,8 +134,9 @@ public:
 				seg.segment(*cin2, *cco2);
 				
 				//printCoefficients("Second circle", cco2);
-	
-				if 	(isPlate(cco1, cco2)) {
+				
+
+				if 	(isPlate(cco1, cco2, (int) std::strtof(cluster.source.get().erase(0, 15).data(), NULL))) {
 					outInfo("found plate");
 					plates.push_back(*cco1);
 					addAnnotation(tcas, cluster, *cco1, clust->points[cin1->indices[0]]);
@@ -191,8 +195,8 @@ public:
 		cluster.annotations.append(poseA);
 	}
 
-	bool isPlate(pcl::ModelCoefficients::Ptr co1, pcl::ModelCoefficients::Ptr co2) {
-		return sqrt(pow(co1->values[0] - co2->values[0], 2) + pow(co1->values[1] - co2->values[1], 2) + pow(co1->values[2] - co2->values[2], 2)) < MAX_DIST_CENTS;
+	bool isPlate(pcl::ModelCoefficients::Ptr co1, pcl::ModelCoefficients::Ptr co2, int avHue) {
+		return avHue > 200 && avHue < 350 && (sqrt(pow(co1->values[0] - co2->values[0], 2) + pow(co1->values[1] - co2->values[1], 2) + pow(co1->values[2] - co2->values[2], 2)) < MAX_DIST_CENTS);
 	}
 
 	void extractCluster(PC::Ptr clust, PC::Ptr cloud, rs::Cluster cluster) {

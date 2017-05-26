@@ -158,16 +158,16 @@
         </overrides>
       </configurationParameter>
       <configurationParameter>
-        <name>cluster_max_size</name>
+        <name>minPoints</name>
         <description></description>
         <type>Integer</type>
         <multiValued>false</multiValued>
         <mandatory>false</mandatory>
         <overrides>
-          <parameter>PointCloudClusterExtractor/cluster_max_size</parameter>
+          <parameter>PointCloudColorSegmentation/minPoints</parameter>
         </overrides>
       </configurationParameter>
-			<configurationParameter>
+      <configurationParameter>
         <name>maxPoints</name>
         <description></description>
         <type>Integer</type>
@@ -175,6 +175,26 @@
         <mandatory>false</mandatory>
         <overrides>
           <parameter>PointCloudColorSegmentation/maxPoints</parameter>
+        </overrides>
+      </configurationParameter>
+      <configurationParameter>
+        <name>hueThreshold</name>
+        <description></description>
+        <type>Integer</type>
+        <multiValued>false</multiValued>
+        <mandatory>false</mandatory>
+        <overrides>
+          <parameter>PointCloudColorSegmentation/hueThreshold</parameter>
+        </overrides>
+      </configurationParameter>
+      <configurationParameter>
+        <name>distThreshold</name>
+        <description></description>
+        <type>Float</type>
+        <multiValued>false</multiValued>
+        <mandatory>false</mandatory>
+        <overrides>
+          <parameter>PointCloudColorSegmentation/distThreshold</parameter>
         </overrides>
       </configurationParameter>
     </configurationParameters>
@@ -188,9 +208,27 @@
         </value>
       </nameValuePair>
       <nameValuePair>
-        <name>cluster_max_size</name>
+        <name>minPoints</name>
         <value>
-            <integer>50000</integer>
+            <integer>1000</integer>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>maxPoints</name>
+        <value>
+            <integer>30000</integer>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>hueThreshold</name>
+        <value>
+            <integer>23</integer>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>distThreshold</name>
+        <value>
+            <float>0.1</float>
         </value>
       </nameValuePair>
     </configurationParameterSettings>
@@ -202,9 +240,9 @@
 			<node>PointCloudFilter</node>
 			<node>NormalEstimator</node>
 			<node>PlaneAnnotator</node>
-			<node>PointCloudClusterExtractor</node>
-			<node>ColorClusterer</node>
-      		<node>SpatulAnnotator</node>
+			<node>PointCloudColorSegmentation</node>
+			<node>PrimitiveShapeAnnotator</node>
+			<node>PlateAnnotator</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>

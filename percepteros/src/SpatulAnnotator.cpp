@@ -17,11 +17,15 @@
 #include <pcl/common/geometry.h>
 #include <iostream>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/common/pca.h>
 
 #include <cmath>
 
 //surface matching
 #include <pcl/console/print.h>
+
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
 
 using namespace uima;
 
@@ -39,6 +43,7 @@ private:
 	PCN::Ptr cloud_n = PCN::Ptr(new PCN);
 	PC::Ptr cloud = PC::Ptr(new PC);
 	PC::Ptr spatula = PC::Ptr(new PC);
+	PC::Ptr spatula_projected = PC::Ptr(new PC);
 	float VAL_UPPER_BOUND, VAL_LOWER_BOUND;
 
 public:
@@ -123,10 +128,19 @@ public:
 			if (!foundRack) {
 				y = getY(spatula);
 			}
-
 			tf::Transform transform;
-			transform.setOrigin(getOrigin(spatula));
+			/*
+			pcl::PCA<PointN> ax;
+			ax.setInputCloud(spatula);
+			ax.project(*spatula, *spatula_projected);
 
+			Eigen::Quaterniond quaternion(ax.getEigenVectors().cast<double>());
+			tf::Quaternion quat;
+			tf::quaternionEigenToTF(quaternion, quat);
+			transform.setRotation(quat);
+			*/
+			transform.setOrigin(getOrigin(spatula));
+			
 			z = x.cross(y);
 			y = z.cross(x);
 
@@ -137,12 +151,13 @@ public:
 				outInfo("Found wrong orientation. Abort.");
 				break;
 			}
-
+			
 			tf::Matrix3x3 rot;
 			rot.setValue(	x[0], x[1], x[2],
 							y[0], y[1], y[2],
 							z[0], z[1], z[2]);
 			transform.setBasis(rot);
+			
 			recA.name.set("Spatula");
 			recA.type.set(7);
 			recA.width.set(0.28f);
