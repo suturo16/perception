@@ -1,29 +1,77 @@
-
 concept: ~EXCEPTION [UNKNOWNQUESTION UNKNOWNPARAMETER REQUESTFAILED REQUESTFINALFAILED REQUESTDONE PROCESSINGREQUESTSHORT
                     PROCESSINGREQUESTLONG]             
 topic: ~bakery_service keep repeat (~bakery cake ~eat ~yesanswer ~eatery  ~noanswer ~beverage ~drink ~help ~want 
                                      ~food ~act  ~EXCEPTION ~qwords ~occupation menu)
 
+
+
+#! responders for MISUNDERSTANDING
+u: ( ~MISUNDERSTANDING)
+   $MISUNDERSTANDING
+
+
+
 #! requesters as HELP
+
 
 t: HELP ()
   
    [what can I do for you]
-   [can I help you]
+   [is there something I may do for you]
+   [is there something I can do for you]
    [how can I help you]
-   [do  you need something]
-   [may I do something for you]
+   [what do you want me to do for you]
+   [what do you need]
+   [just tell me what I may offer you].
                                                                                         
-   a: CAKEHELP ([ ~bakery cake ~eat ~yesanswer ~eatery menu])
-       [may I offer you cake]
+   a: CAKEHELP ([ ~yesanswer])
+       .[may I offer you cake]
        [can I offer you cake]
-       [we have cake. would you like to get a piece]
-       [we have cake. would you like to have a piece]
-       [we have cake. would you like to order a piece]
-       [can I offer you some pieces of cake]
-       b: (~yesanswer)
+       [we have cake. would you like to have some piece]
+       [we have cake. would you like to get some piece]
+       [we have cake. would you like to eat some piece]
+       [can I offer you some piece of cake]
+       b: NUMBERPIECE (~yesanswer)
+          [how many piece would you like]
+          [how many piece of cake do you exactly want]
+          [how many piece of cake do you exactly need]
+          [how many piece of cake exactly]
+          [how many piece of cake exactly should I get for you]
+          c: ONEPIECE ([a])
+              $REQUEST=CUTCAKE
+              $REQUEST 
+          c: MANYPIECE ([many])
+              sorry. 
+              we can just offer you one piece at a time for the moment.
+              should I order a piece for you.
+              d: (~yesanswer)
+                 $REQUEST=CUTCAKE
+                 $REQUEST 
+              d: (~noanswer)
+                 [sorry that we cannot help you]
+                 [sorry that we cannot provide this service]
+                 [sorry that I am not helpful]
+          c: NUMBERPIECE (_~number)
+             $nberpiece = _0
+     if($nberpiece=="one"){
          $REQUEST=CUTCAKE
          $REQUEST 
+     }else{
+            if($nberpiece=="One"){
+                $REQUEST=CUTCAKE
+                $REQUEST
+           }else{ 
+                   if($nberpiece==1){
+                $REQUEST=CUTCAKE
+                $REQUEST
+           }else{ 
+         
+                   so you need $nberpiece piece of cake.
+                    ^reuse(MANYPIECE)}
+
+} 
+     }
+                
        b: (~noanswer)
           do you want something else
           c: (~yesanswer)
@@ -31,26 +79,96 @@ t: HELP ()
           c: (~noanswer)
              so let talk
 
+a: (<<[~help ~want "would like" ~act cut give offer] !~number !what !a !many [~bakery cake]>>)
+        ^reuse(NUMBERPIECE)
 
-    a: ([ ~beverage ~drink] )
+a: (<<[~help ~want "would like" ~act cut give offer] !~number !what a !many [~bakery cake]>>)
+        ^reuse(ONEPIECE)
+
+a: (<<[~help ~want "would like" ~act cut give offer] many !what !~number !a [~bakery cake]>>)
+        ^reuse(MANYPIECE)
+
+a: (<<[~help ~want "would like" ~act cut give offer] _~number !a !many !what [~bakery cake]>>)
+    $nberpiece = _0
+     if($nberpiece=="one"){
+         $REQUEST=CUTCAKE
+         $REQUEST 
+     }else{
+            if($nberpiece=="One"){
+                $REQUEST=CUTCAKE
+                $REQUEST
+           }else{ 
+                   if($nberpiece==1){
+                $REQUEST=CUTCAKE
+                $REQUEST
+           }else{ 
+         
+                   so you need $nberpiece of cake.
+                    ^reuse(MANYPIECE)}
+
+           } 
+          }
+
+
+a: (<<[~help ~want "would like" ~act cut give offer] ~MISUNDERSTANDING !what !cake>>)    
+   ^reuse(HELP) 
+
+   a: ( ~noanswer)
+       so let talk 
+   
+
+   a: ([ ~beverage ~drink] )
        [sorry. we just have cake]
        ^reuse(CAKEHELP) 
 
-    a: ( ~noanswer)
-       so let talk 
-          
+   
+         
              
           
 
       
 #! responders as HELP
  
-u: ([~help ~want ~bakery cake ~eat ~eatery ~food ~beverage ~drink menu])    
+
+u: (<<[~help ~want "would like" ~act cut give offer] !~number !what !a !many [~bakery cake]>>)
+        ^reuse(NUMBERPIECE)
+
+u: (<<[~help ~want "would like" ~act cut give offer] !~number !what a !many [~bakery cake]>>)
+        ^reuse(ONEPIECE)
+
+u: (<<[~help ~want "would like" ~act cut give offer] many !what !~number !a [~bakery cake]>>)
+        ^reuse(MANYPIECE)
+
+u: (<<[~help ~want "would like" ~act cut give offer] _~number !a !many !what [~bakery cake]>>)
+    $nberpiece = _0
+     if($nberpiece=="one"){
+         $REQUEST=CUTCAKE
+         $REQUEST 
+     }else{
+            if($nberpiece=="One"){
+                $REQUEST=CUTCAKE
+                $REQUEST
+           }else{ 
+                   if($nberpiece==1){
+                $REQUEST=CUTCAKE
+                $REQUEST
+           }else{ 
+         
+                   so you need $nberpiece of cake.
+                    ^reuse(MANYPIECE)}
+
+} 
+     }
+
+
+
+u: (<<[~help ~want "would like" ~act cut give offer]  ~MISUNDERSTANDING !what !cake>>)    
    ^reuse(HELP)  
 
-u: (<<!how ~act>>)
-   [we are specialized in the baking]
-   [for the moment we just bake]
+u: (<<!how [~act may offer give cut] !cake what>>)
+   [we are specialized in the baking.We have a backery. If you need cake. just let me know. and I will order it for you. and when it will be ready. I will let you know. The turtle robot will bring it to you.]
+   [for the moment we just bake.We have a backery. If you need cake. just let me know. and I will order it for you. and when it will be ready. I will let you know. The turtle robot will bring it to you.]
+
 
 
 u: (_~EXCEPTION)
@@ -141,7 +259,7 @@ u: (_~EXCEPTION)
 
 t: TASTECAKE ()
    [you will like our delicious cake][our cake tastes really good].
-   a: (~yesanswer)
+   a: ([~yesanswer really])
       [I promise you]
       [really]
       [dont worry. it is delicious]
@@ -149,10 +267,15 @@ t: TASTECAKE ()
 
 t: FEEDBACK ()
    [just give me feedback after eating][just appreciate the cake after eating].
-
+   a: ([~yesanswer why])
+      [thank you. you are wellcome]
+      [nice to hear it from you]
+      [it will be helpful for improving our service]
+   a: (~noanswer)
+      dont worry. I mean if you eat the cake
 
 t: SERVICE ()
-   [how can we improve our services][is there any drink food or service you will wish from us ne] next time
+   [how can we improve our services][which service would you expect from us] next time
    a: (_[~beverage ~foods ~occupation ])
       $service = '_0
       dont worry. next time we provide you with $service
