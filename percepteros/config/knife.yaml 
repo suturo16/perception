@@ -2,13 +2,10 @@
 annotators:
     - CollectionReader
     - ImagePreprocessor
-    - SzeneRecorder
     - PointCloudFilter
     - NormalEstimator
     - PlaneAnnotator
     - PointCloudClusterExtractor
-    - TrayAnnotator
-    - CakeAnnotator
-    - CylinderAnnotator
+    - ColorClusterer
     - KnifeAnnotator
     - ROSPublisher

@@ -113,6 +113,8 @@ public:
             pipelineName="cake";
           } else if(object =="cylinder"){
             pipelineName = "cylinder";
+          } else if(object =="knife"){
+              pipelineName = "knife";
           } else {
               pipelineName= "config";
           }
@@ -125,8 +127,6 @@ public:
       engine.applyNextPipeline();
       return true;
   }
-
-
 
   bool resetAECallback(suturo_perception_msgs::RunPipeline::Request &req,
                        suturo_perception_msgs::RunPipeline::Response &res){
