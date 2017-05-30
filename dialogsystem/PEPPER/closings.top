@@ -6,6 +6,11 @@ topic: ~closings keep repeat (~emogoodbye  ~emohowzit ~BAD not ~GOOD ~emothanks 
                                )
 
 
+
+u: ( ~MISUNDERSTANDING)
+   $MISUNDERSTANDING
+
+
 #! requesters for farewell
 
 t: FAREWELL ()
@@ -38,7 +43,7 @@ u: (<<!how  [~emogoodbye later go away leave exit wish]>>)
    are you [leaving][going]
    a: (~yesanswer)
       ^reuse(ENDFAREWELL)
-   a: (~noanswer)
+   a: (~noanswer) 
       sorry
 
 u: ([ ~bad_quality_adjectives  ([<<not ~GOOD>> << !not ~BAD>>]) ~emosad ~emoangry])
@@ -62,3 +67,6 @@ u: (<< how [meeting service talk discussion debate conversation speech]>>)
       [I am sorry I dont get you]
       [can you be clear a little bit more please]
       [could you please repeat]
+
+#! responders for MISUNDERSTANDING
+
