@@ -17,12 +17,12 @@ $botprompt = ^"PEPPER: "
 
 #pepper robot data
 $peppername = Franklin
-$pepperorigin = Cameroon
-$pepperage    = 27
+$pepperorigin = Germany
+$pepperage    = 10
    
 
 #request status
-
+$MISUNDERSTANDING=MISUNDERSTANDING
 $UNKNOWN_QUESTION=UNKNOWNQUESTION
 $UNKNOWN_PARAMETER=UNKNOWNPARAMETER
 $REQUEST_FAILED=REQUESTFAILED
@@ -45,7 +45,7 @@ pepper
 
 concept: ~GOOD [good powerful fit  healthy  ~good_quality_adjectives nice super extraordinary ~emohappy excellent ok sufficient enough great]
 concept: ~BAD [bad powerless tired sick ~emosad weak poor insufficient small ~bad_quality_adjectives ]
-
+concept: ~MISUNDERSTANDING["I dont get you" "I didnt get" "I dont understand" "it is not clear" "can you repeat" "could you repeat" "not understood" "it is unclear" "one more time"]
 topic: ~control system ()
 
 # on startup, do introduction
