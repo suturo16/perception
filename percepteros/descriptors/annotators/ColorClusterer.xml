@@ -28,6 +28,12 @@
 				<mandatory>true</mandatory>
 			</configurationParameter>
 			<configurationParameter>
+				<name>diffVal</name>
+				<type>Integer</type>
+				<multiValued>false</multiValued>
+				<mandatory>true</mandatory>
+			</configurationParameter>
+			<configurationParameter>
 				<name>diffDist</name>
 				<type>Float</type>
 				<multiValued>false</multiValued>
@@ -66,9 +72,15 @@
 				</value>
 			</nameValuePair>
 			<nameValuePair>
+				<name>diffVal</name>
+				<value>
+					<integer>10</integer>
+				</value>
+			</nameValuePair>
+			<nameValuePair>
 				<name>diffDist</name>
 				<value>
-					<float>0.005</float>
+					<float>0.01</float>
 				</value>
 			</nameValuePair>
 			<nameValuePair>

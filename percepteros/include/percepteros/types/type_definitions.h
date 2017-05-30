@@ -4,6 +4,8 @@
 #ifndef __PERCEPTEROS_TYPE_DEFINITIONS_H__
 #define __PERCEPTEROS_TYPE_DEFINITIONS_H__
 
+#define PERCEPTEROS_RECOGNITIONTYPES_TOOLOBJECT "percepteros.recognitiontypes.ToolObject"
+#define PERCEPTEROS_RECOGNITIONTYPES_RACKOBJECT "percepteros.recognitiontypes.RackObject"
 #define PERCEPTEROS_RECOGNITIONTYPES_RECOGNITIONOBJECT "percepteros.recognitiontypes.RecognitionObject"
 #define PERCEPTEROS_RECORDDATA_RECORDDATA "percepteros.recorddata.RecordData"
 

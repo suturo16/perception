@@ -17,11 +17,15 @@
 #include <pcl/common/geometry.h>
 #include <iostream>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/common/pca.h>
 
 #include <cmath>
 
 //surface matching
 #include <pcl/console/print.h>
+
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
 
 using namespace uima;
 
@@ -32,21 +36,21 @@ typedef pcl::PointCloud<Normal> PCN;
 typedef pcl::PointNormal PointN;
 typedef pcl::PointCloud<PointN> PC;
 
-class KnifeAnnotator : public DrawingAnnotator
+class SpatulAnnotator : public DrawingAnnotator
 {
 private:
 	PCR::Ptr cloud_r = PCR::Ptr(new PCR);
 	PCN::Ptr cloud_n = PCN::Ptr(new PCN);
 	PC::Ptr cloud = PC::Ptr(new PC);
-	PC::Ptr blade = PC::Ptr(new PC);
-	PC::Ptr rack = PC::Ptr(new PC);
-	int HUE_UPPER_BOUND, HUE_LOWER_BOUND;
+	PC::Ptr spatula = PC::Ptr(new PC);
+	PC::Ptr spatula_projected = PC::Ptr(new PC);
+	float VAL_UPPER_BOUND, VAL_LOWER_BOUND;
 
 public:
 	tf::Vector3 x, y, z;
 	PointN highest, lowest;
 
-  KnifeAnnotator(): DrawingAnnotator(__func__){
+  SpatulAnnotator(): DrawingAnnotator(__func__){
   }
 
   TyErrorId initialize(AnnotatorContext &ctx)
@@ -54,8 +58,8 @@ public:
     outInfo("initialize");
 		
 	//extract color parameters
-	ctx.extractValue("minHue", HUE_LOWER_BOUND);
-	ctx.extractValue("maxHue", HUE_UPPER_BOUND);
+	ctx.extractValue("minVal", VAL_LOWER_BOUND);
+	ctx.extractValue("maxVal", VAL_UPPER_BOUND);
 
     return UIMA_ERR_NONE;
   }
@@ -84,7 +88,7 @@ public:
 
 	//helpers
 	rs::StopWatch clock;
-	bool foundKnife = false;
+	bool foundSpatula = false;
 	bool foundRack = false;
 
 	std::vector<percepteros::ToolObject> tools;
@@ -105,13 +109,13 @@ public:
 		}
 		if (tools.size() > 0) {
 			percepteros::ToolObject tool = tools[0];
-			if (tool.hue.get() > HUE_LOWER_BOUND && tool.hue.get() < HUE_UPPER_BOUND) {
-				outInfo("Found knife cluster!");
-				extractPoints(cloud, cluster, blade);
-				foundKnife = true;
+			if (tool.value.get() > VAL_LOWER_BOUND && tool.value.get() < VAL_UPPER_BOUND) {
+				outInfo("Found spatula cluster!");
+				extractPoints(cloud, cluster, spatula);
+				foundSpatula = true;
 			}
 		}
-		if ((foundKnife && foundRack) || (foundKnife && std::next(it) == clusters.end())) {
+		if ((foundSpatula && foundRack) || (foundSpatula && std::next(it) == clusters.end())) {
 			rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
 			percepteros::RecognitionObject recA = rs::create<percepteros::RecognitionObject>(tcas);
 			tf::StampedTransform camToWorld;
@@ -120,14 +124,23 @@ public:
 				rs::conversion::from(scene.viewPoint.get(), camToWorld);
 			}
 			
-			x = getX(blade);
+			x = getX(spatula);
 			if (!foundRack) {
-				y = getY(blade);
+				y = getY(spatula);
 			}
-
 			tf::Transform transform;
-			transform.setOrigin(getOrigin(blade));
+			/*
+			pcl::PCA<PointN> ax;
+			ax.setInputCloud(spatula);
+			ax.project(*spatula, *spatula_projected);
 
+			Eigen::Quaterniond quaternion(ax.getEigenVectors().cast<double>());
+			tf::Quaternion quat;
+			tf::quaternionEigenToTF(quaternion, quat);
+			transform.setRotation(quat);
+			*/
+			transform.setOrigin(getOrigin(spatula));
+			
 			z = x.cross(y);
 			y = z.cross(x);
 
@@ -138,14 +151,15 @@ public:
 				outInfo("Found wrong orientation. Abort.");
 				break;
 			}
-
+			
 			tf::Matrix3x3 rot;
 			rot.setValue(	x[0], x[1], x[2],
 							y[0], y[1], y[2],
 							z[0], z[1], z[2]);
 			transform.setBasis(rot);
-			recA.name.set("Knife");
-			recA.type.set(6);
+			
+			recA.name.set("Spatula");
+			recA.type.set(7);
 			recA.width.set(0.28f);
 			recA.height.set(0.056f);
 			recA.depth.set(0.03f);
@@ -153,7 +167,7 @@ public:
 			tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
 			tf::Stamped<tf::Pose> world(camToWorld * transform, camToWorld.stamp_, camToWorld.frame_id_);
 
-			poseA.source.set("KnifeAnnotator");
+			poseA.source.set("SpatulAnnotator");
 			poseA.camera.set(rs::conversion::to(tcas, camera));
 			poseA.world.set(rs::conversion::to(tcas, world));
 		
@@ -164,24 +178,24 @@ public:
 		}
 	} 	
 
-	if (!foundKnife) {
-		outInfo("No knife found.");
+	if (!foundSpatula) {
+		outInfo("No spatula found.");
 		return UIMA_ERR_NONE;
 	}
 		
     return UIMA_ERR_NONE;
 }
 
-	void setEndpoints(PC::Ptr blade) {
+	void setEndpoints(PC::Ptr spat) {
 		PointN begin, end;
 		std::vector<PointN> endpoints(2);
-		int size = blade->size();	
+		int size = spat->size();	
 		float currDistance = 0;
 		
 		for (int i = 0; i < size; i++) {
-			begin = blade->points[i];
+			begin = spat->points[i];
 			for (int j = i+1; j < size; j++) {
-				end = blade->points[j];
+				end = spat->points[j];
 				if (pcl::geometry::distance(begin, end) > currDistance) {
 					endpoints[0] = begin;
 					endpoints[1] = end;
@@ -200,14 +214,14 @@ public:
 
 }
 
-	tf::Vector3 getX(PC::Ptr blade) {
-		setEndpoints(blade);
+	tf::Vector3 getX(PC::Ptr spat) {
+		setEndpoints(spat);
 		x.setValue(lowest.x - highest.x, lowest.y - highest.y, lowest.z - highest.z);
 		return x;
 	}
 
-	tf::Vector3 getOrigin(PC::Ptr blade) {
-		setEndpoints(blade);
+	tf::Vector3 getOrigin(PC::Ptr spat) {
+		setEndpoints(spat);
 		tf::Vector3 origin;
 		origin.setValue(highest.x, highest.y, highest.z);
 		return origin;
@@ -280,4 +294,4 @@ public:
 };
 
 // This macro exports an entry point that is used to create the annotator.
-MAKE_AE(KnifeAnnotator)
+MAKE_AE(SpatulAnnotator)

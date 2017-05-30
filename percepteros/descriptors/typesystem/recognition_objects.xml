@@ -53,5 +53,46 @@
       </featureDescription>
     </features>
   </typeDescription>
+  
+    <typeDescription>
+    <name>percepteros.recognitiontypes.RackObject</name>
+    <description>Rack Object</description>
+    <supertypeName>rs.core.Annotation</supertypeName>
+    <features>
+      <featureDescription>
+        <name>name</name>
+        <description>The name of the rack</description>
+        <rangeTypeName>uima.cas.String</rangeTypeName>
+      </featureDescription>
+      <featureDescription>
+        <name>normal</name>
+        <description>The average normal vector</description>
+        <rangeTypeName>uima.cas.FloatList</rangeTypeName>
+      </featureDescription>
+     </features>
+  </typeDescription>
+  
+    <typeDescription>
+    <name>percepteros.recognitiontypes.ToolObject</name>
+    <description>Tool Object</description>
+    <supertypeName>rs.core.Annotation</supertypeName>
+    <features>
+      <featureDescription>
+        <name>name</name>
+        <description>The name of the tool</description>
+        <rangeTypeName>uima.cas.String</rangeTypeName>
+      </featureDescription>
+      <featureDescription>
+        <name>hue</name>
+        <description></description>
+        <rangeTypeName>uima.cas.Float</rangeTypeName>
+      </featureDescription>
+      <featureDescription>
+        <name>value</name>
+        <description></description>
+        <rangeTypeName>uima.cas.Float</rangeTypeName>
+      </featureDescription>
+    </features>
+  </typeDescription>
 </types>
 </typeSystemDescription>

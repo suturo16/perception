@@ -9,9 +9,33 @@
     <version>1.0</version>
     <vendor/>
     <configurationParameters>
+		<configurationParameter>
+			<name>minHue</name>
+			<type>Integer</type>
+			<multiValued>false</multiValued>
+			<mandatory>true</mandatory>
+		</configurationParameter>
+		<configurationParameter>
+			<name>maxHue</name>
+			<type>Integer</type>
+			<multiValued>false</multiValued>
+			<mandatory>true</mandatory>
+		</configurationParameter>
     </configurationParameters>
 
     <configurationParameterSettings>
+		<nameValuePair>
+			<name>minHue</name>
+			<value>
+				<integer>150</integer>
+			</value>
+		</nameValuePair>
+		<nameValuePair>
+			<name>maxHue</name>
+			<value>
+				<integer>360</integer>
+			</value>
+		</nameValuePair>
     </configurationParameterSettings>
     <typeSystemDescription>
       <imports>

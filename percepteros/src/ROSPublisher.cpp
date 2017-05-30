@@ -3,6 +3,10 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <string>
+#include <algorithm>
+#include <cctype> 
+
 // RS
 #include <rs/scene_cas.h>
 #include <rs/DrawingAnnotator.h>
@@ -86,7 +90,9 @@ private:
                 objectDetectionMsg.pose.pose.orientation.y=q.y();
                 objectDetectionMsg.pose.pose.orientation.z=q.z();
                 objectDetectionMsg.pose.pose.orientation.w=q.w();
-                objectDetectionMsg.name=recObj.name.get();
+				auto str = recObj.name.get();
+				str[0] = tolower(str[0]);
+                objectDetectionMsg.name=str;
                 objectDetectionMsg.type=recObj.type.get();
                 objectDetectionMsg.width=recObj.width.get();
                 objectDetectionMsg.height=recObj.height.get();

@@ -121,6 +121,9 @@
     <delegateAnalysisEngine key="SacModelAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/SacModelAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="SpatulAnnotator">
+      <import location="../annotators/SpatulAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="StorageWriter">
       <import location="../../../../robosherlock/descriptors/annotators/io/StorageWriter.xml"/>
     </delegateAnalysisEngine>
@@ -167,7 +170,7 @@
           <parameter>PointCloudClusterExtractor/cluster_max_size</parameter>
         </overrides>
       </configurationParameter>
-			<configurationParameter>
+      <configurationParameter>
         <name>maxPoints</name>
         <description></description>
         <type>Integer</type>
@@ -175,6 +178,26 @@
         <mandatory>false</mandatory>
         <overrides>
           <parameter>PointCloudColorSegmentation/maxPoints</parameter>
+        </overrides>
+      </configurationParameter>
+      <configurationParameter>
+        <name>hueThreshold</name>
+        <description></description>
+        <type>Integer</type>
+        <multiValued>false</multiValued>
+        <mandatory>false</mandatory>
+        <overrides>
+          <parameter>PointCloudColorSegmentation/hueThreshold</parameter>
+        </overrides>
+      </configurationParameter>
+      <configurationParameter>
+        <name>distThreshold</name>
+        <description></description>
+        <type>Float</type>
+        <multiValued>false</multiValued>
+        <mandatory>false</mandatory>
+        <overrides>
+          <parameter>PointCloudColorSegmentation/distThreshold</parameter>
         </overrides>
       </configurationParameter>
     </configurationParameters>
@@ -196,15 +219,14 @@
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
-        <node>Trigger</node>
         <node>CollectionReader</node>
         <node>ImagePreprocessor</node>
         <node>SzeneRecorder</node>
         <node>PointCloudFilter</node>
-        <node>PointCloudColorSegmentation</node>
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
+		<node>ColorClusterer</node>
         <node>CakeAnnotator</node>
         <node>CylinderAnnotator</node>
         <node>KnifeAnnotator</node>
