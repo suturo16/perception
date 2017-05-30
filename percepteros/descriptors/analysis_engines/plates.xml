@@ -197,6 +197,16 @@
           <parameter>PointCloudColorSegmentation/distThreshold</parameter>
         </overrides>
       </configurationParameter>
+      <configurationParameter>
+        <name>discretize</name>
+        <description></description>
+        <type>Boolean</type>
+        <multiValued>false</multiValued>
+        <mandatory>true</mandatory>
+        <overrides>
+          <parameter>PointCloudColorSegmentation/discretize</parameter>
+        </overrides>
+      </configurationParameter>
     </configurationParameters>
     <configurationParameterSettings>
       <nameValuePair>
@@ -228,7 +238,13 @@
       <nameValuePair>
         <name>distThreshold</name>
         <value>
-            <integer>0.001</integer>
+            <float>0.1</float>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>discretize</name>
+        <value>
+            <boolean>true</boolean>
         </value>
       </nameValuePair>
     </configurationParameterSettings>

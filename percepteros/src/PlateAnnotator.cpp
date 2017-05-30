@@ -46,6 +46,8 @@ private:
 	std::vector<pcl::ModelCoefficients> plates;
 	std::vector<std::vector<tf::Vector3>> poses;
 
+	int HUE_UPPER_BOUND, HUE_LOWER_BOUND;
+
 public:
 	const float MAX_DIST_CENTS = 0.1;
 	const float MAX_RATIO_RADII = 0.8;
@@ -57,9 +59,9 @@ public:
   {
     outInfo("initialize");
 		
-		//extract color parameters
-		//ctx.extractValue("minHue", HUE_LOWER_BOUND);
-		//ctx.extractValue("maxHue", HUE_UPPER_BOUND);
+	//extract color parameters
+	ctx.extractValue("minHue", HUE_LOWER_BOUND);
+	ctx.extractValue("maxHue", HUE_UPPER_BOUND);
 
     return UIMA_ERR_NONE;
   }
@@ -196,7 +198,7 @@ public:
 	}
 
 	bool isPlate(pcl::ModelCoefficients::Ptr co1, pcl::ModelCoefficients::Ptr co2, int avHue) {
-		return avHue > 200 && avHue < 350 && (sqrt(pow(co1->values[0] - co2->values[0], 2) + pow(co1->values[1] - co2->values[1], 2) + pow(co1->values[2] - co2->values[2], 2)) < MAX_DIST_CENTS);
+		return avHue > HUE_LOWER_BOUND && avHue < HUE_UPPER_BOUND && (sqrt(pow(co1->values[0] - co2->values[0], 2) + pow(co1->values[1] - co2->values[1], 2) + pow(co1->values[2] - co2->values[2], 2)) < MAX_DIST_CENTS);
 	}
 
 	void extractCluster(PC::Ptr clust, PC::Ptr cloud, rs::Cluster cluster) {
