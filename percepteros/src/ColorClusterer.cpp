@@ -35,14 +35,21 @@ typedef pcl::Normal PointN;
 typedef pcl::PointCloud<PointN> PCN;
 typedef pcl::PointXYZHSV PointH;
 typedef pcl::PointCloud<PointH> PCH;
-
+/*
+typedef pcl::PointNormal PointXN;
+typedef pcl::PointCloud<PointXN> PCXN;
+typedef pcl::PointXYZ PointX;
+typedef pcl::PointCloud<PointX> PCX;
+*/
 class ColorClusterer : public DrawingAnnotator
 {
 private:
 	PCR::Ptr temp = PCR::Ptr(new PCR);
 	PCH::Ptr cloud = PCH::Ptr(new PCH);
 	PCN::Ptr normals = PCN::Ptr(new PCN);
-
+/*	PCXN::Ptr cloud_n = PCXN::Ptr(new PCXN);
+	PCX::Ptr cloud_x = PCX::Ptr(new PCX);
+*/
 	std::vector<pcl::PointIndices> hue_indices;
 	std::vector<pcl::PointIndices> value_indices;
 
@@ -90,8 +97,10 @@ public:
 		cas.get(VIEW_CLOUD, *temp);
 		cas.get(VIEW_NORMALS, *normals);
 		pcl::PointCloudXYZRGBAtoXYZHSV(*temp, *cloud);
-
-		//helpers
+/*		
+		pcl::copyPointCloud(*temp, *cloud_x);
+		pcl::concatenateFields(*cloud_x, *normals, *cloud_n);
+*/		//helpers
 		rs::StopWatch clock;
 		bool found = false;
 		
@@ -110,7 +119,7 @@ public:
 			found = checkCluster(clust, cloud, input_labels);
 			if (found) {
 				outInfo("Found rack!"); found = true;
-				annotateCluster(clust, cloud, tcas);				
+				annotateCluster(clust, normals, tcas);				
 				pcl::PointCloud<pcl::Label>::Ptr output_labels(new pcl::PointCloud<pcl::Label>);
 
 				pcl::HueClusterComparator<PointH, pcl::Normal, pcl::Label>::Ptr hcc(new pcl::HueClusterComparator<PointH, pcl::Normal, pcl::Label>());
@@ -308,42 +317,57 @@ public:
 		}
 	}
 
-	void annotateCluster(rs::Cluster clust, PCH::Ptr cloud_ptr, CAS &tcas) {
+	void annotateCluster(rs::Cluster clust, PCN::Ptr normals, CAS &tcas) {
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
 		rs::ReferenceClusterPoints clusterpoints(clust.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 		
-		PCH::Ptr rack = PCH::Ptr(new PCH);
+		PCN::Ptr rack = PCN::Ptr(new PCN);
 		pcl::ModelCoefficients::Ptr coeffs(new pcl::ModelCoefficients);
 		pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 
-		pcl::ExtractIndices<PointH> ex;
-		ex.setKeepOrganized(true);
-		ex.setInputCloud(cloud_ptr);
+		pcl::ExtractIndices<PointN> ex;
+		ex.setKeepOrganized(false);
+		ex.setInputCloud(normals);
 		ex.setIndices(cluster_indices);
 		ex.filter(*rack);
-
+		
+		std::vector<int> indices;
+		removeNaNNormalsFromPointCloud(*rack, *rack, indices);
+/*
         //prepare segmenter
-		pcl::SACSegmentation<PointH> seg;
+		pcl::SACSegmentationFromNormals<PointXN, PointXN> seg;
 		seg.setOptimizeCoefficients(true);
 		seg.setMethodType(pcl::SAC_RANSAC);
-		seg.setMaxIterations(1000);
-		seg.setModelType(pcl::SACMODEL_PLANE);
-		seg.setDistanceThreshold(0.1);
+		seg.setMaxIterations(500);
+		seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
+		seg.setDistanceThreshold(10);
+		seg.setProbability(0.1);
 		seg.setInputCloud(rack);
+		seg.setInputNormals(rack);
 
-		seg.segment(*inliers, *coeffs);
-		outInfo("came here");	
+		seg.segment(*inliers, *coeffs);*/
+		std::vector<float> normal = getAverageNormal(rack);
 		//add rack annotation
 		percepteros::RackObject rA = rs::create<percepteros::RackObject>(tcas);
 		rA.name.set("Rack");
-		std::vector<float> normal; normal.push_back(coeffs->values[0]); normal.push_back(coeffs->values[1]); normal.push_back(coeffs->values[2]);
+		//std::vector<float> normal; normal.push_back(coeffs->values[0]); normal.push_back(coeffs->values[1]); normal.push_back(coeffs->values[2]);
 		rA.normal.set(normal);
 		clust.annotations.append(rA);
-		outInfo("came here");
 	}
 
+	std::vector<float> getAverageNormal(PCN::Ptr rack) {
+		std::vector<float> avn(3);
+		int size = rack->points.size();
 
+		for (int i = 0; i < size; i++) {
+			avn[0] = rack->points[i].normal_x / size;
+			avn[1] = rack->points[i].normal_y / size;
+			avn[2] = rack->points[i].normal_z / size;
+		}
+		
+		return avn;
+	}
 };
 
 // This macro exports an entry point that is used to create the annotator.

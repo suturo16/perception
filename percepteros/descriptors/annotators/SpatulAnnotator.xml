@@ -26,13 +26,13 @@
 		<nameValuePair>
 			<name>minVal</name>
 			<value>
-				<float>0.2</float>
+				<float>0.1</float>
 			</value>
 		</nameValuePair>
 		<nameValuePair>
 			<name>maxVal</name>
 			<value>
-				<float>0.3</float>
+				<float>0.5</float>
 			</value>
 		</nameValuePair>
     </configurationParameterSettings>
