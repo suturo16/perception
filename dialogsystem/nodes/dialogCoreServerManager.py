@@ -38,7 +38,7 @@ class DialogCoreClientManager(object):
         rospy.Subscriber('dialogManager/coreDialogBus', String, self.process)
         #chartscript server
         rospy.loginfo("starting core server Manager ...")
-        self.SERVERPROCESS=subprocess.Popen(self.CORESERVERPATH,cwd=self.CORESERVERCWD,shell=True)    
+        self.SERVERPROCESS=subprocess.Popen([self.CORESERVERPATH],cwd=self.CORESERVERCWD)    
         #connection to chatscript server cd BINARIES && ./LinuxChatScript64
         #initalize the dialogue
         #rospy.sleep(10)
@@ -72,7 +72,7 @@ class DialogCoreClientManager(object):
 		  SELF_CLIENT_SOCKET.sendall((self.USERNAME+chr(0)+self.BOT+chr(0)+self.DATA_IN +chr(0))) 
 
 		  #system's reaction
-	 	  self.DATA_OUT = SELF_CLIENT_SOCKET.recv(80)
+	 	  self.DATA_OUT = SELF_CLIENT_SOCKET.recv(1024)
 		  
 		  #publish reaction
                   self.pub.publish(String(self.DATA_OUT))
