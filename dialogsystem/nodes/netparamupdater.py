@@ -51,7 +51,7 @@ class Updater:
                self.RPCSERVERIP=ip
                rospy.set_param("RPCSERVERIP", self.RPCSERVERIP)
                rospy.set_param("RPCSERVERPORT", self.RPCSERVERPORT) 
-	       self.pr2 = xmlrpclib.ServerProxy('http://'+str(rospy.get_param('PR2IP','127.0.0.1'))+':'+str(rospy.get_param('PR2PORT','8000')))
+	       self.pr2 = xmlrpclib.ServerProxy('http://'+str(rospy.get_param('PR2IP','127.0.0.1'))+':'+str(rospy.get_param('PR2PORT','8000'))+"/RPC2")
                clientID=0 #about pepper-robot's parameters
 	       self.pr2.updateObserverClient(self.clientID,self.RPCSERVERIP, self.RPCSERVERPORT)
 	 except:
