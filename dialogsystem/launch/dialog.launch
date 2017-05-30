@@ -4,23 +4,39 @@
  <param name="receiving" value="0"/>
 
  <param name="CONFIG" value="$(find dialogsystem)/launch/pepper.corpus"/>
-
+ <param name="FOLDER" value="$(find dialogsystem)/launch"/>
  <param name="PEPPERPORT" value="9559"/>
  <param name="PEPPERIP" value="192.168.101.69"/>
 
  <param name="RPCSERVERPORT" value="8000"/>
- <param name="RPCSERVERIP" value="localhost"/>
+ <param name="RPCSERVERIP" value="192.168.101.253"/>
 
- <param name="PR2PORT" value="8005"/>
- <param name="PR2IP" value="192.168.102.60"/>
+ <param name="PR2PORT" value="39340"/>
+ <param name="PR2IP" value="192.168.101.97"/>
 
  <param name="CORESERVERPORT" value="1024"/>
- <param name="CORESERVERIP" value="localhost"/>
+ <param name="CORESERVERIP" value="192.168.101.253"/>
  <param name="CORESERVERPATH" value="./BINARIES/LinuxChatScript64"/>
- <param name="CORESERVERCWD" value="$(find dialogsystem)/ChatScript" />
+ <param name="CORESERVERCWD" value="$(find dialogsystem)/ChatScript"/>
  <param name="INTERFACE" value="eth0"/>
-    
 
+ <param name="INDEX" value="1"/>
+ <param name="NBTHREADS" value="4"/>
+ <param name="BEAMSIZE" value="3"/>
+ <param name="HOST" value="192.168.101.253" />
+ <param name="PORT" value="7000"/>
+ <param name="RPCPORT" value="8000"/>
+ <param name="DATAPATH" value="data"/>
+ <param name="ASRPATH" value="./CMU/sphinx-source/pocketsphinx/src/programs/pocketsphinx_continuous"/>
+ <param name="ASRCWD" value="$(find dialogsystem)"/>
+ <param name="TRESHOLD" value="-10000"/>
+
+ <param name="RHOST" value="192.168.101.69"/>
+ <param name="RUSERNAME" value="nao"/>
+ <param name="RPASSWORD" value="iai" />
+ <param name="RPORT" value="22"/>
+ 
+ <param name="ORDER" value="0"/>
 
 
  <node name="netparamupdater" pkg="dialogsystem" type="netparamupdater.py" output="screen">
@@ -40,6 +56,13 @@
   </node>
 
  <node name="speechRecognizer" pkg="dialogsystem" type="speechRecognizer.py" output="screen">
+ </node>
+
+
+ <node name="sphinx_asr" pkg="dialogsystem" type="sphinx_asr.py" output="screen">
+ </node>
+
+ <node name="gstreamer_sphinx" pkg="dialogsystem" type="gstreamer_sphinx.py" output="screen">
  </node>
 
 </launch>
