@@ -9,6 +9,8 @@ catkin_package(
 )
 
 catkin_install_python(PROGRAMS ./nodes/rpc_server.py
+                               ./nodes/sphinx_asr.py
+                               ./nodes/gstreamer_sphinx.py
                                ./nodes/speechRecognizer.py
                                ./nodes/nao_speech.py 
                                ./nodes/dialogManager.py
