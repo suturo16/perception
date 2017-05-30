@@ -127,6 +127,9 @@
     <delegateAnalysisEngine key="SuperVoxelAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/SupervoxelAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="SzeneRecorder">
+      <import location="../annotators/SzeneRecorder.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="TFBroadcaster">
       <import location="../../../../robosherlock/descriptors/annotators/io/TFBroadcaster.xml"/>
     </delegateAnalysisEngine>
@@ -180,7 +183,7 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_mongodb_playback.ini</string>
+            <string>config_kinect_robot.ini</string>
           </array>
         </value>
       </nameValuePair>
@@ -193,13 +196,20 @@
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
-			<node>Trigger</node>
-      <node>CollectionReader</node>
-      <node>ImagePreprocessor</node>
-			<node>PointCloudFilter</node>
-			<node>NormalEstimator</node>
-			<node>PlaneAnnotator</node>
-			<node>PointCloudColorSegmentation</node>
+        <node>Trigger</node>
+        <node>CollectionReader</node>
+        <node>ImagePreprocessor</node>
+        <node>SzeneRecorder</node>
+        <node>PointCloudFilter</node>
+        <node>PointCloudColorSegmentation</node>
+        <node>NormalEstimator</node>
+        <node>PlaneAnnotator</node>
+        <node>PointCloudClusterExtractor</node>
+        <node>CakeAnnotator</node>
+        <node>CylinderAnnotator</node>
+        <node>KnifeAnnotator</node>
+        <node>TrayAnnotator</node>
+        <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>

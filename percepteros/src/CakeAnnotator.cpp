@@ -68,8 +68,8 @@ private:
   constexpr static double BOX_NORMAL_WEIGHT = 0.04;
   constexpr static double BOX_DISTANCE_THRESHOLD_NORMALPLANE = 0.015;
   constexpr static double BOX_DISTANCE_THRESHOLD_PLANE1 = 0.004;
-  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE2 = 0.01;
-  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE3 = 0.01;
+  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE2 = 0.005;
+  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE3 = 0.005;
   constexpr static double BOX_EPSILON_PLANE1 = 0.1;
   constexpr static double BOX_MAX_SIZE_RATIO_PLANE1 = 0.75;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE1 = 0.2;
@@ -78,7 +78,7 @@ private:
   //constexpr static double PLANE2_TO_BOX_MIN_RATIO = 0.20;
   constexpr static double BOX_MIN_MATCHED_POINTS_RATIO = 0.4;
   constexpr static int MAX_SEGMENTATION_ITERATIONS = 2000;
-  constexpr static double EPSILON_ANGLE = 0.1;
+  constexpr static double EPSILON_ANGLE = 0.3;
   constexpr static int MIN_CLOUD_SIZE = 50;
 
 
@@ -390,7 +390,7 @@ public:
           }
 
           plane_size = segmentPlane(cloud_object, pcl::SACMODEL_PARALLEL_PLANE,
-                                    BOX_DISTANCE_THRESHOLD_PLANE3, coefficients_plane3, inliers3, cloud_rem3, norm_plane2, EPSILON_ANGLE);
+                                    BOX_DISTANCE_THRESHOLD_PLANE3, coefficients_plane3, inliers3, cloud_rem3, sceneUp, EPSILON_ANGLE);
           bo.plane3InCluster = *inliers3;
           matched_points += plane_size;
 
@@ -402,7 +402,7 @@ public:
             return 0;
           }
 
-          double angle = acos(norm_plane2.dot(norm_plane3));
+          double angle = acos(sceneUp.dot(norm_plane3));
 
           if (angle > M_PI_2 + EPSILON_ANGLE || angle < M_PI_2 - EPSILON_ANGLE)
           {
@@ -442,6 +442,17 @@ public:
           min_v2 = fminf(min_v2, value_v2);
           min_v3 = fminf(min_v3, value_v3);
         }
+        float height, width, depth;
+        height = max_v3 - min_v3;
+        width = max_v1 - min_v1;
+        depth = max_v2 - min_v2;
+        if( height < 0.04 || width < 0.04 || depth < 0.04){
+
+            return 0;
+        }
+        if(height > 0.5 || width > 0.5 || depth > 0.5){
+            return 0;
+        }
 
         /*min_v1 = -coefficients_plane1->values[3];
         min_v2 += 0.005;
@@ -449,7 +460,7 @@ public:
         */
 
         Eigen::Matrix3f mat;
-        mat << v2, -v1, v3;
+        mat << bo.xVector, bo.yVector, bo.zVector;
         Eigen::Quaternionf qua(mat);
         qua.normalize();
 
@@ -477,7 +488,7 @@ public:
         transform.setOrigin(trans);
         transform.setBasis(rot);
 
-        o.name.set("Box");
+        o.name.set("box");
         o.type.set(1);
         o.width.set(max_v1 - min_v1);
         o.height.set(max_v3 - min_v3);
