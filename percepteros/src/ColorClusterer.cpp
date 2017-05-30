@@ -361,9 +361,9 @@ public:
 		int size = rack->points.size();
 
 		for (int i = 0; i < size; i++) {
-			avn[0] = rack->points[i].normal_x / size;
-			avn[1] = rack->points[i].normal_y / size;
-			avn[2] = rack->points[i].normal_z / size;
+			avn[0] -= rack->points[i].normal_x / size;
+			avn[1] -= rack->points[i].normal_y / size;
+			avn[2] -= rack->points[i].normal_z / size;
 		}
 		
 		return avn;
