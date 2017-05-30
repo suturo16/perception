@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import nao_speech
 import time
 import rospy
 import sys
@@ -22,7 +23,7 @@ class Util:
 
 
 class Constants:
-    EVENT = ["WordRecognized","ALBasicAwareness/HumanTracked","ALBasicAwareness/HumanLost"]
+    EVENT = ["ALBasicAwareness/HumanTracked","ALBasicAwareness/HumanLost"]
     
 
 
@@ -42,8 +43,7 @@ class SpeechRecognitionWrapper(ALModule):
         #parameter reading
         self.PEPPERIP = rospy.get_param("PEPPERIP", "192.168.101.69")
         self.PEPPERPORT = int(rospy.get_param("PEPPERPORT", 9559))
-        self.config=rospy.get_param("CONFIG", "")
-        
+        #self.config=rospy.get_param("CONFIG", "")        
         # Get a (unique) name for naoqi module which is based on the node name
         # and is a valid Python identifier (will be useful later)
         self.naoqi_name = Util.to_naoqi_name( rospy.get_name() )
@@ -63,17 +63,22 @@ class SpeechRecognitionWrapper(ALModule):
       
         # Start naoqi proxies
         self.memory = ALProxy("ALMemory",self.PEPPERIP,self.PEPPERPORT)
-        self.proxy = ALProxy("ALSpeechRecognition",self.PEPPERIP,self.PEPPERPORT)
+        #self.mic_spk = ALProxy("ALAudioDevice",self.PEPPERIP,self.PEPPERPORT)
+        #self.proxy = ALProxy("ALSpeechRecognition",self.PEPPERIP,self.PEPPERPORT)
+        self.al =ALProxy("ALAutonomousLife",self.PEPPERIP,self.PEPPERPORT)
+        self.al.switchFocus('emptybehavior/behavior_1')
         self.basic_awareness = ALProxy("ALBasicAwareness", self.PEPPERIP,self.PEPPERPORT)
         self.motion = ALProxy("ALMotion", self.PEPPERIP,self.PEPPERPORT)
         
         #lock speech recognizer
         self.is_speech_reco_started = False
-
+        #self.mic_spk.closeAudioInputs()
         #on stop for publisher
         rospy.on_shutdown(self.cleanup)
         #Keep publisher to send word recognized
-        self.pub = rospy.Publisher("~word_recognized", WordRecognized,queue_size=1000 )
+        self.pub = rospy.Publisher("~word_recognized", String,queue_size=1000 )
+        # Subscribe to the recognition topic
+        rospy.Subscriber('/rpc_server/recognition', String, self.on_word_recognized);
 
 
         #Install global variables needed by Naoqi
@@ -81,12 +86,12 @@ class SpeechRecognitionWrapper(ALModule):
 
 
         #loading the vocabulary
-        rospy.loginfo( 'FILE CONFIG:'+self.config)
-        rospy.loginfo('Loading vocabulary...')
-        with open(self.config) as f:
-             self.vocabulary= f.readlines()
-        for i in range(len(self.vocabulary)):
-            self.vocabulary[i]=self.vocabulary[i][:-1]
+        #rospy.loginfo( 'FILE CONFIG:'+self.config)
+        #rospy.loginfo('Loading vocabulary...')
+        #with open(self.config) as f:
+        #     self.vocabulary= f.readlines()
+        #for i in range(len(self.vocabulary)):
+        #    self.vocabulary[i]=self.vocabulary[i][:-1]
         
         #kill running modules  
         for i in range(len(Constants.EVENT)):
@@ -99,20 +104,13 @@ class SpeechRecognitionWrapper(ALModule):
 
 
         #subscribe to different events
-
-        
         self.memory.subscribeToEvent(
             Constants.EVENT[0],
-            self.naoqi_name,
-            self.on_word_recognised.func_name)
-
-        self.memory.subscribeToEvent(
-            Constants.EVENT[1],
             self.naoqi_name,
             self.on_human_detected.func_name)
 
         self.memory.subscribeToEvent(
-             Constants.EVENT[2],
+             Constants.EVENT[1],
              self.naoqi_name,
              self.on_human_lost.func_name)
 
@@ -124,27 +122,12 @@ class SpeechRecognitionWrapper(ALModule):
     def startSpeechRecognition(self):
 	    """ activate the speech recognition when people disappear"""
 	    if not self.is_speech_reco_started:
-		    try:#configure language
-		        self.proxy.pause(1)
-                        self.proxy.setParameter('Sensitivity',1)
-                        self.proxy.setParameter('NbHypotheses',1)
-                        rospy.loginfo('Parameters are set')
-		        self.proxy.setLanguage('English')
-			self.proxy.setVocabulary(self.vocabulary, False)
-		    except RuntimeError:
-			print "Speech recognition already started"
-		    self.proxy.setVisualExpression(True)
-		    self.proxy.pause(0)
-		    #subscribe to speech recognition
-		    self.proxy.subscribe(self.naoqi_name)
 		    self.is_speech_reco_started = True
 		   
 
     def stopSpeechRecognition(self):
 	    """ stop speech recognition if human speaker disapper """
 	    if self.is_speech_reco_started:
-		#unsuscribe from speech recognition
-		self.proxy.unsubscribe(self.naoqi_name)
 		self.is_speech_reco_started = False
 	    
 
@@ -160,25 +143,20 @@ class SpeechRecognitionWrapper(ALModule):
 	    rospy.loginfo('Human likely detected: '+str(value))
 	    if value >= 0:  # found a new person
 	       #alert the dialog Manager to synchronize for communication
-	       self.pub.publish([self.TALKSTART],[0.5])
+	       self.pub.publish(String(self.TALKSTART))
 	       self.startSpeechRecognition()
 	       rospy.loginfo('new Human likely detected')
 
 	       
-    def on_word_recognised(self, key, value, subscriber_id ):
-		"""Publish the words recognized by NAO via ROS """
-		rospy.loginfo('speech detected')
-		rospy.loginfo('BUSY:='+str(rospy.get_param('busy','1')))
-		if(rospy.get_param('busy','1')==0):
-			#rospy.set_param('busy',1)
-			#Create  dictionary, by grouping into tuples the list in value
-			temp_dict = dict( value[i:i+2] for i in range(0, len(value), 2) )
-
-			#Delete empty string from  dictionary
-			#temp_dict={4:5}
-			rospy.loginfo("Detection:"+str(temp_dict))
-			self.pub.publish(WordRecognized( temp_dict.keys(), temp_dict.values() ))
-	       
+    def on_word_recognized(self,msg ):
+	"""Publish the words recognized by NAO via ROS """
+	rospy.loginfo('******speech detected********')
+        if self.is_speech_reco_started:
+             if(rospy.get_param('busy','1')==0):
+                #self.mic_spk.closeAudioInputs()
+  	        self.pub.publish(msg)
+                rospy.loginfo('ACCEPTED:***********************************'+msg.data)
+	        rospy.set_param('busy',1)
 
     # Install global variables needed for Naoqi callbacks to work
     def install_naoqi_globals(self):
@@ -205,10 +183,11 @@ class SpeechRecognitionWrapper(ALModule):
         try:
             self.memory.unsubscribeToEvent( Constants.EVENT[0], module )
             self.memory.unsubscribeToEvent( Constants.EVENT[1], module )
-            self.memory.unsubscribeToEvent( Constants.EVENT[2], module )
-            self.proxy.unsubscribe(module)
+            #self.memory.unsubscribeToEvent( Constants.EVENT[2], module )
+            #self.proxy.unsubscribe(module)
             self.basic_awareness.stopAwareness()
             #self.motion.rest()
+            self.al.stopFocus('emptybehavior/behavior_1')
             self.broker.shutdown()
         except RuntimeError:
             rospy.logwarn("Could not unsubscribe from NAO services")
