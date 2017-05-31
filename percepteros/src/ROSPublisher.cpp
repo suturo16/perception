@@ -87,7 +87,7 @@ private:
         if(objects.size()!=0 && objects.size() == poses.size()){
             for(int i = 0; i < objects.size(); i++){
             	percepteros::RecognitionObject recObj  = objects[i];
-                rs::StampedPose pose = poses[i].camera.get();
+                rs::StampedPose pose = poses[i].world.get();
             	std::vector<double> translation = pose.translation.get();
             	std::vector<double> rotation = pose.rotation.get();
             	Eigen::Matrix3d mat;
@@ -95,15 +95,15 @@ private:
             			rotation[3], rotation[4], rotation[5],
                         rotation[6], rotation[7], rotation[8];
                 Eigen::Vector3d trans(translation[0],translation[1],translation[2]);
-                trans = kinectToOdomEigen * trans;
-                mat = kinectToOdomEigen*mat;
+                //trans = kinectToOdomEigen * trans;
+                //mat = kinectToOdomEigen*mat;
                 Eigen::Quaterniond q(mat);
             	
                 outInfo(recObj.name.get());
 
                 suturo_perception_msgs::ObjectDetection objectDetectionMsg;
                 
-                objectDetectionMsg.pose.header.frame_id = "head_mount_kinect_rgb_optical_frame";
+                objectDetectionMsg.pose.header.frame_id = "map";
 
                 objectDetectionMsg.pose.pose.position.x=trans[0];
                 objectDetectionMsg.pose.pose.position.y=trans[1];
