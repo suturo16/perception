@@ -144,7 +144,7 @@ public:
 							y[0], y[1], y[2],
 							z[0], z[1], z[2]);
 			transform.setBasis(rot);
-			recA.name.set("Knife");
+			recA.name.set("knife");
 			recA.type.set(6);
 			recA.width.set(0.28f);
 			recA.height.set(0.056f);
