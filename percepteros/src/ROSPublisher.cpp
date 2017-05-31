@@ -1,6 +1,7 @@
 // UIMA
 #include <uima/api.hpp>
 
+
 // RS
 #include <rs/scene_cas.h>
 #include <rs/DrawingAnnotator.h>
@@ -87,7 +88,7 @@ private:
         if(objects.size()!=0 && objects.size() == poses.size()){
             for(int i = 0; i < objects.size(); i++){
             	percepteros::RecognitionObject recObj  = objects[i];
-            	rs::StampedPose pose = poses[i].world.get();
+                rs::StampedPose pose = poses[i].camera.get();
             	std::vector<double> translation = pose.translation.get();
             	std::vector<double> rotation = pose.rotation.get();
             	Eigen::Matrix3d mat;
@@ -113,6 +114,7 @@ private:
                 objectDetectionMsg.pose.pose.orientation.y=q.y();
                 objectDetectionMsg.pose.pose.orientation.z=q.z();
                 objectDetectionMsg.pose.pose.orientation.w=q.w();
+                
                 objectDetectionMsg.name=recObj.name.get();
                 objectDetectionMsg.type=recObj.type.get();
                 objectDetectionMsg.width=recObj.width.get();
