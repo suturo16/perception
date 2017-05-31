@@ -158,7 +158,7 @@ public:
 							z[0], z[1], z[2]);
 			transform.setBasis(rot);
 			
-			recA.name.set("Spatula");
+			recA.name.set("spatula");
 			recA.type.set(7);
 			recA.width.set(0.28f);
 			recA.height.set(0.056f);

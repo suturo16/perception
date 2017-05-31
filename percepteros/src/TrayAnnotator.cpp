@@ -158,7 +158,7 @@ private:
 						poseA.camera.set(rs::conversion::to(tcas, poseCam));
 						poseA.world.set(rs::conversion::to(tcas, poseWorld));
 
-						o.name.set("DropZone");
+						o.name.set("dropzone");
 						o.type.set(5);
 						o.width.set(0.21);
 						o.height.set(0.29);

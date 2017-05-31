@@ -170,7 +170,7 @@
           <parameter>PointCloudClusterExtractor/cluster_max_size</parameter>
         </overrides>
       </configurationParameter>
-      <configurationParameter>
+			<configurationParameter>
         <name>maxPoints</name>
         <description></description>
         <type>Integer</type>
@@ -178,26 +178,6 @@
         <mandatory>false</mandatory>
         <overrides>
           <parameter>PointCloudColorSegmentation/maxPoints</parameter>
-        </overrides>
-      </configurationParameter>
-      <configurationParameter>
-        <name>hueThreshold</name>
-        <description></description>
-        <type>Integer</type>
-        <multiValued>false</multiValued>
-        <mandatory>false</mandatory>
-        <overrides>
-          <parameter>PointCloudColorSegmentation/hueThreshold</parameter>
-        </overrides>
-      </configurationParameter>
-      <configurationParameter>
-        <name>distThreshold</name>
-        <description></description>
-        <type>Float</type>
-        <multiValued>false</multiValued>
-        <mandatory>false</mandatory>
-        <overrides>
-          <parameter>PointCloudColorSegmentation/distThreshold</parameter>
         </overrides>
       </configurationParameter>
     </configurationParameters>
@@ -221,16 +201,12 @@
       <fixedFlow>
         <node>CollectionReader</node>
         <node>ImagePreprocessor</node>
-        <node>SzeneRecorder</node>
         <node>PointCloudFilter</node>
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
-        <node>PointCloudClusterExtractor</node>
-	<node>ColorClusterer</node>
-        <node>CakeAnnotator</node>
-        <node>CylinderAnnotator</node>
-        <node>KnifeAnnotator</node>
-        <node>TrayAnnotator</node>
+	<node>PrimitiveShapeAnnotator</node>
+	<node>PointCloudColorSegmentation</node>
+	<node>PlateAnnotator</node>	
         <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>

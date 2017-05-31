@@ -1,7 +1,6 @@
 // UIMA
 #include <uima/api.hpp>
 
-
 // RS
 #include <rs/scene_cas.h>
 #include <rs/DrawingAnnotator.h>
