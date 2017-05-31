@@ -221,16 +221,12 @@
       <fixedFlow>
         <node>CollectionReader</node>
         <node>ImagePreprocessor</node>
-        <node>SzeneRecorder</node>
         <node>PointCloudFilter</node>
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
 	<node>ColorClusterer</node>
-        <node>CakeAnnotator</node>
-        <node>CylinderAnnotator</node>
         <node>KnifeAnnotator</node>
-        <node>TrayAnnotator</node>
         <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
