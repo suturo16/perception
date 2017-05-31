@@ -44,6 +44,7 @@ private:
     typedef pcl::PointNormal PointNormalT;
     typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
     double pointSize = 1;
+    int runCount = 0;
 
 
     pcl::PointIndices clusterIndices;
@@ -57,6 +58,8 @@ private:
         cv::Mat afterDepthImage;
         PointCloud::Ptr afterActionPC;
         ros::Time afterTime;
+
+        cv::Mat dist;
     };
 
     ros::NodeHandle nh_;
@@ -85,8 +88,6 @@ public:
     savedSzene.beforeActionPC = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
     savedSzene.afterActionPC = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
-    pcl::io::loadPCDFile("/home/surxz/pcds/beforeGood/testbefore2.pcd",*savedSzene.beforeActionPC);
-    pcl::io::loadPCDFile("/home/surxz/pcds/afterGood/testafter2.pcd",*savedSzene.afterActionPC);
     return UIMA_ERR_NONE;
   }
 
@@ -110,7 +111,7 @@ public:
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
     cas.get(VIEW_CLOUD,*cloud_ptr);
 
-    outInfo("Cloud size: " << cloud_ptr->points.size());
+    /*outInfo("Cloud size: " << cloud_ptr->points.size());
     outInfo("took: " << clock.getTime() << " ms.");
     if(queueSaveImage){
         queueSaveImage = false;
@@ -129,20 +130,82 @@ public:
 
         }
 
+    }*/
+
+    if(runCount == 0){
+        savedSzene.beforeActionPC = cloud_ptr;
+        savedSzene.beforeDepthImage = depth_image;
+        runCount ++;
+    } else if(runCount == 1){
+        savedSzene.afterActionPC = cloud_ptr;
+        savedSzene.afterDepthImage = depth_image;
+        runCount = 0;
+
+        //savedSzene.dist = cv::substract(savedSzene.afterDepthImage,savedSzene.beforeDepthImage, savedSzene.dist);
+
+        cv::absdiff(savedSzene.beforeDepthImage, savedSzene.afterDepthImage, savedSzene.dist);
+        //cv::imshow("dist",savedSzene.beforeDepthImage);
+        //dst = src1 - src2;
+        //dst -= src1;
+
+        cv::Mat I = savedSzene.dist;
+        ushort min = 65535, max = 0;
+        printf("Depth: %d", I.depth());
+        //CV_Assert(I.depth() == CV_8U);
+
+        int channels = I.channels();
+
+        int nRows = I.rows;
+        int nCols = I.cols * channels;
+
+
+        if (I.isContinuous())
+        {
+            nCols *= nRows;
+            nRows = 1;
+        }
+
+        int i,j;
+        ushort* p;
+        for( i = 0; i < nRows; ++i)
+        {
+            p = I.ptr<ushort>(i);
+            for ( j = 0; j < nCols; ++j)
+            {
+                if(min > p[j]){
+                  min = p[j];
+                }
+                if(max < p[j]){
+                    max = p[j];
+                }
+                if(p[j]> 20){
+                    p[j] = 65535;
+                }
+            }
+        }
+        printf("Min: %u, Max: %u ",min,max);
+
+        pcl::PointIndices indices = detectChange();
+        if(indices.indices.size() == 0){
+            return UIMA_ERR_NONE;
+        }
+        outInfo("change detected");
+        clusterIndices = indices;
+
+        rs::Cluster uimaCluster = rs::create<rs::Cluster>(tcas);
+        rs::ReferenceClusterPoints rcp = rs::create<rs::ReferenceClusterPoints>(tcas);
+        rs::PointIndices uimaIndices = rs::conversion::to(tcas, indices);
+        outInfo("Before set");
+        rcp.indices.set(uimaIndices);
+        outInfo("After set");
+
+        uimaCluster.points.set(rcp);
+        uimaCluster.source.set("ChangeDetection");
+
+        scene.identifiables.append(uimaCluster);
+
     }
-    pcl::PointIndices indices = detectChange();
-    clusterIndices = indices;
 
-    rs::Cluster uimaCluster = rs::create<rs::Cluster>(tcas);
-    rs::ReferenceClusterPoints rcp = rs::create<rs::ReferenceClusterPoints>(tcas);
-    rs::PointIndices uimaIndices = rs::conversion::to(tcas, indices);
-
-    rcp.indices.set(uimaIndices);
-
-    uimaCluster.points.set(rcp);
-    uimaCluster.source.set("ChangeDetection");
-
-    scene.identifiables.append(uimaCluster);
     return UIMA_ERR_NONE;
   }
 
@@ -150,7 +213,7 @@ public:
       srand ((unsigned int) time (NULL));
 
       // Octree resolution - side length of octree voxels
-      float resolution = 0.05f;
+      float resolution = 0.03f;
 
       // Instantiate octree-based point cloud change detection class
       pcl::octree::OctreePointCloudChangeDetector<pcl::PointXYZRGBA> octree (resolution);
@@ -169,10 +232,11 @@ public:
       std::vector<int> newPointIdxVector;
 
       // Get vector of point indices from octree voxels which did not exist in previous buffer
-      octree.getPointIndicesFromNewVoxels (newPointIdxVector,60);
+      octree.getPointIndicesFromNewVoxels (newPointIdxVector);
 
       pcl::PointIndices indices;
       indices.indices = newPointIdxVector;
+      printf("amount of indices: %d", indices.indices.size() );
 
       // Output points
       std::cout << "Output from getPointIndicesFromNewVoxels:" << std::endl;
@@ -200,10 +264,18 @@ public:
       return true;
   }
 
+  void drawImageWithLock(cv::Mat &disp)
+  {
+    disp = savedSzene.dist;
+  }
+
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
   {
   const std::string &cloudname = this->name;
   const pcl::PointIndices &indices = clusterIndices;
+/*  if(runCount != 1 ){
+      return;
+  }*/
   for(size_t j = 0; j < indices.indices.size(); ++j)
   {
     size_t index = indices.indices[j];
@@ -215,6 +287,7 @@ public:
         {
           visualizer.addPointCloud(savedSzene.afterActionPC, cloudname);
           visualizer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
+
         }
         else
         {
