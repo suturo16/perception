@@ -51,7 +51,7 @@ private:
     Eigen::Vector3f zVector;
   };
 
-  float test_param;
+  bool test_param;
   tf::Transform transform;
 
   pcl::PointCloud<PointT>::Ptr cloud_ptr;
@@ -92,7 +92,7 @@ public:
   TyErrorId initialize(AnnotatorContext &ctx)
   {
     outInfo("initialize");
-    ctx.extractValue("test_param", test_param);
+    //ctx.extractValue("enable_change_detection", test_param);
     return UIMA_ERR_NONE;
   }
 

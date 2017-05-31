@@ -110,6 +110,10 @@ public:
 
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
     cas.get(VIEW_CLOUD,*cloud_ptr);
+    cv::Mat scaledMat;
+    depth_image.convertTo(scaledMat, CV_32F, 1.0/65535.0f);
+
+    cv::threshold(scaledMat,scaledMat,0.4f,1.0f,cv::THRESH_BINARY);
 
     /*outInfo("Cloud size: " << cloud_ptr->points.size());
     outInfo("took: " << clock.getTime() << " ms.");
@@ -149,7 +153,7 @@ public:
         //dst -= src1;
 
         cv::Mat I = savedSzene.dist;
-        ushort min = 65535, max = 0;
+        float min = 1, max = 0;
         printf("Depth: %d", I.depth());
         //CV_Assert(I.depth() == CV_8U);
 
@@ -166,10 +170,10 @@ public:
         }
 
         int i,j;
-        ushort* p;
+        float* p;
         for( i = 0; i < nRows; ++i)
         {
-            p = I.ptr<ushort>(i);
+            p = I.ptr<float>(i);
             for ( j = 0; j < nCols; ++j)
             {
                 if(min > p[j]){
@@ -178,8 +182,8 @@ public:
                 if(max < p[j]){
                     max = p[j];
                 }
-                if(p[j]> 20){
-                    p[j] = 65535;
+                if(p[j]> 0.001){
+                    p[j] = 1;
                 }
             }
         }
