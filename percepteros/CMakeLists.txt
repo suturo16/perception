@@ -56,9 +56,6 @@ find_additional_files()
 rs_add_library(rs_cylinderAnnotator src/CylinderAnnotator.cpp)
 target_link_libraries(rs_cylinderAnnotator ${CATKIN_LIBRARIES})
 
-rs_add_library(rs_szeneRecorder src/SzeneRecorder.cpp)
-target_link_libraries(rs_szeneRecorder ${CATKIN_LIBRARIES})
-
 rs_add_library(rs_rosPublisher src/ROSPublisher.cpp)
 target_link_libraries(rs_rosPublisher ${CATKIN_LIBRARIES})
 
