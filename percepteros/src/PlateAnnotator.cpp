@@ -153,10 +153,11 @@ public:
 		origin.setValue(co.values[0], co.values[1], co.values[2]);
 		x.setValue(circ.x - co.values[0], circ.y - co.values[1], circ.z - co.values[2]);
 		z.setValue(co.values[4], co.values[5], co.values[6]);
+
 		y = x.cross(z);
+		x = z.cross(y);
+
 		x.normalize(); y.normalize(); z.normalize();
-			
-		outInfo("Normal vector: " << co.values[4] << "/" << co.values[5] << "/" << co.values[6]);
 
 		po.push_back(x); po.push_back(y); po.push_back(z); po.push_back(origin);
 		poses.push_back(po);
