@@ -124,11 +124,17 @@
     <delegateAnalysisEngine key="SacModelAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/SacModelAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="SpatulAnnotator">
+      <import location="../annotators/SpatulAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="StorageWriter">
       <import location="../../../../robosherlock/descriptors/annotators/io/StorageWriter.xml"/>
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="SuperVoxelAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/SupervoxelAnnotator.xml"/>
+    </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="SzeneRecorder">
+      <import location="../annotators/SzeneRecorder.xml"/>
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="TFBroadcaster">
       <import location="../../../../robosherlock/descriptors/annotators/io/TFBroadcaster.xml"/>

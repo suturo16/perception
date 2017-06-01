@@ -5,10 +5,7 @@ annotators:
     - PointCloudFilter
     - NormalEstimator
     - PlaneAnnotator
-    - PointCloudClusterExtractor
-    - ColorClusterer
-    - TrayAnnotator
-    - CakeAnnotator
-    - CylinderAnnotator
-    - KnifeAnnotator
+    - SimpleShapeAnnotator
+    - PointCloudColorSegmentation
+    - PlateAnnotator
     - ROSPublisher

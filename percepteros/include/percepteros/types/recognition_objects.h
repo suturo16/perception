@@ -18,6 +18,69 @@ namespace percepteros
 {
 
 /*
+ * Tool Object
+ */
+class ToolObject : public rs::Annotation
+{
+private:
+  void initFields()
+  {
+    name.init(this, "name");
+    hue.init(this, "hue");
+    value.init(this, "value");
+  }
+public:
+  // The name of the tool
+  rs::FeatureStructureEntry<std::string> name;
+  // No description given
+  rs::FeatureStructureEntry<float> hue;
+  // No description given
+  rs::FeatureStructureEntry<float> value;
+
+  ToolObject(const ToolObject &other) :
+      rs::Annotation(other)
+  {
+    initFields();
+  }
+
+  ToolObject(uima::FeatureStructure fs) :
+      rs::Annotation(fs)
+  {
+    initFields();
+  }
+};
+
+/*
+ * Rack Object
+ */
+class RackObject : public rs::Annotation
+{
+private:
+  void initFields()
+  {
+    name.init(this, "name");
+    normal.init(this, "normal");
+  }
+public:
+  // The name of the rack
+  rs::FeatureStructureEntry<std::string> name;
+  // The average normal vector
+  rs::ListFeatureStructureEntry<float> normal;
+
+  RackObject(const RackObject &other) :
+      rs::Annotation(other)
+  {
+    initFields();
+  }
+
+  RackObject(uima::FeatureStructure fs) :
+      rs::Annotation(fs)
+  {
+    initFields();
+  }
+};
+
+/*
  * Recognition Object
  */
 class RecognitionObject : public rs::Annotation
@@ -67,6 +130,8 @@ public:
 
 }
 
+TYPE_TRAIT(percepteros::ToolObject, PERCEPTEROS_RECOGNITIONTYPES_TOOLOBJECT)
+TYPE_TRAIT(percepteros::RackObject, PERCEPTEROS_RECOGNITIONTYPES_RACKOBJECT)
 TYPE_TRAIT(percepteros::RecognitionObject, PERCEPTEROS_RECOGNITIONTYPES_RECOGNITIONOBJECT)
 
 #endif /* __RECOGNITION_OBJECTS_H__ */
