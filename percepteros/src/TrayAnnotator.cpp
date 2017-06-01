@@ -91,87 +91,66 @@ private:
 
     cas.get(VIEW_CLOUD, *cloud);
 
-		std::vector<rs::Cluster> clusters;
-		scene.identifiables.filter(clusters);
+	std::vector<rs::Cluster> clusters;
+	scene.identifiables.filter(clusters);
 
-		pcl::SACSegmentation<PointR> seg;
-		seg.setModelType(pcl::SACMODEL_PLANE);
-		seg.setMethodType(pcl::SAC_RANSAC);
-		seg.setDistanceThreshold(0.01);
-	
-		pcl::PCA<PointR> pca; 
+	pcl::PCA<PointR> pca; 
 
-		tf::StampedTransform camToWorld, worldToCam;
-		camToWorld.setIdentity();
-		if (scene.viewPoint.has()) {
-			rs::conversion::from(scene.viewPoint.get(), camToWorld);
-		} else {
-			outInfo("No camera to world transformation!!!");
-		}
-		worldToCam = tf::StampedTransform(camToWorld.inverse(), camToWorld.stamp_, camToWorld.child_frame_id_, camToWorld.frame_id_);
-		Eigen::Affine3d eigenTransform;
-		tf::transformTFToEigen(camToWorld, eigenTransform);
+	tf::StampedTransform camToWorld;
+	camToWorld.setIdentity();
+	if (scene.viewPoint.has()) {
+		rs::conversion::from(scene.viewPoint.get(), camToWorld);
+	} else {
+		outInfo("No camera to world transformation!!!");
+	}
 
-		for (auto cluster : clusters) {
-			if (cluster.source.get().compare(0, 13, "HueClustering") == 0) {
-				pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
-				rs::ReferenceClusterPoints clusterpoints(cluster.points());
-				rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+	for (auto cluster : clusters) {
+		if (cluster.source.get().compare(0, 13, "HueClustering") == 0) {
+			pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
+			rs::ReferenceClusterPoints clusterpoints(cluster.points());
+			rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 
-				extractPoints(cloud, tray, cluster_indices);
+			extractPoints(cloud, tray, cluster_indices);
+			float hue = std::strtof(cluster.source.get().substr(15).data(), NULL);
 
-				pcl::transformPointCloud<PointR>(*tray, *tray, eigenTransform);
+			if (hue < 10 || hue > 320 || (hue > 40 && hue < 80)) {
+				pca.setInputCloud(tray);
+				percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
+					
+				tf::Transform objectToWorld;
+				Eigen::Vector3d translation = pca.getMean().head(3).cast<double>();
+				tf::vectorEigenToTF(translation, origin);
+				objectToWorld.setOrigin(origin);
+					
+				ev = pca.getEigenVectors();
 
-				pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
-				pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+				Eigen::Quaterniond quaternion(pca.getEigenVectors().cast<double>());
+				tf::Quaternion quat;
+				tf::quaternionEigenToTF(quaternion, quat);
+				objectToWorld.setRotation(quat);
 
-				seg.setInputCloud(tray);
-				seg.segment(*inliers, *coefficients);
-				
-				if (inliers->indices.size() / tray->points.size() > 0.9) {
-					float hue = std::strtof(cluster.source.get().substr(15).data(), NULL);
+				tf::Stamped<tf::Pose> poseCam, poseWorld;
+				poseCam = tf::Stamped<tf::Pose>(objectToWorld, camToWorld.stamp_, camToWorld.child_frame_id_);
+				poseWorld = tf::Stamped<tf::Pose>(camToWorld * objectToWorld, camToWorld.stamp_, camToWorld.frame_id_);
 
-					if (hue < 10 || hue > 320 || (hue > 40 && hue < 80)) {
-						pca.setInputCloud(tray);
+				rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
+				poseA.source.set("TrayAnnotator");
+				poseA.camera.set(rs::conversion::to(tcas, poseCam));
+				poseA.world.set(rs::conversion::to(tcas, poseWorld));
 
-						percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
-						
-						tf::Transform objectToWorld;
+				o.name.set("dropzone");
+				o.type.set(5);
+				o.width.set(0.21);
+				o.height.set(0.29);
+				o.depth.set(0);
 
-						Eigen::Vector3d translation = pca.getMean().head(3).cast<double>();
-						tf::vectorEigenToTF(translation, origin);
-						objectToWorld.setOrigin(origin);
-						
-						ev = pca.getEigenVectors();
-
-						Eigen::Quaterniond quaternion(pca.getEigenVectors().cast<double>());
-						tf::Quaternion quat;
-						tf::quaternionEigenToTF(quaternion, quat);
-						objectToWorld.setRotation(quat);
-
-						tf::Stamped<tf::Pose> poseCam, poseWorld;
-						poseCam = tf::Stamped<tf::Pose>(worldToCam * objectToWorld, camToWorld.stamp_, camToWorld.child_frame_id_);
-						poseWorld = tf::Stamped<tf::Pose>(objectToWorld, camToWorld.stamp_, camToWorld.frame_id_);
-
-						rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
-						poseA.source.set("TrayAnnotator");
-						poseA.camera.set(rs::conversion::to(tcas, poseCam));
-						poseA.world.set(rs::conversion::to(tcas, poseWorld));
-
-						o.name.set("dropzone");
-						o.type.set(5);
-						o.width.set(0.21);
-						o.height.set(0.29);
-						o.depth.set(0);
-
-						cluster.annotations.append(poseA);
-						cluster.annotations.append(o);
-					}
+				cluster.annotations.append(poseA);
+				cluster.annotations.append(o);
 				}
 			}
 		}
 		return UIMA_ERR_NONE;
-  }
+	}
 
 	void extractPoints(PCR::Ptr cloud, PCR::Ptr object, pcl::PointIndices::Ptr indices) {
 		object->clear();
@@ -206,9 +185,9 @@ private:
 		co.values.push_back(origin[1]);
 		co.values.push_back(origin[2]);
 
-		co.values.push_back(rot(start,0));
-		co.values.push_back(rot(start,1));
-		co.values.push_back(rot(start,2));
+		co.values.push_back(rot(0,start));
+		co.values.push_back(rot(1,start));
+		co.values.push_back(rot(2,start));
 
 		co.values.push_back(1.0f);
 
