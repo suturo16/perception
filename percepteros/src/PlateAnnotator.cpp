@@ -147,12 +147,22 @@ public:
   
 
 	void addAnnotation(CAS &tcas, rs::Cluster cluster, pcl::ModelCoefficients co, PointN circ) {
+		//calculate average normal
+		extractCluster(clust, cloud, cluster);
+		std::vector<int> indices;
+		removeNaNNormalsFromPointCloud(*clust, *clust, indices);
+
+		tf::Vector3 normal = getAverageNormal(clust);
+
 		//calculate values
 		std::vector<tf::Vector3> po;
 		tf::Vector3 x,y,z,origin;
 		origin.setValue(co.values[0], co.values[1], co.values[2]);
 		x.setValue(circ.x - co.values[0], circ.y - co.values[1], circ.z - co.values[2]);
 		z.setValue(co.values[4], co.values[5], co.values[6]);
+		if (z.angle(normal) > 1.8f) {
+			z.setValue(-co.values[4], -co.values[5], -co.values[6]);
+		}
 
 		y = x.cross(z);
 		x = y.cross(z);
@@ -207,6 +217,20 @@ public:
 	
 		cluster.annotations.append(poseA);
 		cluster.annotations.append(o);
+	}
+
+	tf::Vector3 getAverageNormal(PC::Ptr plate) {
+		std::vector<float> avn(3);
+		int size = plate->points.size();
+
+		for (int i = 0; i < size; i++) {
+			avn[0] += plate->points[i].normal_x / size;
+			avn[1] += plate->points[i].normal_y / size;
+			avn[2] += plate->points[i].normal_z / size;
+		}
+
+		tf::Vector3 n(avn[0], avn[1], avn[2]);
+		return n;
 	}
 
 	bool isPlate(pcl::ModelCoefficients::Ptr co1, pcl::ModelCoefficients::Ptr co2, int avHue) {
