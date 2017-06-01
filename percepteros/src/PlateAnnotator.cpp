@@ -155,7 +155,8 @@ public:
 		z.setValue(co.values[4], co.values[5], co.values[6]);
 
 		y = x.cross(z);
-		x = z.cross(y);
+		x = y.cross(z);
+		z = x.cross(y);
 
 		x.normalize(); y.normalize(); z.normalize();
 
