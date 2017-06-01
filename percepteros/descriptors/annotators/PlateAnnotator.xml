@@ -27,7 +27,7 @@
 		<nameValuePair>
 			<name>minHue</name>
 			<value>
-				<integer>150</integer>
+				<integer>100</integer>
 			</value>
 		</nameValuePair>
 		<nameValuePair>

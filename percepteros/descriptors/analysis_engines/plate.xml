@@ -160,16 +160,6 @@
           <parameter>CollectionReader/camera_config_files</parameter>
         </overrides>
       </configurationParameter>
-      <configurationParameter>
-        <name>cluster_max_size</name>
-        <description></description>
-        <type>Integer</type>
-        <multiValued>false</multiValued>
-        <mandatory>false</mandatory>
-        <overrides>
-          <parameter>PointCloudClusterExtractor/cluster_max_size</parameter>
-        </overrides>
-      </configurationParameter>
             <configurationParameter>
         <name>minPoints</name>
         <description></description>
@@ -231,15 +221,9 @@
         </value>
       </nameValuePair>
       <nameValuePair>
-        <name>cluster_max_size</name>
-        <value>
-            <integer>50000</integer>
-        </value>
-      </nameValuePair>
-      <nameValuePair>
         <name>minPoints</name>
         <value>
-            <integer>5000</integer>
+            <integer>1000</integer>
         </value>
       </nameValuePair>
       <nameValuePair>
@@ -257,7 +241,7 @@
       <nameValuePair>
         <name>distThreshold</name>
         <value>
-            <float>0.05</float>
+            <float>0.01</float>
         </value>
       </nameValuePair>
       <nameValuePair>
@@ -274,14 +258,9 @@
         <node>PointCloudFilter</node>
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
-        <node>PointCloudClusterExtractor</node>
-        <node>ColorClusterer</node>
         <node>PointCloudColorSegmentation</node>
         <node>PrimitiveShapeAnnotator</node>
         <node>PlateAnnotator</node>	
-		<node>CakeAnnotator</node>
-        <node>KnifeAnnotator</node>
-        <node>SpatulAnnotator</node>
         <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>

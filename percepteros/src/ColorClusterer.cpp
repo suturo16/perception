@@ -127,6 +127,7 @@ public:
 				segmenter.setInputCloud(cloud);
 				segmenter.segment(*output_labels, cluster_i);
 				
+				hue_indices.clear();
 				for (size_t i = 0; i < cluster_i.size(); i++) {
 					if (cluster_i.at(i).indices.size() > CLUSTER_THRESHOLD) {
 						hue_indices.push_back(cluster_i.at(i));
@@ -160,7 +161,8 @@ public:
 				pcl::OrganizedConnectedComponentSegmentation<PointH, pcl::Label> segmenterV(vcc);
 				segmenterV.setInputCloud(cloud_b);
 				segmenterV.segment(*output_l, cluster_i);
-					
+				
+				value_indices.clear();
 				for (size_t i = 0; i < cluster_i.size(); i++) {
 					if (cluster_i.at(i).indices.size() > CLUSTER_THRESHOLD) {
 						value_indices.push_back(cluster_i.at(i));

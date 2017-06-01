@@ -9,8 +9,8 @@ annotators:
     - ColorClusterer
     - PointCloudColorSegmentation
     - PrimitiveShapeAnnotator
-    - SpatulAnnotator
     - PlateAnnotator
+    - SpatulAnnotator
     - CakeAnnotator
     - KnifeAnnotator
     - ROSPublisher

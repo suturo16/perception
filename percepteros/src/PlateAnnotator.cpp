@@ -43,7 +43,6 @@ private:
 	PC::Ptr clust = PC::Ptr(new PC);
 	PC::Ptr clust_filtered = PC::Ptr(new PC);
 
-	std::vector<pcl::ModelCoefficients> plates;
 	std::vector<std::vector<tf::Vector3>> poses;
 	
 	int HUE_LOWER_BOUND, HUE_UPPER_BOUND;
@@ -78,6 +77,7 @@ public:
     rs::SceneCas cas(tcas);
 	rs::Scene scene = cas.getScene();
 	std::vector<rs::Cluster> clusters;
+	clusters.clear();
 	scene.identifiables.filter(clusters);
 
 	//get scene points
@@ -101,6 +101,7 @@ public:
 	ex.setNegative(true);
 
 	std::vector<rs::Shape> shapes;
+	poses.clear();
 	for (auto it = clusters.begin(); it != clusters.end(); ++it) {
 		auto cluster = *it;
 		shapes.clear();
@@ -136,8 +137,7 @@ public:
 				
 
 				if 	(isPlate(cco1, cco2, (int) std::strtof(cluster.source.get().erase(0, 15).data(), NULL))) {
-					outInfo("found plate");
-					plates.push_back(*cco1);
+					outInfo("Found a plate");
 					addAnnotation(tcas, cluster, *cco1, clust->points[cin1->indices[0]]);
 				}
 			}
@@ -155,16 +155,23 @@ public:
 		z.setValue(co.values[4], co.values[5], co.values[6]);
 		y = x.cross(z);
 		x.normalize(); y.normalize(); z.normalize();
-		
+			
+		outInfo("Normal vector: " << co.values[4] << "/" << co.values[5] << "/" << co.values[6]);
+
 		po.push_back(x); po.push_back(y); po.push_back(z); po.push_back(origin);
 		poses.push_back(po);
 	
 		tf::Matrix3x3 rot;
+		
+		rot.setValue(	x[0], y[0], z[0],
+						x[1], y[1], z[1],
+						x[2], y[2], z[2]);
+		/*
 		rot.setValue(	x[0], x[1], x[2],
 						y[0], y[1], y[2],
 						z[0], z[1], z[2]);
-	
-	tf::Transform trans;
+		*/
+		tf::Transform trans;
 		trans.setOrigin(origin);
 		trans.setBasis(rot);
 			
@@ -173,6 +180,12 @@ public:
 		tf::StampedTransform camToWorld;
 		camToWorld.setIdentity();
 		
+    	rs::SceneCas cas(tcas);
+		rs::Scene scene = cas.getScene();
+		if (scene.viewPoint.has()) {
+			rs::conversion::from(scene.viewPoint.get(), camToWorld);
+		}
+
 		tf::Stamped<tf::Pose> camera(trans, camToWorld.stamp_, camToWorld.child_frame_id_);
 		tf::Stamped<tf::Pose> world(camToWorld * trans, camToWorld.stamp_, camToWorld.frame_id_);
 		
@@ -183,15 +196,15 @@ public:
 		//adjust recognition object
 		percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
 	
-		o.name.set("Plate");
+		o.name.set("plate");
 		o.type.set(7);
 		o.color.set(std::stoi(cluster.source.get().substr(15)));
 		o.width.set(co.values[3]);
 		o.height.set(0);
 		o.depth.set(0);
 	
-		cluster.annotations.append(o);
 		cluster.annotations.append(poseA);
+		cluster.annotations.append(o);
 	}
 
 	bool isPlate(pcl::ModelCoefficients::Ptr co1, pcl::ModelCoefficients::Ptr co2, int avHue) {
