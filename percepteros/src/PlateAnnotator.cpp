@@ -45,9 +45,8 @@ private:
 
 	std::vector<pcl::ModelCoefficients> plates;
 	std::vector<std::vector<tf::Vector3>> poses;
-
-	int HUE_UPPER_BOUND, HUE_LOWER_BOUND;
-
+	
+	int HUE_LOWER_BOUND, HUE_UPPER_BOUND;
 public:
 	const float MAX_DIST_CENTS = 0.1;
 	const float MAX_RATIO_RADII = 0.8;
@@ -106,8 +105,6 @@ public:
 		auto cluster = *it;
 		shapes.clear();
 		cluster.annotations.filter(shapes);
-		outInfo(cluster.source.get());
-		outInfo(cluster.source.get().compare(0, 13, "HueClustering"));
 		if (cluster.source.get().compare(0, 13, "HueClustering") > -1 &&
 				shapes.size() > 0 &&
 				shapes[0].shape.get().compare("round") > -1) {
@@ -186,7 +183,7 @@ public:
 		//adjust recognition object
 		percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
 	
-		o.name.set("plate");
+		o.name.set("Plate");
 		o.type.set(7);
 		o.color.set(std::stoi(cluster.source.get().substr(15)));
 		o.width.set(co.values[3]);

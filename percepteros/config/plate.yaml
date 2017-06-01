@@ -5,7 +5,7 @@ annotators:
     - PointCloudFilter
     - NormalEstimator
     - PlaneAnnotator
-    - SimpleShapeAnnotator
     - PointCloudColorSegmentation
+    - PrimitiveShapeAnnotator
     - PlateAnnotator
     - ROSPublisher
