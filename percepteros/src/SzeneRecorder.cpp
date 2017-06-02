@@ -113,7 +113,7 @@ public:
     cv::Mat scaledMat;
     depth_image.convertTo(scaledMat, CV_32F, 1.0/65535.0f);
 
-    cv::threshold(scaledMat,scaledMat,0.4f,1.0f,cv::THRESH_BINARY);
+    cv::threshold(scaledMat,scaledMat,0.02f,1.0f,cv::THRESH_TRUNC);
 
     /*outInfo("Cloud size: " << cloud_ptr->points.size());
     outInfo("took: " << clock.getTime() << " ms.");
@@ -138,11 +138,11 @@ public:
 
     if(runCount == 0){
         savedSzene.beforeActionPC = cloud_ptr;
-        savedSzene.beforeDepthImage = depth_image;
+        savedSzene.beforeDepthImage = scaledMat;
         runCount ++;
     } else if(runCount == 1){
         savedSzene.afterActionPC = cloud_ptr;
-        savedSzene.afterDepthImage = depth_image;
+        savedSzene.afterDepthImage = scaledMat;
         runCount = 0;
 
         //savedSzene.dist = cv::substract(savedSzene.afterDepthImage,savedSzene.beforeDepthImage, savedSzene.dist);
@@ -182,7 +182,7 @@ public:
                 if(max < p[j]){
                     max = p[j];
                 }
-                if(p[j]> 0.001){
+                if(p[j]> 0.0003){
                     p[j] = 1;
                 }
             }
