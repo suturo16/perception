@@ -73,7 +73,7 @@ private:
     tf::StampedTransform kinectToOdom;
     Eigen::Affine3d kinectToOdomEigen;
 
-    listener.lookupTransform("/head_mount_kinect_rgb_optical_frame", "/odom_combined", ros::Time(0), kinectToOdom);
+    listener.lookupTransform("/odom_combined", "/head_mount_kinect_rgb_optical_frame", ros::Time(0), kinectToOdom);
     tf::transformTFToEigen(kinectToOdom, kinectToOdomEigen);
 
 
@@ -96,14 +96,17 @@ private:
                         rotation[6], rotation[7], rotation[8];
                 Eigen::Vector3d trans(translation[0],translation[1],translation[2]);
                 trans = kinectToOdomEigen * trans;
-                mat = kinectToOdomEigen*mat;
-                Eigen::Quaterniond q(mat);
+                Eigen::Matrix3d res;
+                res = kinectToOdomEigen*mat;
+                Eigen::Quaterniond q(res);
+                //Eigen::Quaterniond q(mat);
+                q.normalize();
             	
                 outInfo(recObj.name.get());
 
                 suturo_perception_msgs::ObjectDetection objectDetectionMsg;
                 
-                objectDetectionMsg.pose.header.frame_id = "head_mount_kinect_rgb_optical_frame";
+                objectDetectionMsg.pose.header.frame_id = "odom_combined";
 
                 objectDetectionMsg.pose.pose.position.x=trans[0];
                 objectDetectionMsg.pose.pose.position.y=trans[1];

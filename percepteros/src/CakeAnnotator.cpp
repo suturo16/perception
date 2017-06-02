@@ -66,19 +66,19 @@ private:
   double pointSize = 1;
 
   constexpr static double BOX_NORMAL_WEIGHT = 0.04;
-  constexpr static double BOX_DISTANCE_THRESHOLD_NORMALPLANE = 0.015;
+  constexpr static double BOX_DISTANCE_THRESHOLD_NORMALPLANE = 0.03;
   constexpr static double BOX_DISTANCE_THRESHOLD_PLANE1 = 0.004;
   constexpr static double BOX_DISTANCE_THRESHOLD_PLANE2 = 0.005;
-  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE3 = 0.005;
+  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE3 = 0.01;
   constexpr static double BOX_EPSILON_PLANE1 = 0.1;
-  constexpr static double BOX_MAX_SIZE_RATIO_PLANE1 = 0.75;
+  constexpr static double BOX_MAX_SIZE_RATIO_PLANE1 = 0.85;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE1 = 0.2;
-  constexpr static double BOX_MIN_SIZE_RATIO_PLANE2 = 0.25;
-  constexpr static double BOX_MIN_SIZE_RATIO_PLANE3 = 0.15;
+  constexpr static double BOX_MIN_SIZE_RATIO_PLANE2 = 0.10;
+  constexpr static double BOX_MIN_SIZE_RATIO_PLANE3 = 0.03;
   //constexpr static double PLANE2_TO_BOX_MIN_RATIO = 0.20;
   constexpr static double BOX_MIN_MATCHED_POINTS_RATIO = 0.4;
   constexpr static int MAX_SEGMENTATION_ITERATIONS = 2000;
-  constexpr static double EPSILON_ANGLE = 0.3;
+  constexpr static double EPSILON_ANGLE = 0.1;
   constexpr static int MIN_CLOUD_SIZE = 50;
 
 
@@ -352,12 +352,15 @@ public:
         // return false if the plane is too small
         if ((double) matched_points / (double) cloud_object->points.size() < BOX_MIN_SIZE_RATIO_PLANE1)
         {
+            outInfo("plane1 too small");
           return 0;
         }
 
         // return false if the complete Object is a single plane
         if ((double) plane_size / (double) cloud_object->points.size() > BOX_MAX_SIZE_RATIO_PLANE1)
         {
+            outInfo("plane1 too big");
+
           return 0;
         }
 
@@ -366,8 +369,8 @@ public:
         bo.plane2InCluster = *inliers2;
         removeIndicesfromPointcloud(cloud_object, inliers2);
 
-        remaining_size_2 -= matched_points;
         matched_points += plane_size;
+        remaining_size_2 -= matched_points;
 
         Eigen::Vector3f norm_plane2 = vectorFromCoeff(coefficients_plane2,0);
         bo.xVector = norm_plane2;
@@ -378,14 +381,17 @@ public:
 
         if ((double) plane_size / (double) cloud_rem1->points.size() < BOX_MIN_SIZE_RATIO_PLANE2)
         {
+          outInfo("plane2 too small");
+
           return 0;
         }
 
         if ((double) matched_points / (double) cloud_object->points.size() > BOX_MIN_MATCHED_POINTS_RATIO)
         {
-
           if(cloud_rem2->points.size() < MIN_CLOUD_SIZE)
           {
+              outInfo("too few points remaining");
+
             return 0;
           }
 
@@ -399,6 +405,8 @@ public:
 
           if ((double) plane_size / (double) remaining_size_2 < BOX_MIN_SIZE_RATIO_PLANE3)
           {
+              outInfo("plane3 too small");
+
             return 0;
           }
 
@@ -406,6 +414,8 @@ public:
 
           if (angle > M_PI_2 + EPSILON_ANGLE || angle < M_PI_2 - EPSILON_ANGLE)
           {
+              outInfo("wrong angle of plane 3");
+
             return 0;
           }
         }
@@ -446,11 +456,14 @@ public:
         height = max_v3 - min_v3;
         width = max_v1 - min_v1;
         depth = max_v2 - min_v2;
-        if( height < 0.04 || width < 0.04 || depth < 0.04){
+        if( height < 0.03 || width < 0.03 || depth < 0.03){
+            outInfo("Box too small");
 
             return 0;
         }
         if(height > 0.5 || width > 0.5 || depth > 0.5){
+            outInfo("Box too big");
+
             return 0;
         }
 

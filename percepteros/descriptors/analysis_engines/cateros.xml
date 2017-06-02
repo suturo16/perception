@@ -206,7 +206,7 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot.ini</string>
+            <string>change_config_mongodb_playback.ini</string>
           </array>
         </value>
       </nameValuePair>
@@ -221,14 +221,13 @@
       <fixedFlow>
         <node>CollectionReader</node>
         <node>ImagePreprocessor</node>
+        <node>RegionFilter</node>
         <node>SzeneRecorder</node>
-        <node>PointCloudFilter</node>
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
-	<node>ColorClusterer</node>
+        <!--node>ColorClusterer</node-->
         <node>CakeAnnotator</node>
-        <node>CylinderAnnotator</node>
         <node>KnifeAnnotator</node>
         <node>TrayAnnotator</node>
         <node>ROSPublisher</node>
