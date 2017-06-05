@@ -4,7 +4,7 @@ topic: ~bakery_service keep repeat (~bakery cake ~eat ~yesanswer ~eatery  ~noans
                                      ~food ~act  ~EXCEPTION ~qwords ~occupation menu)
 
 
-
+                                           
 #! responders for MISUNDERSTANDING
 u: ( ~MISUNDERSTANDING)
    $MISUNDERSTANDING
@@ -23,6 +23,9 @@ t: HELP ()
    [what do you want me to do for you]
    [what do you need]
    [just tell me what I may offer you].
+    if($username){
+         $username
+        }.
                                                                                         
    a: CAKEHELP ([ ~yesanswer])
        .[may I offer you cake]
@@ -30,8 +33,14 @@ t: HELP ()
        [we have cake. would you like to have some piece]
        [we have cake. would you like to get some piece]
        [we have cake. would you like to eat some piece]
-       [can I offer you some piece of cake]
+       [can I offer you some piece of cake].
+       if($username){
+         $username
+        }.
        b: NUMBERPIECE (~yesanswer)
+           if($username){
+         $username
+        }.
           [how many piece would you like]
           [how many piece of cake do you exactly want]
           [how many piece of cake do you exactly need]
@@ -44,13 +53,19 @@ t: HELP ()
               sorry. 
               we can just offer you one piece at a time for the moment.
               should I order a piece for you.
+              if($username){
+         $username
+        }.
               d: (~yesanswer)
                  $REQUEST=CUTCAKE
                  $REQUEST 
               d: (~noanswer)
                  [sorry that we cannot help you]
                  [sorry that we cannot provide this service]
-                 [sorry that I am not helpful]
+                 [sorry that I am not helpful].
+                 if($username){
+         $username
+        }.
           c: NUMBERPIECE (_~number)
              $nberpiece = _0
      if($nberpiece=="one"){
@@ -103,7 +118,7 @@ a: (<<[~help ~want "would like" ~act cut give offer] _~number !a !many !what [~b
                 $REQUEST
            }else{ 
          
-                   so you need $nberpiece of cake.
+                   so you need $nberpiece piece of cake.
                     ^reuse(MANYPIECE)}
 
            } 
@@ -154,7 +169,7 @@ u: (<<[~help ~want "would like" ~act cut give offer] _~number !a !many !what [~b
                 $REQUEST
            }else{ 
          
-                   so you need $nberpiece of cake.
+                   so you need $nberpiece piece of cake.
                     ^reuse(MANYPIECE)}
 
 } 
@@ -166,6 +181,10 @@ u: (<<[~help ~want "would like" ~act cut give offer]  ~MISUNDERSTANDING !what !c
    ^reuse(HELP)  
 
 u: (<<!how [~act may offer give cut] !cake what>>)
+    if($username){
+         $username
+        }
+.
    [we are specialized in the baking.We have a backery. If you need cake. just let me know. and I will order it for you. and when it will be ready. I will let you know. The turtle robot will bring it to you.]
    [for the moment we just bake.We have a backery. If you need cake. just let me know. and I will order it for you. and when it will be ready. I will let you know. The turtle robot will bring it to you.]
 
@@ -176,17 +195,23 @@ u: (_~EXCEPTION)
    if($UNKNOWN_QUESTION==$STATUS){
    [I am sorry I dont get you]
    [can you be clear a little bit more please]
-   [could you please repeat]
+   [could you please repeat].
+    if($username){
+         $username
+        }
    }else if($UNKNOWN_PARAMETER==$STATUS){
               Why dont you answer my question
           }else  if($PROCESSING_REQUEST_SHORT==$STATUS){
                     $NBERODER = $NBERODER + 1
-		    ok 
+		    ok. 
 		    [just wait for a few minutes.]
 		    [just have a sit]
 		    [your cake will be ready very soon]
 		    [I let you know when it is ready] 
-		    [I let you know when your cake is ready]    
+		    [I let you know when your cake is ready].
+                     if($username){
+                        $username
+                     }    
 		  } else if($REQUEST_FAILED==$STATUS){
 			    sorry. 
 			    [I cannot get the cake right now. the bakery is actually closed]
@@ -203,10 +228,16 @@ u: (_~EXCEPTION)
 				   [I let you know when your cake is ready]
 				   [I let you know when it is done].
 				   it may take some time. 
+                                     if($username){
+                                       $username
+                                     }
 				    
 				  }else if($REQUEST_DONE==$STATUS){
                                          $NBERODER = $NBERODER - 1
                                          ok your cake is [ready][done][coming][on the way].
+                                           if($username){
+                                             $username
+                                            }
                                          if($NBERODER>0){
                                             but it remains $NBERODER piece.
                                          }else if($NBERODER<0){
@@ -223,6 +254,9 @@ u: (_~EXCEPTION)
                                            [the baker cannot provide your cake]
                                            [the baking failed]
                                            [the baking was unsuccessful].
+                                            if($username){
+                                               $username
+                                            }
                                            if($NBERODER>0){
                                             but it remains $NBERODER piece.
                                          }else if($NBERODER<0){
@@ -235,9 +269,7 @@ u: (_~EXCEPTION)
                                          }
                                           }
 
-    if($username){
-         $username
-        }
+    
 
    a: (~qwords)
       if($PROCESSING_REQUEST_LONG==$STATUS)
@@ -259,6 +291,9 @@ u: (_~EXCEPTION)
 
 t: TASTECAKE ()
    [you will like our delicious cake][our cake tastes really good].
+    if($username){
+         $username
+        }.
    a: ([~yesanswer really])
       [I promise you]
       [really]
@@ -267,6 +302,9 @@ t: TASTECAKE ()
 
 t: FEEDBACK ()
    [just give me feedback after eating][just appreciate the cake after eating].
+    if($username){
+         $username
+        }.
    a: ([~yesanswer why])
       [thank you. you are wellcome]
       [nice to hear it from you]
@@ -275,6 +313,9 @@ t: FEEDBACK ()
       dont worry. I mean if you eat the cake
 
 t: SERVICE ()
+     if($username){
+         $username
+        }.
    [how can we improve our services][which service would you expect from us] next time
    a: (_[~beverage ~foods ~occupation ])
       $service = '_0
