@@ -20,7 +20,7 @@
 #include "pocketsphinx.h"
 /* special headers. */
 
-#include <score.h>
+
 #include <pthread.h> 
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
@@ -65,8 +65,7 @@ string ASRCWD;
 
 
 
-//superglobal variables
-scoreType* scoreobj=NULL;
+
 
 //convert string to char*
 
