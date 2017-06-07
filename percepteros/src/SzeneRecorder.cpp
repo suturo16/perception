@@ -31,9 +31,11 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
+#include <cmath>        // std::abs
 
 using namespace uima;
-
+using namespace std;
+using namespace cv;
 
 class SzeneRecorder : public DrawingAnnotator
 {
@@ -51,15 +53,15 @@ private:
 
     struct SavedSzene{
 
-        cv::Mat beforeDepthImage;
+        Mat beforeDepthImage;
         PointCloud::Ptr beforeActionPC;
         ros::Time beforeTime;
 
-        cv::Mat afterDepthImage;
+        Mat afterDepthImage;
         PointCloud::Ptr afterActionPC;
         ros::Time afterTime;
 
-        cv::Mat dist;
+        Mat dist;
     };
 
     ros::NodeHandle nh_;
@@ -104,37 +106,16 @@ public:
     rs::SceneCas cas(tcas);
     rs::Scene scene = cas.getScene();
 
-    cv::Mat depth_image;
+    Mat depth_image;
 
     cas.get(VIEW_DEPTH_IMAGE, depth_image);
 
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
     cas.get(VIEW_CLOUD,*cloud_ptr);
-    cv::Mat scaledMat;
+    Mat scaledMat;
     depth_image.convertTo(scaledMat, CV_32F, 1.0/65535.0f);
-
-    cv::threshold(scaledMat,scaledMat,0.02f,1.0f,cv::THRESH_TRUNC);
-
-    /*outInfo("Cloud size: " << cloud_ptr->points.size());
-    outInfo("took: " << clock.getTime() << " ms.");
-    if(queueSaveImage){
-        queueSaveImage = false;
-        if(firstRun){
-            firstRun = false;
-            savedSzene.beforeActionPC = cloud_ptr;
-            savedSzene.beforeDepthImage = depth_image;
-            pcl::io::savePCDFileASCII ("testbefore.pcd", *cloud_ptr);
-        }
-        else{
-            savedSzene.afterActionPC = cloud_ptr;
-            savedSzene.afterDepthImage = depth_image;
-            pcl::io::savePCDFileASCII ("testafter.pcd", *cloud_ptr);
-
-
-
-        }
-
-    }*/
+    //distance filter
+    threshold(scaledMat,scaledMat,0.02f,1.0f,THRESH_TRUNC);
 
     if(runCount == 0){
         savedSzene.beforeActionPC = cloud_ptr;
@@ -145,50 +126,50 @@ public:
         savedSzene.afterDepthImage = scaledMat;
         runCount = 0;
 
-        //savedSzene.dist = cv::substract(savedSzene.afterDepthImage,savedSzene.beforeDepthImage, savedSzene.dist);
+        //savedSzene.dist = substract(savedSzene.afterDepthImage,savedSzene.beforeDepthImage, savedSzene.dist);
 
-        cv::absdiff(savedSzene.beforeDepthImage, savedSzene.afterDepthImage, savedSzene.dist);
-        //cv::imshow("dist",savedSzene.beforeDepthImage);
+        absdiff(savedSzene.beforeDepthImage, savedSzene.afterDepthImage, savedSzene.dist);
+        //imshow("dist",savedSzene.beforeDepthImage);
         //dst = src1 - src2;
         //dst -= src1;
 
-        cv::Mat I = savedSzene.dist;
-        float min = 1, max = 0;
-        printf("Depth: %d", I.depth());
-        //CV_Assert(I.depth() == CV_8U);
+        Mat I = savedSzene.dist;
 
-        int channels = I.channels();
+        threshold(I,I,0.0003f,1.0f,THRESH_BINARY);
 
-        int nRows = I.rows;
-        int nCols = I.cols * channels;
-
-
-        if (I.isContinuous())
+        //erode(I,I,Mat(),Point(-1,-1),2);
+        //dilate(I,I,Mat(),Point(-1,-1),2);
+        float thresh = 0.3;
+        Mat canny_output;
+        std::vector<std::vector<Point> > cont;
+        std::vector<Vec4i> hierarchy;
+        Mat canny_in;
+        I.convertTo(canny_in, CV_8UC1, 255/16);
+        Canny( canny_in, canny_output, thresh, thresh*2, 3 );
+        findContours(canny_in, cont,hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0,0));
+        for( int i = 0; i< cont.size(); i++ )
         {
-            nCols *= nRows;
-            nRows = 1;
+
+         if(cont[i].size()<50){
+              continue;
+          }
+         double area = contourArea(cont[i]);
+        if(area < 300){
+            continue;
         }
-
-        int i,j;
-        float* p;
-        for( i = 0; i < nRows; ++i)
-        {
-            p = I.ptr<float>(i);
-            for ( j = 0; j < nCols; ++j)
-            {
-                if(min > p[j]){
-                  min = p[j];
-                }
-                if(max < p[j]){
-                    max = p[j];
-                }
-                if(p[j]> 0.0003){
-                    p[j] = 1;
-                }
+         RotatedRect rect = minAreaRect(cont[i]);
+         if((rect.size.height >= 20 || rect.size.width >= 20) && abs(rect.size.height - rect.size.width)< 30){
+            Scalar color;
+            Point p = cont[i][0];
+            if(savedSzene.afterDepthImage.at<float>(p) - savedSzene.beforeDepthImage.at<float>(p)< 0){
+                color = 0.3;
+            } else{
+              color = 0.6;
             }
-        }
-        printf("Min: %u, Max: %u ",min,max);
+            drawContours( I, cont, i, color, 2, 8, hierarchy, 0, Point() );
 
+          }
+        }
         pcl::PointIndices indices = detectChange();
         if(indices.indices.size() == 0){
             return UIMA_ERR_NONE;
@@ -217,7 +198,7 @@ public:
       srand ((unsigned int) time (NULL));
 
       // Octree resolution - side length of octree voxels
-      float resolution = 0.03f;
+      float resolution = 0.02f;
 
       // Instantiate octree-based point cloud change detection class
       pcl::octree::OctreePointCloudChangeDetector<pcl::PointXYZRGBA> octree (resolution);
@@ -236,7 +217,7 @@ public:
       std::vector<int> newPointIdxVector;
 
       // Get vector of point indices from octree voxels which did not exist in previous buffer
-      octree.getPointIndicesFromNewVoxels (newPointIdxVector);
+      octree.getPointIndicesFromNewVoxels (newPointIdxVector, 5);
 
       pcl::PointIndices indices;
       indices.indices = newPointIdxVector;
@@ -268,7 +249,7 @@ public:
       return true;
   }
 
-  void drawImageWithLock(cv::Mat &disp)
+  void drawImageWithLock(Mat &disp)
   {
     disp = savedSzene.dist;
   }
