@@ -472,34 +472,41 @@ public:
         min_v2 += 0.005;
         */
 
-        Eigen::Matrix3f mat;
-        mat << bo.xVector, bo.yVector, bo.zVector;
-        Eigen::Quaternionf qua(mat);
-        qua.normalize();
 
-        pose.header.frame_id = cloud_object->header.frame_id;
+
+        tf::Vector3 trans(((max_v1 + min_v1) * v1.x() + (max_v2 + min_v2) * v2.x() + (max_v3 + min_v3) * v3.x()) / 2.0f,
+                          ((max_v1 + min_v1) * v1.y() + (max_v2 + min_v2) * v2.y() + (max_v3 + min_v3) * v3.y()) / 2.0f,
+                          ((max_v1 + min_v1) * v1.z() + (max_v2 + min_v2) * v2.z() + (max_v3 + min_v3) * v3.z()) / 2.0f);
+/*        pose.header.frame_id = cloud_object->header.frame_id;
         pose.pose.orientation.x = qua.x();
         pose.pose.orientation.y = qua.y();
         pose.pose.orientation.z = qua.z();
         pose.pose.orientation.w = qua.w();
 
         pose.pose.position.x =
-            ((max_v1 + min_v1) * v1.x() + (max_v2 + min_v2) * v2.x() + (max_v3 + min_v3) * v3.x()) / 2.0f;
+            ;
         pose.pose.position.y =
-            ((max_v1 + min_v1) * v1.y() + (max_v2 + min_v2) * v2.y() + (max_v3 + min_v3) * v3.y()) / 2.0f;
+            ;
         pose.pose.position.z =
-            ((max_v1 + min_v1) * v1.z() + (max_v2 + min_v2) * v2.z() + (max_v3 + min_v3) * v3.z()) / 2.0f;
+            ;
 
 
-        tf::Vector3 trans(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
         tf::Matrix3x3 rot;
 
         rot.setValue(mat(0,0), mat(0,1), mat(0,2),
                      mat(1,0), mat(1,1), mat(1,2),
-                     mat(2,0), mat(2,1), mat(2,2));
+                     mat(2,0), mat(2,1), mat(2,2));*/
+
+        Eigen::Matrix3f mat;
+        mat << bo.xVector, bo.yVector, bo.zVector;
+        Eigen::Quaternionf qua(mat);
+        qua.normalize();
+        tf::Quaternion quat;
+        Eigen::Quaterniond quatd = qua.cast<double>();
+        tf::quaternionEigenToTF(quatd, quat);
 
         transform.setOrigin(trans);
-        transform.setBasis(rot);
+        transform.setRotation(quat);
 
         o.name.set("box");
         o.type.set(1);
