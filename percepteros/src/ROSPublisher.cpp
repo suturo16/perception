@@ -12,6 +12,7 @@
 #include <suturo_perception_msgs/ObjectDetection.h>
 #include <tf_conversions/tf_eigen.h>
 #include <tf/transform_listener.h>
+#include "geometry_msgs/PoseStamped.h"
 
 using namespace uima;
 
@@ -73,10 +74,6 @@ private:
     tf::StampedTransform kinectToOdom;
     Eigen::Affine3d kinectToOdomEigen;
 
-    listener.lookupTransform("/head_mount_kinect_rgb_optical_frame", "/odom_combined", ros::Time(0), kinectToOdom);
-    tf::transformTFToEigen(kinectToOdom, kinectToOdomEigen);
-
-
      for(rs::Cluster c: clusters){
         std::vector<percepteros::RecognitionObject> objects;
         std::vector<rs::PoseAnnotation> poses;
@@ -87,23 +84,23 @@ private:
         if(objects.size()!=0 && objects.size() == poses.size()){
             for(int i = 0; i < objects.size(); i++){
             	percepteros::RecognitionObject recObj  = objects[i];
-                rs::StampedPose pose = poses[i].world.get();
+                rs::StampedPose pose = poses[i].camera.get();
             	std::vector<double> translation = pose.translation.get();
             	std::vector<double> rotation = pose.rotation.get();
+
             	Eigen::Matrix3d mat;
             	mat << 	rotation[0], rotation[1], rotation[2], 
             			rotation[3], rotation[4], rotation[5],
                         rotation[6], rotation[7], rotation[8];
                 Eigen::Vector3d trans(translation[0],translation[1],translation[2]);
-                //trans = kinectToOdomEigen * trans;
-                //mat = kinectToOdomEigen*mat;
                 Eigen::Quaterniond q(mat);
+				q.normalize();
             	
                 outInfo(recObj.name.get());
 
                 suturo_perception_msgs::ObjectDetection objectDetectionMsg;
                 
-                objectDetectionMsg.pose.header.frame_id = "map";
+                objectDetectionMsg.pose.header.frame_id = "/head_mount_kinect_rgb_optical_frame";
 
                 objectDetectionMsg.pose.pose.position.x=trans[0];
                 objectDetectionMsg.pose.pose.position.y=trans[1];
@@ -113,7 +110,11 @@ private:
                 objectDetectionMsg.pose.pose.orientation.y=q.y();
                 objectDetectionMsg.pose.pose.orientation.z=q.z();
                 objectDetectionMsg.pose.pose.orientation.w=q.w();
-                
+				
+				geometry_msgs::PoseStamped nPose;
+				listener.transformPose("/odom_combined", objectDetectionMsg.pose, nPose);
+				objectDetectionMsg.pose = nPose;
+
                 objectDetectionMsg.name=recObj.name.get();
                 objectDetectionMsg.type=recObj.type.get();
                 objectDetectionMsg.width=recObj.width.get();

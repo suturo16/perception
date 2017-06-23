@@ -43,11 +43,9 @@ private:
 	PC::Ptr clust = PC::Ptr(new PC);
 	PC::Ptr clust_filtered = PC::Ptr(new PC);
 
-	std::vector<pcl::ModelCoefficients> plates;
 	std::vector<std::vector<tf::Vector3>> poses;
-
-	int HUE_UPPER_BOUND, HUE_LOWER_BOUND;
-
+	
+	int HUE_LOWER_BOUND, HUE_UPPER_BOUND;
 public:
 	const float MAX_DIST_CENTS = 0.1;
 	const float MAX_RATIO_RADII = 0.8;
@@ -79,6 +77,7 @@ public:
     rs::SceneCas cas(tcas);
 	rs::Scene scene = cas.getScene();
 	std::vector<rs::Cluster> clusters;
+	clusters.clear();
 	scene.identifiables.filter(clusters);
 
 	//get scene points
@@ -102,12 +101,11 @@ public:
 	ex.setNegative(true);
 
 	std::vector<rs::Shape> shapes;
+	poses.clear();
 	for (auto it = clusters.begin(); it != clusters.end(); ++it) {
 		auto cluster = *it;
 		shapes.clear();
 		cluster.annotations.filter(shapes);
-		outInfo(cluster.source.get());
-		outInfo(cluster.source.get().compare(0, 13, "HueClustering"));
 		if (cluster.source.get().compare(0, 13, "HueClustering") > -1 &&
 				shapes.size() > 0 &&
 				shapes[0].shape.get().compare("round") > -1) {
@@ -139,8 +137,7 @@ public:
 				
 
 				if 	(isPlate(cco1, cco2, (int) std::strtof(cluster.source.get().erase(0, 15).data(), NULL))) {
-					outInfo("found plate");
-					plates.push_back(*cco1);
+					outInfo("Found a plate");
 					addAnnotation(tcas, cluster, *cco1, clust->points[cin1->indices[0]]);
 				}
 			}
@@ -150,24 +147,43 @@ public:
   
 
 	void addAnnotation(CAS &tcas, rs::Cluster cluster, pcl::ModelCoefficients co, PointN circ) {
+		//calculate average normal
+		extractCluster(clust, cloud, cluster);
+		std::vector<int> indices;
+		removeNaNNormalsFromPointCloud(*clust, *clust, indices);
+
+		tf::Vector3 normal = getAverageNormal(clust);
+
 		//calculate values
 		std::vector<tf::Vector3> po;
 		tf::Vector3 x,y,z,origin;
 		origin.setValue(co.values[0], co.values[1], co.values[2]);
 		x.setValue(circ.x - co.values[0], circ.y - co.values[1], circ.z - co.values[2]);
 		z.setValue(co.values[4], co.values[5], co.values[6]);
+		if (z.angle(normal) > 1.8f) {
+			z.setValue(-co.values[4], -co.values[5], -co.values[6]);
+		}
+
 		y = x.cross(z);
+		x = y.cross(z);
+		z = x.cross(y);
+
 		x.normalize(); y.normalize(); z.normalize();
-		
+
 		po.push_back(x); po.push_back(y); po.push_back(z); po.push_back(origin);
 		poses.push_back(po);
 	
 		tf::Matrix3x3 rot;
+		
+		rot.setValue(	x[0], y[0], z[0],
+						x[1], y[1], z[1],
+						x[2], y[2], z[2]);
+		/*
 		rot.setValue(	x[0], x[1], x[2],
 						y[0], y[1], y[2],
 						z[0], z[1], z[2]);
-	
-	tf::Transform trans;
+		*/
+		tf::Transform trans;
 		trans.setOrigin(origin);
 		trans.setBasis(rot);
 			
@@ -176,6 +192,12 @@ public:
 		tf::StampedTransform camToWorld;
 		camToWorld.setIdentity();
 		
+    	rs::SceneCas cas(tcas);
+		rs::Scene scene = cas.getScene();
+		if (scene.viewPoint.has()) {
+			rs::conversion::from(scene.viewPoint.get(), camToWorld);
+		}
+
 		tf::Stamped<tf::Pose> camera(trans, camToWorld.stamp_, camToWorld.child_frame_id_);
 		tf::Stamped<tf::Pose> world(camToWorld * trans, camToWorld.stamp_, camToWorld.frame_id_);
 		
@@ -193,8 +215,22 @@ public:
 		o.height.set(0);
 		o.depth.set(0);
 	
-		cluster.annotations.append(o);
 		cluster.annotations.append(poseA);
+		cluster.annotations.append(o);
+	}
+
+	tf::Vector3 getAverageNormal(PC::Ptr plate) {
+		std::vector<float> avn(3);
+		int size = plate->points.size();
+
+		for (int i = 0; i < size; i++) {
+			avn[0] += plate->points[i].normal_x / size;
+			avn[1] += plate->points[i].normal_y / size;
+			avn[2] += plate->points[i].normal_z / size;
+		}
+
+		tf::Vector3 n(avn[0], avn[1], avn[2]);
+		return n;
 	}
 
 	bool isPlate(pcl::ModelCoefficients::Ptr co1, pcl::ModelCoefficients::Ptr co2, int avHue) {
