@@ -13,6 +13,7 @@
 #include <tf_conversions/tf_eigen.h>
 #include <tf/transform_listener.h>
 #include "geometry_msgs/PoseStamped.h"
+#include <visualization_msgs/Marker.h>
 
 using namespace uima;
 
@@ -22,9 +23,12 @@ private:
 
   ros::NodeHandle n;
   ros::Publisher chatter_pub;
+  ros::Publisher debug_pub;
+
   tf::TransformListener listener;
 
   tf::StampedTransform camToWorld, worldToCam;
+  int currentid = 0;
 
 
 public:
@@ -38,6 +42,7 @@ public:
     char* argv[0];
     ros::init(argc, argv, "detected_objects");
     chatter_pub = n.advertise<suturo_perception_msgs::ObjectDetection>("percepteros/object_detection", 1000);
+    debug_pub = n.advertise<visualization_msgs::Marker>( "visualization_marker", 0 );
 
     outInfo("initialize");
     return UIMA_ERR_NONE;
@@ -76,10 +81,15 @@ private:
 
      for(rs::Cluster c: clusters){
         std::vector<percepteros::RecognitionObject> objects;
+        std::vector<percepteros::EnclosingCircle> circles;
         std::vector<rs::PoseAnnotation> poses;
         
         c.annotations.filter(objects);
         c.annotations.filter(poses);
+        c.annotations.filter(circles);
+        for(auto circle: circles){
+            publishDebugMarker(circle);
+        }
         
         if(objects.size()!=0 && objects.size() == poses.size()){
             for(int i = 0; i < objects.size(); i++){
@@ -122,10 +132,44 @@ private:
                 objectDetectionMsg.depth=recObj.depth.get();
 
                 chatter_pub.publish(objectDetectionMsg);
+
             }
         }
+        currentid = 0;
     }
     return UIMA_ERR_NONE;
+  }
+
+  void publishDebugMarker(percepteros::EnclosingCircle circle){
+      rs::StampedPose pose = circle.pose.get();
+      std::vector<double> translation = pose.translation.get();
+      visualization_msgs::Marker marker;
+      marker.header.frame_id = pose.frame.get();
+      marker.header.stamp = ros::Time();
+      marker.ns = "my_namespace";
+      marker.id = currentid;
+      marker.type = visualization_msgs::Marker::CYLINDER;
+      marker.action = visualization_msgs::Marker::ADD;
+      marker.pose.position.x = translation[0];
+      marker.pose.position.y = translation[1];
+      marker.pose.position.z = translation[2];
+      marker.pose.orientation.x = 0.0;
+      marker.pose.orientation.y = 0.0;
+      marker.pose.orientation.z = 0.0;
+      marker.pose.orientation.w = 1.0;
+      marker.scale.x = circle.radius.get();
+      marker.scale.y = circle.radius.get();
+      marker.scale.z = 0.1;
+      marker.color.a = 1.0; // Don't forget to set the alpha!
+      marker.color.r = 0.0;
+      marker.color.g = 1.0;
+      marker.color.b = 0.0;
+      debug_pub.publish( marker );
+      cout << "radius"<< circle.radius.get()<< endl;
+      cout << "x" << translation[0] << endl;
+      cout << "y" << translation[1] << endl;
+      cout << "z" << translation[2] << endl;
+      currentid++;
   }
 
   void drawImageWithLock(cv::Mat &disp)

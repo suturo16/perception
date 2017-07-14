@@ -6,6 +6,7 @@
 
 #include <percepteros/types/type_definitions.h>
 #include <percepteros/types/recognition_objects.h>
+#include <percepteros/types/enclosing_circle.h>
 #include <percepteros/types/record_data.h>
 
 
