@@ -12,5 +12,6 @@ annotators:
     - PlateAnnotator
     - SpatulAnnotator
     - CakeAnnotator
+    - BoardAnnotator
     - KnifeAnnotator
     - ROSPublisher
