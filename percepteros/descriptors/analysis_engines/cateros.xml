@@ -229,7 +229,7 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot.ini</string>
+            <string>config_mongodb_playback.ini</string>
           </array>
         </value>
       </nameValuePair>
@@ -273,6 +273,15 @@
     <flowConstraints>
       <fixedFlow>
         <node>Trigger</node>
+      <node>CollectionReader</node>
+      <node>ImagePreprocessor</node>
+      <node>PointCloudFilter</node>
+      <node>NormalEstimator</node>
+      <node>PlaneAnnotator</node>
+      <node>PointCloudClusterExtractor</node>
+      <node>SpatulaRecognition</node>
+      <node>ROSPublisher</node>
+        <!--
         <node>CollectionReader</node>
         <node>ImagePreprocessor</node>
         <node>PointCloudFilter</node>
@@ -280,8 +289,9 @@
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
         <node>SpatulaRecognition</node>
-        <node>Cluster3DGeometryAnnotator</node>
-        <node>ROSPublisher</node>
+        -->
+        <!--<node>Cluster3DGeometryAnnotator</node>
+        <node>ROSPublisher</node>-->
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>

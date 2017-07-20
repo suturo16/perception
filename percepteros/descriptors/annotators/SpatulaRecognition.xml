@@ -10,19 +10,31 @@
     <vendor/>
     <configurationParameters>
         <configurationParameter>
-            <name>test_param</name>
+            <name>vector_length</name>
             <type>Float</type>
             <multiValued>false</multiValued>
             <mandatory>false</mandatory>
         </configurationParameter>
+        <configurationParameter>
+            <name>radius</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>        
     </configurationParameters>
     <configurationParameterSettings>
         <nameValuePair>
-            <name>test_param</name>
+            <name>vector_length</name>
             <value>
-                <float>0.01</float>
+                <float>1</float>
             </value>
         </nameValuePair>
+        <nameValuePair>
+            <name>radius</name>
+            <value>
+                <float>0.001</float>
+            </value>
+        </nameValuePair>        
     </configurationParameterSettings>
     <typeSystemDescription>
         <imports>
