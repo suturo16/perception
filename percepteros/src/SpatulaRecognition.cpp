@@ -30,6 +30,11 @@ private:
   std::vector<Eigen::Vector3f>  obj_position;
   float radius;
   float vector_length;
+
+  struct featureSet{
+    ;
+  };
+  calculate
 public:
 
   SpatulaRecognition(): DrawingAnnotator(__func__), pointSize(1){
@@ -57,13 +62,15 @@ public:
     obj_position.clear();
     obj_orientation.clear();
 
-    //rs::StopWatch clock;
+    /*
+    rs::StopWatch clock;
+    outInfo("took: " << clock.getTime() << " ms.");
+*/
     rs::SceneCas cas(tcas);
     rs::Scene scene = cas.getScene();
     cas.get(VIEW_CLOUD,*cloud_ptr);
 
     outInfo("Cloud size: " << cloud_ptr->points.size());
-//    outInfo("took: " << clock.getTime() << " ms.");
 
     std::vector<rs::Cluster> clusters;
     scene.identifiables.filter(clusters);
@@ -129,7 +136,6 @@ public:
       visualizer.getPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
     }
 
-    //double radius = 0.5;
     if (obj_orientation.size() == obj_position.size())
     {
       outInfo("total obj no " + std::to_string(obj_orientation.size()));
@@ -139,18 +145,6 @@ public:
         visualizer.addSphere(pos, radius,1, 0, 0, std::to_string(i));
         pcl::PointXYZ to(vector_length*(obj_position[i].x()-obj_orientation[i](0, 0)), vector_length*(obj_position[i].y()-obj_orientation[i](1, 0)), vector_length*(obj_position[i].z()-obj_orientation[i](2, 0)));
         visualizer.addLine(pos, to, 1, 0, 0, std::to_string(i)+"_a");
-        /*
-
-        pcl::ModelCoefficients mc;
-        mc.values.push_back(obj_position[i].x());
-        mc.values.push_back(obj_position[i].y());
-        mc.values.push_back(obj_position[i].z());
-        mc.values.push_back(obj_orientation[0][0]);
-        mc.values.push_back(obj_orientation.y());
-        mc.values.push_back(obj_orientation.z());
-        visualizer.addCone( mc ,"x");
-        visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
-*/
       }
     }
   }
