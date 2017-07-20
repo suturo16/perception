@@ -54,6 +54,9 @@ public:
   TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec)
   {
     outInfo("process start");
+    obj_position.clear();
+    obj_orientation.clear();
+
     //rs::StopWatch clock;
     rs::SceneCas cas(tcas);
     rs::Scene scene = cas.getScene();
@@ -134,10 +137,8 @@ public:
       {
         pcl::PointXYZ pos(obj_position[i].x(), obj_position[i].y(), obj_position[i].z());
         visualizer.addSphere(pos, radius,1, 0, 0, std::to_string(i));
-        pcl::PointXYZ to_1(vector_length*(obj_position[i].x()-obj_orientation[i](0,0)), vector_length*(obj_position[i].y()-obj_orientation[i](0,1)), vector_length*(obj_position[i].z()-obj_orientation[i](0,2)));
-        //pcl::PointXYZ to_2(vector_length*(obj_position[i].x()-obj_orientation[i](0, 0)), vector_length*(obj_position[i].y()-obj_orientation[i](1, 0)), vector_length*(obj_position[i].z()-obj_orientation[i](2, 0)));
-        visualizer.addLine(pos, to_1, 1, 0, 0, std::to_string(i)+"_a");
-        visualizer.addLine(pos, to_1, 0, 1, 0, std::to_string(i)+"_b");
+        pcl::PointXYZ to(vector_length*(obj_position[i].x()-obj_orientation[i](0, 0)), vector_length*(obj_position[i].y()-obj_orientation[i](1, 0)), vector_length*(obj_position[i].z()-obj_orientation[i](2, 0)));
+        visualizer.addLine(pos, to, 1, 0, 0, std::to_string(i)+"_a");
         /*
 
         pcl::ModelCoefficients mc;
