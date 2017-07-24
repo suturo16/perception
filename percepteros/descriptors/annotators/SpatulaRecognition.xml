@@ -20,7 +20,68 @@
             <type>Float</type>
             <multiValued>false</multiValued>
             <mandatory>false</mandatory>
-        </configurationParameter>        
+        </configurationParameter>
+        <configurationParameter>
+            <name>eigen_vec_0</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>eigen_vec_1</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>eigen_vec_2</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>eigen_val_0</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>eigen_val_1</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>eigen_val_2</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>h_val</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>s_val</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>v_val</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+        <configurationParameter>
+            <name>max_dist</name>
+            <type>Float</type>
+            <multiValued>false</multiValued>
+            <mandatory>false</mandatory>
+        </configurationParameter>
+
     </configurationParameters>
     <configurationParameterSettings>
         <nameValuePair>
@@ -35,6 +96,66 @@
                 <float>0.001</float>
             </value>
         </nameValuePair>        
+        <nameValuePair>
+            <name>eigen_vec_0</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>eigen_vec_1</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>eigen_vec_2</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>eigen_val_0</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>eigen_val_1</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>eigen_val_2</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>h_val</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>s_val</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>v_val</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
+        <nameValuePair>
+            <name>max_dist</name>
+            <value>
+                <float>0</float>
+            </value>
+        </nameValuePair>
     </configurationParameterSettings>
     <typeSystemDescription>
         <imports>

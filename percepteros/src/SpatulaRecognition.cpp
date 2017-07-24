@@ -7,6 +7,7 @@
 #include <pcl/common/pca.h>
 #include <pcl/common/geometry.h>
 #include <pcl/common/centroid.h>
+#include <pcl/point_types_conversion.h>
 
 //RS
 #include <rs/types/all_types.h>
@@ -24,9 +25,9 @@ typedef pcl::PointXYZRGBA PointXYZRGBA;
 struct featureSet{
   Eigen::Matrix3f pca_eigen_vec;
   Eigen::Vector3f pca_eigen_vals;
-  uint8_t r_mean; 
-  uint8_t g_mean; 
-  uint8_t b_mean; 
+  float h_mean; 
+  float s_mean; 
+  float v_mean; 
   float max_dist; //btw two points within the cloud  
 };
 
@@ -39,12 +40,13 @@ private:
   std::vector<Eigen::Matrix3f> obj_orientation;
   std::vector<Eigen::Vector3f>  obj_position;
   std::vector<featureSet> obj_feats;
-  featureSet obj_feat_means;
+  featureSet spatula_features;
   float radius;
   float vector_length;
 
-  float maxDist(pcl::PointCloud<pcl::PointXYZ>::Ptr cluster);
-  featureSet computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cluster);
+  float maxDist(pcl::PointCloud<pcl::PointXYZ>::Ptr);
+  featureSet computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr);
+  bool hasSimilarFS(featureSet , featureSet);
 
 public:
 
@@ -64,6 +66,70 @@ TyErrorId SpatulaRecognition::initialize(AnnotatorContext &ctx)
 {
   if(ctx.isParameterDefined("radius")) ctx.extractValue("radius", radius);
   if(ctx.isParameterDefined("vector_length")) ctx.extractValue("vector_length", vector_length);
+  float eigen_vec;
+  if(ctx.isParameterDefined("eigen_vec_0"))
+  {
+    ctx.extractValue("eigen_vec_0", eigen_vec);
+    this->spatula_features.pca_eigen_vec(0, 0) = eigen_vec;
+    outInfo("set vaule: eigen_vec_0");
+  }
+  if(ctx.isParameterDefined("eigen_vec_1"))
+  {
+    ctx.extractValue("eigen_vec_1", eigen_vec);
+    this->spatula_features.pca_eigen_vec(1, 0) = eigen_vec;  
+    outInfo("set vaule: eigen_vec_1");
+  }
+  if(ctx.isParameterDefined("eigen_vec_2"))
+  {
+    ctx.extractValue("eigen_vec_2", eigen_vec);
+    this->spatula_features.pca_eigen_vec(1, 2) = eigen_vec;
+    outInfo("set vaule: eigen_vec_2");
+  }
+
+  float eigen_val;
+  if(ctx.isParameterDefined("eigen_val_0"))
+  {
+    ctx.extractValue("eigen_val_0", eigen_val);
+    this->spatula_features.pca_eigen_vals[0] = eigen_val;
+    outInfo("set vaule: eigen_val_0");
+  }
+  if(ctx.isParameterDefined("eigen_val_1"))
+  {
+    ctx.extractValue("eigen_val_1", eigen_val);
+    this->spatula_features.pca_eigen_vals[1] = eigen_val;
+    outInfo("set vaule: eigen_vec_1");
+  }
+  if(ctx.isParameterDefined("eigen_val_2"))
+  {
+    ctx.extractValue("eigen_val_2", eigen_val);
+    this->spatula_features.pca_eigen_vals[2] = eigen_val;
+    outInfo("set vaule: eigen_val_2");
+  }
+  float hsv;
+  if(ctx.isParameterDefined("h_val"))
+  {
+    ctx.extractValue("h_val", hsv);
+    this->spatula_features.h_mean = hsv;
+    outInfo("set vaule: h_val");
+  }
+  if(ctx.isParameterDefined("s_val"))
+  {
+    ctx.extractValue("s_val", hsv);
+    this->spatula_features.s_mean = hsv;
+    outInfo("set vaule: s_val");
+  }
+  if(ctx.isParameterDefined("v_val"))
+  {
+    ctx.extractValue("v_val", hsv);
+    this->spatula_features.v_mean = hsv;
+    outInfo("set vaule: v_val");
+  }
+
+  if(ctx.isParameterDefined("max_dist")) 
+  {
+      ctx.extractValue("max_dist", this->spatula_features.max_dist);
+      outInfo("set value: max_dist");
+  }
   
   outInfo("initialize");
   return UIMA_ERR_NONE;
@@ -211,15 +277,50 @@ for(auto point = cluster->begin(); point != cluster->end(); point++)
   centroidComputer.add(*point);
 pcl::PointXYZRGBA centroid;
 centroidComputer.get(centroid);
-int rgb = centroid.rgb;
-cluster_feats.r_mean = (rgb >> 16) & 0x0000ff;
-cluster_feats.g_mean = (rgb >> 8)  & 0x0000ff;
-cluster_feats.b_mean = (rgb)       & 0x0000ff;
+
+pcl::PointXYZHSV hsv;
+pcl::PointXYZRGBAtoXYZHSV(centroid, hsv);
+cluster_feats.h_mean = hsv.h;
+cluster_feats.s_mean = hsv.s;
+cluster_feats.v_mean = hsv.v;
 
 //get max distance within cloud
-cluster_feats.max_dist = maxDist(space_cloud);
+cluster_feats.max_dist = std::abs(maxDist(space_cloud));
 
 return cluster_feats;
+}
+
+/*
+struct featureSet{
+  Eigen::Matrix3f pca_eigen_vec;
+  Eigen::Vector3f pca_eigen_vals;
+  double h_mean; 
+  double s_mean; 
+  double v_mean; 
+  float max_dist; //btw two points within the cloud  
+};
+*/
+bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
+{
+  float range = 0.1;
+  //check eigenvectors
+  //check eigenvalues
+  Eigen::Vector3f eV_range = compared.pca_eigen_vals * 0.1;
+  Eigen::Vector3f eV_min = compared.pca_eigen_vals - eV_range;
+  Eigen::Vector3f eV_max = compared.pca_eigen_vals + eV_range;
+
+  if((comparing.pca_eigen_vals[0] < eV_min[0])||(comparing.pca_eigen_vals[1] < eV_min[1])||(comparing.pca_eigen_vals[2] < eV_min[2])) return false;
+  if((comparing.pca_eigen_vals[0] > eV_max[0])||(comparing.pca_eigen_vals[1] > eV_max[1])||(comparing.pca_eigen_vals[2] > eV_max[2])) return false;
+
+  //check hsv
+  if (((compared.h_mean-(range*compared.h_mean))>comparing.h_mean)||((compared.s_mean-(range*compared.s_mean))>comparing.s_mean)||((compared.v_mean-(range*compared.v_mean))>comparing.v_mean)) return false;
+  if (((compared.h_mean+(range*compared.h_mean))<comparing.h_mean)||((compared.s_mean+(range*compared.s_mean))<comparing.s_mean)||((compared.v_mean+(range*compared.v_mean))<comparing.v_mean)) return false;
+  
+  //check maxDist
+  if ((compared.max_dist + (compared.max_dist*0.1)) > comparing.max_dist) return false;
+  if ((compared.max_dist - (compared.max_dist*0.1)) > comparing.max_dist) return false;
+
+  return true;
 }
 // This macro exports an entry point that is used to create the annotator.
 MAKE_AE(SpatulaRecognition)
