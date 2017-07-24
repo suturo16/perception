@@ -46,12 +46,14 @@ private:
   featureSet spatula_features;
   float range;
   float vector_length;
-  Eigen::Vector3f spatula_pos;
+  Eigen::Vector3f spatula_pos; //this one is for the pcl::visualizer::addtext3d
   bool found_spat;
+  //pcl::PointXYZ spatula_origin; //this one is for the frame
 
   float maxDist(pcl::PointCloud<pcl::PointXYZ>::Ptr);
   featureSet computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr);
   bool hasSimilarFS(featureSet , featureSet);
+  pcl::PointXYZ getOrigin(pcl::PointCloud<pcl::PointXYZ>::Ptr);
 
 public:
 
@@ -203,6 +205,48 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
       outInfo("Spatula detected");
       found_spat = true;
       this->spatula_pos = centroid;
+      pcl::PointXYZ spatula_origin = getOrigin(object_cloud);
+
+      tf::Transform transform;
+      transform.setOrigin(tf::Vector3(spatula_origin.x, spatula_origin.y, spatula_origin.z));
+
+      tf::Vector3 spat_y(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
+      tf::Vector3 spat_x();
+      tf::Vector3 spat_z();// = spat_x.cross(spat_y);
+
+      spat_y.normalize();
+      /*
+      spat_x.normalize();
+      spat_z.normalize();
+
+      if (
+        std::isnan(spat_x[0]) || std::isnan(spat_x[1]) || std::isnan(spat_x[2]) ||
+        std::isnan(spat_y[0]) || std::isnan(spat_y[1]) || std::isnan(spat_y[2]) ||
+        std::isnan(spat_z[0]) || std::isnan(spat_z[1]) || std::isnan(spat_z[2])
+        ) 
+      {
+        outError("Found wrong orientation. Abort.");
+        break;
+      }
+
+      tf::Matrix3x3 rot;
+      rot.setValue(
+                    spat_x.x, spat_y.x, spat_z.x, 
+                    spat_x.y, spat_y.y, spat_z.y, 
+                    spat_x.z, spat_y.z, spat_z.z
+                  );
+      transform.setBasis(rot);
+
+
+      tf::StampedTransform camToWorld;
+      camToWorld.setIdentity();
+      if (scene.viewPoint.has()) {
+        rs::conversion::from(scene.viewPoint.get(), camToWorld);
+      }
+
+      tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
+      tf::Stamped<tf::Pose> world(camToWorld * transform, camToWorld.stamp_, camToWorld.frame_id_);
+      */
     }
     /*
     */
@@ -357,5 +401,37 @@ bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
 
   return true;
 }
+
+
+pcl::PointXYZ SpatulaRecognition::getOrigin(pcl::PointCloud<pcl::PointXYZ>::Ptr spat) {
+  pcl::PointXYZ spatula_origin,begin, end;
+  std::vector<pcl::PointXYZ> endpoints(2);
+  int size = spat->size(); 
+  float currDistance = 0;
+  
+  for (int i = 0; i < size; i++) {
+    begin = spat->points[i];
+    for (int j = i+1; j < size; j++) {
+      end = spat->points[j];
+      if (pcl::geometry::distance(begin, end) > currDistance) {
+        endpoints[0] = begin;
+        endpoints[1] = end;
+        currDistance = pcl::geometry::distance(begin, end);
+      }
+    }
+  }
+
+  if (endpoints[0].x + endpoints[0].y + endpoints[0].z < endpoints[1].x + endpoints[1].y + endpoints[1].z) {
+    spatula_origin = endpoints[0];
+  } else {
+    spatula_origin = endpoints[1];
+  }
+  return spatula_origin;
+
+}
+
+
+
+
 // This macro exports an entry point that is used to create the annotator.
 MAKE_AE(SpatulaRecognition)
