@@ -16,6 +16,8 @@
 #include <rs/scene_cas.h>
 #include <rs/utils/time.h>
 
+//CATERROS
+#include <geometry_msgs/PoseStamped.h>
 
 
 using namespace uima;
@@ -44,6 +46,8 @@ private:
   featureSet spatula_features;
   float range;
   float vector_length;
+  Eigen::Vector3f spatula_pos;
+  bool found_spat;
 
   float maxDist(pcl::PointCloud<pcl::PointXYZ>::Ptr);
   featureSet computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr);
@@ -148,6 +152,7 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
   this->clusters.clear();
   this->obj_position.clear();
   this->obj_feats.clear();
+  found_spat = false;
   //this->obj_orientation.clear();
 
   /*
@@ -185,12 +190,20 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
     spat_axis.setInputCloud(object_cloud);
     obj_orientation.push_back(spat_axis.getEigenVectors());
 */
-    this->obj_feats.push_back(computeFeatures(temp));
+    featureSet computed_fs = computeFeatures(temp);
+    this->obj_feats.push_back(computed_fs);
     Eigen::Vector4f center_temp;
     pcl::compute3DCentroid(*object_cloud, center_temp);
     Eigen::Vector3f centroid;
     centroid << center_temp.x(), center_temp.y(), center_temp.z();
     obj_position.push_back(centroid);
+
+    if (hasSimilarFS(spatula_features, computed_fs))
+    {
+      outInfo("Spatula detected");
+      found_spat = true;
+      this->spatula_pos = centroid;
+    }
     /*
     */
   }
@@ -232,6 +245,12 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
   }
 
   outInfo("total obj no " + std::to_string(obj_feats.size()));
+
+  if (this->found_spat)
+  {
+    visualizer.addText3D("spatula", pcl::PointXYZ(this->spatula_pos.x(), this->spatula_pos.y(), this->spatula_pos.z()), 0.02);;
+  }
+  /*
   if (obj_feats.size() == obj_position.size())
   {
     for (int i = 0; i<obj_position.size(); i++)
@@ -243,11 +262,11 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
       obj_description = std::to_string(obj_feats[i].pca_eigen_vec(0,0))+", "+std::to_string(obj_feats[i].pca_eigen_vec(1,0))+", "+std::to_string(obj_feats[i].pca_eigen_vec(2,0))+"\n"
                         +std::to_string(obj_feats[i].pca_eigen_vals[0])+", "+std::to_string(obj_feats[i].pca_eigen_vals[1])+", "+std::to_string(obj_feats[i].pca_eigen_vals[2])+"\n"
                         +std::to_string(obj_feats[i].h_mean)+", "+std::to_string(obj_feats[i].s_mean)+", "+std::to_string(obj_feats[i].v_mean);
-      visualizer.addText3D(obj_description.c_str(), pos, 0.005);
+      //visualizer.addText3D(obj_description.c_str(), pos, 0.005);
       if(hasSimilarFS(spatula_features, this->obj_feats[i]))
       {
         outInfo("detected Spatula!!!");
-        visualizer.addText3D("spatula"+std::to_string(i), pos, 0.002);
+        visualizer.addText3D("spatula"+std::to_string(i), pos, 0.02);
       }
     }
   }
@@ -255,32 +274,30 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
   {
     outError("the sizes of obj_feats and obj_position do not match!");
   }
+  */
 }
 
 float SpatulaRecognition::maxDist(pcl::PointCloud<pcl::PointXYZ>::Ptr cluster) {
-outInfo("start maxDist");
-pcl::PointXYZ tmp_begin, tmp_end, begin, end;
-std::vector<pcl::PointXYZ> endpoints(2);
-int size = cluster->size(); 
-float currDistance = 0;    
-for (int i = 0; i < size; i++) {
-  begin = cluster->points[i];
-  for (int j = i+1; j < size; j++) {
-    end = cluster->points[j];
-    if (pcl::geometry::distance(begin, end) > currDistance) {
-      endpoints[0] = begin;
-      endpoints[1] = end;
-      currDistance = pcl::geometry::distance(begin, end);
+  pcl::PointXYZ tmp_begin, tmp_end, begin, end;
+  std::vector<pcl::PointXYZ> endpoints(2);
+  int size = cluster->size(); 
+  float currDistance = 0;    
+  for (int i = 0; i < size; i++) {
+    begin = cluster->points[i];
+    for (int j = i+1; j < size; j++) {
+      end = cluster->points[j];
+      if (pcl::geometry::distance(begin, end) > currDistance) {
+        endpoints[0] = begin;
+        endpoints[1] = end;
+        currDistance = pcl::geometry::distance(begin, end);
+      }
     }
   }
-}
-outInfo("stop maxDist");
-return currDistance;
+  return currDistance;
 }
 
 featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cluster)
 {
-  outInfo("start computeFeatures");
   featureSet cluster_feats;
   
   pcl::PointCloud<pcl::PointXYZ>::Ptr space_cloud(new pcl::PointCloud<pcl::PointXYZ>());
@@ -314,14 +331,12 @@ featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA
   
   //get max distance within cloud
   //cluster_feats.max_dist = std::abs(maxDist(space_cloud));
-  outInfo("stop computeFeatures");
 
   return cluster_feats;
 }
 
 bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
 {
-  outInfo("start hasSimilarFS");
   //float range = 0.1;
   //check eigenvectors
   //check eigenvalues
@@ -340,7 +355,6 @@ bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
   //if ((compared.max_dist + (compared.max_dist*0.1)) > comparing.max_dist) return false;
   //if ((compared.max_dist - (compared.max_dist*0.1)) > comparing.max_dist) return false;
 
-  outInfo("stop hasSimilarFS");
   return true;
 }
 // This macro exports an entry point that is used to create the annotator.
