@@ -49,6 +49,7 @@ private:
   Eigen::Vector3f spatula_pos; //this one is for the pcl::visualizer::addtext3d
   bool found_spat;
   //pcl::PointXYZ spatula_origin; //this one is for the frame
+  tf::Transform spat_transf;
 
   float maxDist(pcl::PointCloud<pcl::PointXYZ>::Ptr);
   featureSet computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr);
@@ -151,6 +152,8 @@ TyErrorId SpatulaRecognition::destroy()
 TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification const &res_spec)
 {
   outInfo("process start");
+
+  //clearing data from last run
   this->clusters.clear();
   this->obj_position.clear();
   this->obj_feats.clear();
@@ -160,10 +163,27 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
   /*
   rs::StopWatch clock;
   outInfo("took: " << clock.getTime() << " ms.");
-*/
+  */
+  //setting up scene variables
   rs::SceneCas cas(tcas);
   rs::Scene scene = cas.getScene();
   cas.get(VIEW_CLOUD,*cloud_ptr);
+
+  //getting "up-achis" of scene
+  tf::StampedTransform camToWorld, worldToCam;
+  camToWorld.setIdentity();
+  if(scene.viewPoint.has())
+  {
+    rs::conversion::from(scene.viewPoint.get(), camToWorld);
+  }
+  else
+  {
+    outInfo("No camera to world transformation!!!");
+  }
+  worldToCam = tf::StampedTransform(camToWorld.inverse(), camToWorld.stamp_, camToWorld.child_frame_id_, camToWorld.frame_id_);
+
+  tf::Matrix3x3 matrix = worldToCam.getBasis();
+  tf::Vector3 scene_z = matrix*tf::Vector3(0,0,1);
 
   scene.identifiables.filter(clusters);
 
@@ -187,11 +207,7 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
     object_cloud->width = object_cloud->points.size();
     object_cloud->height = 1;
     object_cloud->is_dense = true;
-/*
-    pcl::PCA<pcl::PointXYZ> spat_axis;
-    spat_axis.setInputCloud(object_cloud);
-    obj_orientation.push_back(spat_axis.getEigenVectors());
-*/
+
     featureSet computed_fs = computeFeatures(temp);
     this->obj_feats.push_back(computed_fs);
     Eigen::Vector4f center_temp;
@@ -207,18 +223,21 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
       this->spatula_pos = centroid;
       pcl::PointXYZ spatula_origin = getOrigin(object_cloud);
 
-      tf::Transform transform;
-      transform.setOrigin(tf::Vector3(spatula_origin.x, spatula_origin.y, spatula_origin.z));
+/*    Vorschlag: Ys = Xs x Z; Zs = Xs x Ys
+      Wobei 's' die Achsen des Pfannenwenders sind und Z die globale Z-Achse
+      und 'x' das Kreuzprodukt
+*/
+      spat_transf.setOrigin(tf::Vector3(spatula_origin.x, spatula_origin.y, spatula_origin.z));
 
-      tf::Vector3 spat_y(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
-      tf::Vector3 spat_x();
-      tf::Vector3 spat_z();// = spat_x.cross(spat_y);
+      tf::Vector3 spat_x(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
+      tf::Vector3 spat_y = spat_x.cross(scene_z);
+      tf::Vector3 spat_z = spat_x.cross(spat_y);
 
-      spat_y.normalize();
-      /*
       spat_x.normalize();
+      spat_y.normalize();
       spat_z.normalize();
 
+      
       if (
         std::isnan(spat_x[0]) || std::isnan(spat_x[1]) || std::isnan(spat_x[2]) ||
         std::isnan(spat_y[0]) || std::isnan(spat_y[1]) || std::isnan(spat_y[2]) ||
@@ -229,23 +248,24 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
         break;
       }
 
-      tf::Matrix3x3 rot;
-      rot.setValue(
-                    spat_x.x, spat_y.x, spat_z.x, 
-                    spat_x.y, spat_y.y, spat_z.y, 
-                    spat_x.z, spat_y.z, spat_z.z
+      tf::Matrix3x3 spat_rot;
+      spat_rot.setValue(
+                    spat_x.x(), spat_y.x(), spat_z.x(), 
+                    spat_x.y(), spat_y.y(), spat_z.y(), 
+                    spat_x.z(), spat_y.z(), spat_z.z()
                   );
-      transform.setBasis(rot);
+      spat_transf.setBasis(spat_rot);
+      
+      tf::Stamped<tf::Pose> camera(spat_transf, camToWorld.stamp_, camToWorld.child_frame_id_);
+      tf::Stamped<tf::Pose> world(camToWorld*spat_transf, camToWorld.stamp_, camToWorld.frame_id_);
 
-
-      tf::StampedTransform camToWorld;
-      camToWorld.setIdentity();
-      if (scene.viewPoint.has()) {
-        rs::conversion::from(scene.viewPoint.get(), camToWorld);
-      }
-
-      tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
-      tf::Stamped<tf::Pose> world(camToWorld * transform, camToWorld.stamp_, camToWorld.frame_id_);
+      rs::PoseAnnotation poseAnnotation = rs::create<rs::PoseAnnotation>(tcas);
+      poseAnnotation.camera.set(rs::conversion::to(tcas, camera));
+      poseAnnotation.world.set(rs::conversion::to(tcas, world));
+      poseAnnotation.source.set("3DEstimate");
+      cluster.annotations.append(poseAnnotation);
+      scene.identifiables.append(cluster);
+      /*
       */
     }
     /*
