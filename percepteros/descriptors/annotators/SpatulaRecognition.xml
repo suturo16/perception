@@ -93,43 +93,43 @@
         <nameValuePair>
             <name>range</name>
             <value>
-                <float>0.5</float>
+                <float>20</float>
             </value>
         </nameValuePair>        
         <nameValuePair>
             <name>eigen_vec_0</name>
             <value>
-                <float>0.771640</float>
+                <float>0.75</float>
             </value>
         </nameValuePair>
         <nameValuePair>
             <name>eigen_vec_1</name>
             <value>
-                <float>0.080930</float>
+                <float>0.05</float>
             </value>
         </nameValuePair>
         <nameValuePair>
             <name>eigen_vec_2</name>
             <value>
-                <float>0.63089</float>
+                <float>0.65</float>
             </value>
         </nameValuePair>
         <nameValuePair>
             <name>eigen_val_0</name>
             <value>
-                <float>3.513723</float>
+                <float>3.5</float>
             </value>
         </nameValuePair>
         <nameValuePair>
             <name>eigen_val_1</name>
             <value>
-                <float>0.086772</float>
+                <float>0.09</float>
             </value>
         </nameValuePair>
         <nameValuePair>
             <name>eigen_val_2</name>
             <value>
-                <float>0.047642</float>
+                <float>0.04</float>
             </value>
         </nameValuePair>
         <nameValuePair>
@@ -141,13 +141,13 @@
         <nameValuePair>
             <name>s_val</name>
             <value>
-                <float>0.328767</float>
+                <float>0.33</float>
             </value>
         </nameValuePair>
         <nameValuePair>
             <name>v_val</name>
             <value>
-                <float>0.286275</float>
+                <float>0.28</float>
             </value>
         </nameValuePair>
         <nameValuePair>

@@ -27,9 +27,8 @@ typedef pcl::PointXYZRGBA PointXYZRGBA;
 struct featureSet{
   Eigen::Matrix3f pca_eigen_vec;
   Eigen::Vector3f pca_eigen_vals;
-  float h_mean; 
-  float s_mean; 
-  float v_mean; 
+  Eigen::Vector3f hsv_means;
+
   //float max_dist; //btw two points within the cloud  
 };
 
@@ -74,63 +73,37 @@ TyErrorId SpatulaRecognition::initialize(AnnotatorContext &ctx)
 {
   if(ctx.isParameterDefined("range")) ctx.extractValue("range", range);
   if(ctx.isParameterDefined("vector_length")) ctx.extractValue("vector_length", vector_length);
-  float eigen_vec;
-  if(ctx.isParameterDefined("eigen_vec_0"))
+
+  if(ctx.isParameterDefined("eigen_vec_0") && ctx.isParameterDefined("eigen_vec_1") && ctx.isParameterDefined("eigen_vec_2"))
   {
-    ctx.extractValue("eigen_vec_0", eigen_vec);
-    this->spatula_features.pca_eigen_vec(0, 0) = eigen_vec;
-    outInfo("set vaule: eigen_vec_0");
-  }
-  if(ctx.isParameterDefined("eigen_vec_1"))
-  {
-    ctx.extractValue("eigen_vec_1", eigen_vec);
-    this->spatula_features.pca_eigen_vec(1, 0) = eigen_vec;  
-    outInfo("set vaule: eigen_vec_1");
-  }
-  if(ctx.isParameterDefined("eigen_vec_2"))
-  {
-    ctx.extractValue("eigen_vec_2", eigen_vec);
-    this->spatula_features.pca_eigen_vec(1, 2) = eigen_vec;
-    outInfo("set vaule: eigen_vec_2");
+    float eigen_vec_0, eigen_vec_1, eigen_vec_2;
+    ctx.extractValue("eigen_vec_0", eigen_vec_0);
+    ctx.extractValue("eigen_vec_1", eigen_vec_1);
+    ctx.extractValue("eigen_vec_2", eigen_vec_2);
+    this->spatula_features.pca_eigen_vec(0,0) = eigen_vec_0;
+    this->spatula_features.pca_eigen_vec(1,0) = eigen_vec_1;
+    this->spatula_features.pca_eigen_vec(2,0) = eigen_vec_2;
+    outInfo("set vaule: eigen_vec_0, eigen_vec_1, eigen_vec_2");
   }
 
-  float eigen_val;
-  if(ctx.isParameterDefined("eigen_val_0"))
+  if(ctx.isParameterDefined("eigen_val_0") && ctx.isParameterDefined("eigen_val_0") && ctx.isParameterDefined("eigen_val_0"))
   {
-    ctx.extractValue("eigen_val_0", eigen_val);
-    this->spatula_features.pca_eigen_vals[0] = eigen_val;
-    outInfo("set vaule: eigen_val_0");
+    float eigen_val_0, eigen_val_1, eigen_val_2;
+    ctx.extractValue("eigen_val_0", eigen_val_0);
+    ctx.extractValue("eigen_val_1", eigen_val_1);
+    ctx.extractValue("eigen_val_2", eigen_val_2);
+    this->spatula_features.pca_eigen_vals = Eigen::Vector3f(eigen_val_0, eigen_val_1, eigen_val_2);
+    outInfo("set vaule: , eigen_val_1, eigen_val_2");
   }
-  if(ctx.isParameterDefined("eigen_val_1"))
+
+  if(ctx.isParameterDefined("h_val") && ctx.isParameterDefined("s_val") && ctx.isParameterDefined("v_val"))
   {
-    ctx.extractValue("eigen_val_1", eigen_val);
-    this->spatula_features.pca_eigen_vals[1] = eigen_val;
-    outInfo("set vaule: eigen_vec_1");
-  }
-  if(ctx.isParameterDefined("eigen_val_2"))
-  {
-    ctx.extractValue("eigen_val_2", eigen_val);
-    this->spatula_features.pca_eigen_vals[2] = eigen_val;
-    outInfo("set vaule: eigen_val_2");
-  }
-  float hsv;
-  if(ctx.isParameterDefined("h_val"))
-  {
-    ctx.extractValue("h_val", hsv);
-    this->spatula_features.h_mean = hsv;
-    outInfo("set vaule: h_val");
-  }
-  if(ctx.isParameterDefined("s_val"))
-  {
-    ctx.extractValue("s_val", hsv);
-    this->spatula_features.s_mean = hsv;
-    outInfo("set vaule: s_val");
-  }
-  if(ctx.isParameterDefined("v_val"))
-  {
-    ctx.extractValue("v_val", hsv);
-    this->spatula_features.v_mean = hsv;
-    outInfo("set vaule: v_val");
+    float h, s, v;
+    ctx.extractValue("h_val", h);
+    ctx.extractValue("s_val", s);
+    ctx.extractValue("v_val", v);
+    this->spatula_features.hsv_means = Eigen::Vector3f(h, s, v);
+    outInfo("set vaule: h_val, s_val, v_val");
   }
 /*
   if(ctx.isParameterDefined("max_dist")) 
@@ -314,7 +287,6 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
   {
     visualizer.addText3D("spatula", pcl::PointXYZ(this->spatula_pos.x(), this->spatula_pos.y(), this->spatula_pos.z()), 0.02);;
   }
-  /*
   if (obj_feats.size() == obj_position.size())
   {
     for (int i = 0; i<obj_position.size(); i++)
@@ -323,21 +295,19 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
       pcl::PointXYZ to(vector_length*(obj_position[i].x()-obj_feats[i].pca_eigen_vec(0, 0)), vector_length*(obj_position[i].y()-obj_feats[i].pca_eigen_vec(1, 0)), vector_length*(obj_position[i].z()-obj_feats[i].pca_eigen_vec(2, 0)));
       visualizer.addLine(pos, to, 1, 0, 0, std::to_string(i)+"_a");
       std::string obj_description;
+      /*
       obj_description = std::to_string(obj_feats[i].pca_eigen_vec(0,0))+", "+std::to_string(obj_feats[i].pca_eigen_vec(1,0))+", "+std::to_string(obj_feats[i].pca_eigen_vec(2,0))+"\n"
                         +std::to_string(obj_feats[i].pca_eigen_vals[0])+", "+std::to_string(obj_feats[i].pca_eigen_vals[1])+", "+std::to_string(obj_feats[i].pca_eigen_vals[2])+"\n"
                         +std::to_string(obj_feats[i].h_mean)+", "+std::to_string(obj_feats[i].s_mean)+", "+std::to_string(obj_feats[i].v_mean);
-      //visualizer.addText3D(obj_description.c_str(), pos, 0.005);
-      if(hasSimilarFS(spatula_features, this->obj_feats[i]))
-      {
-        outInfo("detected Spatula!!!");
-        visualizer.addText3D("spatula"+std::to_string(i), pos, 0.02);
-      }
+      visualizer.addText3D(obj_description.c_str(), pos, 0.005);
+      */
     }
   }
   else
   {
     outError("the sizes of obj_feats and obj_position do not match!");
   }
+  /*
   */
 }
 
@@ -389,10 +359,12 @@ featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA
   
   pcl::PointXYZHSV hsv;
   pcl::PointXYZRGBAtoXYZHSV(centroid, hsv);
+  cluster_feats.hsv_means = Eigen::Vector3f(hsv.h, hsv.s, hsv.v);
+/*
   cluster_feats.h_mean = hsv.h;
   cluster_feats.s_mean = hsv.s;
   cluster_feats.v_mean = hsv.v;
-  
+  */
   //get max distance within cloud
   //cluster_feats.max_dist = std::abs(maxDist(space_cloud));
 
@@ -401,23 +373,27 @@ featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA
 
 bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
 {
-  //float range = 0.1;
+  outInfo("hasSimilarFS started");
   //check eigenvectors
-  //check eigenvalues
-  Eigen::Vector3f eV_range = compared.pca_eigen_vals * 0.1;
-  Eigen::Vector3f eV_min = compared.pca_eigen_vals - eV_range;
-  Eigen::Vector3f eV_max = compared.pca_eigen_vals + eV_range;
+  Eigen::Vector3f compared_eigen_vec;
+  compared_eigen_vec << compared.pca_eigen_vec(0,0), compared.pca_eigen_vec(1,0), compared.pca_eigen_vec(2,0); 
+  Eigen::Vector3f comparing_eigen_vec;
+  comparing_eigen_vec << comparing.pca_eigen_vec(0,0), comparing.pca_eigen_vec(1,0), comparing.pca_eigen_vec(2,0); 
+  float eigen_vec_dist = (compared_eigen_vec - comparing_eigen_vec).squaredNorm();
+  outInfo("vec distance" << eigen_vec_dist);
+  if (eigen_vec_dist>range) return false;
 
-  if((comparing.pca_eigen_vals[0] < eV_min[0])||(comparing.pca_eigen_vals[1] < eV_min[1])||(comparing.pca_eigen_vals[2] < eV_min[2])) return false;
-  if((comparing.pca_eigen_vals[0] > eV_max[0])||(comparing.pca_eigen_vals[1] > eV_max[1])||(comparing.pca_eigen_vals[2] > eV_max[2])) return false;
+  //check EigenValues
+  float eigen_val_dist = (compared.pca_eigen_vals - comparing.pca_eigen_vals).squaredNorm();
+  outInfo("val distance" << eigen_val_dist);
+  if (eigen_val_dist > range) return false;
 
   //check hsv
-  if (((compared.h_mean-(range*compared.h_mean))>comparing.h_mean)||((compared.s_mean-(range*compared.s_mean))>comparing.s_mean)||((compared.v_mean-(range*compared.v_mean))>comparing.v_mean)) return false;
-  if (((compared.h_mean+(range*compared.h_mean))<comparing.h_mean)||((compared.s_mean+(range*compared.s_mean))<comparing.s_mean)||((compared.v_mean+(range*compared.v_mean))<comparing.v_mean)) return false;
-  
-  //check maxDist
-  //if ((compared.max_dist + (compared.max_dist*0.1)) > comparing.max_dist) return false;
-  //if ((compared.max_dist - (compared.max_dist*0.1)) > comparing.max_dist) return false;
+  float hsv_dist = (compared.hsv_means- comparing.hsv_means).squaredNorm();
+  outInfo("hsv distance" << hsv_dist);
+  if (hsv_dist > range) return false;
+
+  outInfo("hasSimilarFS ended");
 
   return true;
 }
