@@ -6,5 +6,6 @@ annotators:
     - NormalEstimator
     - PlaneAnnotator
     - PointCloudClusterExtractor
+    - ClusterColorHistogramCalculator
     - CakeAnnotator
     - ROSPublisher

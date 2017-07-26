@@ -11,6 +11,7 @@ annotators:
     - PrimitiveShapeAnnotator
     - PlateAnnotator
     - SpatulAnnotator
+    - ClusterColorHistogramCalculator
     - CakeAnnotator
     - KnifeAnnotator
     - ROSPublisher

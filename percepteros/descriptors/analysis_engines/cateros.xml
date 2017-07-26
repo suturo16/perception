@@ -278,8 +278,9 @@
         <node>ColorClusterer</node>
         <node>PointCloudColorSegmentation</node>
         <node>PrimitiveShapeAnnotator</node>
+        <node>ClusterColorHistogramCalculator</node>
         <node>PlateAnnotator</node>	
-		<node>CakeAnnotator</node>
+        <node>CakeAnnotator</node>
         <node>KnifeAnnotator</node>
         <node>SpatulAnnotator</node>
         <node>ROSPublisher</node>
