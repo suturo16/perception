@@ -128,7 +128,6 @@ public:
       std::vector<std::string> lowLvlPipeline;
       fs["annotators"] >> lowLvlPipeline;
       engine.setNextPipeline(lowLvlPipeline);
-      engine.applyNextPipeline();
       return true;
   }
 
