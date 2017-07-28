@@ -30,7 +30,6 @@ struct featureSet{
   Eigen::Vector3f pca_eigen_vals;
   Eigen::Vector3f hsv_means;
 
-  //float max_dist; //btw two points within the cloud  
 };
 
 class SpatulaRecognition : public DrawingAnnotator
@@ -39,22 +38,25 @@ private:
   double pointSize;
   pcl::PointCloud<PointXYZRGBA>::Ptr cloud_ptr;
   pcl::PointCloud<pcl::PointXYZ>::Ptr spatula;
-  //std::vector<Eigen::Matrix3f> obj_orientation;
   std::vector<Eigen::Vector3f>  obj_position;
   std::vector<featureSet> obj_feats;
   std::vector<rs::Cluster> clusters;
   featureSet spatula_features;
   float range;
   float vector_length;
-  Eigen::Vector3f spatula_pos; //this one is for the pcl::visualizer::addtext3d
+  Eigen::Vector3f spatula_pos; //this one describes the cluster center
+  
+  //spatula description
   bool found_spat;
-  //pcl::PointXYZ spatula_origin; //this one is for the frame
   tf::Transform spat_transf;
+  tf::Vector3 spat_x, spat_y, spat_z;
+  pcl::PointXYZ spatula_origin; //this one describes the highest point in the spatula cluster
 
-  float maxDist(pcl::PointCloud<pcl::PointXYZ>::Ptr);
   featureSet computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr);
   bool hasSimilarFS(featureSet , featureSet);
   pcl::PointXYZ getOrigin(pcl::PointCloud<pcl::PointXYZ>::Ptr);
+  pcl::ModelCoefficients getCoefficients(tf::Vector3 axis, pcl::PointXYZ origin);
+
 
 public:
 
@@ -106,13 +108,7 @@ TyErrorId SpatulaRecognition::initialize(AnnotatorContext &ctx)
     this->spatula_features.hsv_means = Eigen::Vector3f(h, s, v);
     outInfo("set vaule: h_val, s_val, v_val");
   }
-/*
-  if(ctx.isParameterDefined("max_dist")) 
-  {
-      ctx.extractValue("max_dist", this->spatula_features.max_dist);
-      outInfo("set value: max_dist");
-  }
-*/  
+ 
   outInfo("initialize");
   return UIMA_ERR_NONE;
 }
@@ -132,7 +128,6 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
   this->obj_position.clear();
   this->obj_feats.clear();
   found_spat = false;
-  //this->obj_orientation.clear();
 
   /*
   rs::StopWatch clock;
@@ -195,17 +190,13 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
       outInfo("Spatula detected");
       found_spat = true;
       this->spatula_pos = centroid;
-      pcl::PointXYZ spatula_origin = getOrigin(object_cloud);
+      spatula_origin = getOrigin(object_cloud);
 
-/*    Vorschlag: Ys = Xs x Z; Zs = Xs x Ys
-      Wobei 's' die Achsen des Pfannenwenders sind und Z die globale Z-Achse
-      und 'x' das Kreuzprodukt
-*/
       spat_transf.setOrigin(tf::Vector3(spatula_origin.x, spatula_origin.y, spatula_origin.z));
 
-      tf::Vector3 spat_x(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
-      tf::Vector3 spat_y = spat_x.cross(scene_z);
-      tf::Vector3 spat_z = spat_x.cross(spat_y);
+      spat_x = tf::Vector3(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
+      spat_y = spat_x.cross(scene_z);
+      spat_z = spat_x.cross(spat_y);
 
       spat_x.normalize();
       spat_y.normalize();
@@ -247,11 +238,8 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
 
       //put spatula into scene
       scene.identifiables.append(cluster);
-      /*
-      */
+
     }
-    /*
-    */
   }
 
   if (obj_feats.size() != obj_position.size())
@@ -264,15 +252,6 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
   return UIMA_ERR_NONE;
 }
 
-/*
-struct featureSet{
-  Eigen::Matrix3f pca_eigen_vec;
-  Eigen::Vector3f pca_eigen_vals;
-  double h_mean; 
-  double s_mean; 
-  double v_mean; 
-};
-*/
 
 void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
 {
@@ -295,48 +274,13 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
   if (this->found_spat)
   {
     visualizer.addText3D("spatula", pcl::PointXYZ(this->spatula_pos.x(), this->spatula_pos.y(), this->spatula_pos.z()), 0.02);;
+    visualizer.addCone(getCoefficients(spat_x, spatula_origin), "x");
+    visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
+    visualizer.addCone(getCoefficients(spat_y, spatula_origin), "y");
+    visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
+    visualizer.addCone(getCoefficients(spat_z, spatula_origin), "z");
+    visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
   }
-  if (obj_feats.size() == obj_position.size())
-  {
-    for (int i = 0; i<obj_position.size(); i++)
-    {
-      pcl::PointXYZ pos(obj_position[i].x(), obj_position[i].y(), obj_position[i].z());
-      pcl::PointXYZ to(vector_length*(obj_position[i].x()-obj_feats[i].pca_eigen_vec(0, 0)), vector_length*(obj_position[i].y()-obj_feats[i].pca_eigen_vec(1, 0)), vector_length*(obj_position[i].z()-obj_feats[i].pca_eigen_vec(2, 0)));
-      visualizer.addLine(pos, to, 1, 0, 0, std::to_string(i)+"_a");
-      std::string obj_description;
-      /*
-      obj_description = std::to_string(obj_feats[i].pca_eigen_vec(0,0))+", "+std::to_string(obj_feats[i].pca_eigen_vec(1,0))+", "+std::to_string(obj_feats[i].pca_eigen_vec(2,0))+"\n"
-                        +std::to_string(obj_feats[i].pca_eigen_vals[0])+", "+std::to_string(obj_feats[i].pca_eigen_vals[1])+", "+std::to_string(obj_feats[i].pca_eigen_vals[2])+"\n"
-                        +std::to_string(obj_feats[i].h_mean)+", "+std::to_string(obj_feats[i].s_mean)+", "+std::to_string(obj_feats[i].v_mean);
-      visualizer.addText3D(obj_description.c_str(), pos, 0.005);
-      */
-    }
-  }
-  else
-  {
-    outError("the sizes of obj_feats and obj_position do not match!");
-  }
-  /*
-  */
-}
-
-float SpatulaRecognition::maxDist(pcl::PointCloud<pcl::PointXYZ>::Ptr cluster) {
-  pcl::PointXYZ tmp_begin, tmp_end, begin, end;
-  std::vector<pcl::PointXYZ> endpoints(2);
-  int size = cluster->size(); 
-  float currDistance = 0;    
-  for (int i = 0; i < size; i++) {
-    begin = cluster->points[i];
-    for (int j = i+1; j < size; j++) {
-      end = cluster->points[j];
-      if (pcl::geometry::distance(begin, end) > currDistance) {
-        endpoints[0] = begin;
-        endpoints[1] = end;
-        currDistance = pcl::geometry::distance(begin, end);
-      }
-    }
-  }
-  return currDistance;
 }
 
 featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cluster)
@@ -355,7 +299,6 @@ featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA
   cluster_axis.setInputCloud(space_cloud);
   cluster_feats.pca_eigen_vec = cluster_axis.getEigenVectors();
 
-  
   //compute their magnitude
   cluster_feats.pca_eigen_vals = cluster_axis.getEigenValues();
   
@@ -369,13 +312,6 @@ featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA
   pcl::PointXYZHSV hsv;
   pcl::PointXYZRGBAtoXYZHSV(centroid, hsv);
   cluster_feats.hsv_means = Eigen::Vector3f(hsv.h, hsv.s, hsv.v);
-/*
-  cluster_feats.h_mean = hsv.h;
-  cluster_feats.s_mean = hsv.s;
-  cluster_feats.v_mean = hsv.v;
-  */
-  //get max distance within cloud
-  //cluster_feats.max_dist = std::abs(maxDist(space_cloud));
 
   return cluster_feats;
 }
@@ -407,6 +343,21 @@ bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
   return true;
 }
 
+pcl::ModelCoefficients SpatulaRecognition::getCoefficients(tf::Vector3 axis, pcl::PointXYZ origin) {
+  pcl::ModelCoefficients coeffs;
+  //point
+  coeffs.values.push_back(origin.x);
+  coeffs.values.push_back(origin.y);
+  coeffs.values.push_back(origin.z);
+  //direction
+  coeffs.values.push_back(axis[0]);
+  coeffs.values.push_back(axis[1]);
+  coeffs.values.push_back(axis[2]);
+  //radius
+  coeffs.values.push_back(1.0f);
+
+  return coeffs;
+}
 
 pcl::PointXYZ SpatulaRecognition::getOrigin(pcl::PointCloud<pcl::PointXYZ>::Ptr spat) {
   pcl::PointXYZ spatula_origin,begin, end;
@@ -434,9 +385,6 @@ pcl::PointXYZ SpatulaRecognition::getOrigin(pcl::PointCloud<pcl::PointXYZ>::Ptr 
   return spatula_origin;
 
 }
-
-
-
 
 // This macro exports an entry point that is used to create the annotator.
 MAKE_AE(SpatulaRecognition)

@@ -278,13 +278,13 @@
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
+        <node>SpatulaRecognition</node>
         <node>ColorClusterer</node>
         <node>PointCloudColorSegmentation</node>
         <node>PrimitiveShapeAnnotator</node>
         <node>PlateAnnotator</node> 
     <node>CakeAnnotator</node>
         <node>KnifeAnnotator</node>
-        <node>SpatulRecognition</node>
         <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
