@@ -35,6 +35,7 @@ private:
   bool useIdentityResolution_;
 
 public:
+  bool queued = false;
 
   CaterrosControlledAnalysisEngine(ros::NodeHandle nh) : RSAnalysisEngine(),
     rspm(NULL),currentAEName(""),nh_(nh),it_(nh_),useIdentityResolution_(false)
@@ -66,6 +67,7 @@ public:
   void setNextPipeline(std::vector<std::string> l)
   {
     next_pipeline_order = l;
+    queued = true;
   }
 
 
@@ -80,6 +82,7 @@ public:
     if(rspm)
     {
       rspm->setPipelineOrdering(next_pipeline_order);
+      queued = false;
     }
   }
 
