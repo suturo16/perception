@@ -281,6 +281,15 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
     visualizer.addCone(getCoefficients(spat_z, spatula_origin), "z");
     visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
   }
+
+  if (obj_feats.size() == obj_position.size() )
+  {
+    for (int i = 0; i < obj_feats.size(); i++)
+    {
+      std::string obj_desc("");
+      obj_desc += "eV: " + std::to_string(obj_feats[i].pca_eigen_vec(0,0)) + ", " + std::to_string(obj_feats[i].pca_eigen_vec(1,0)) + ", " + std::to_string(obj_feats[i].pca_eigen_vec(2,0)) + "/n" ;
+    }
+  }  
 }
 
 featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cluster)
