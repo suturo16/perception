@@ -11,6 +11,9 @@ void CaterrosPipelineManager::run()
     }
     else
     {
+      if(engine.queued){
+        engine.applyNextPipeline();
+      }
       engine.process(true);
     }
     ros::spinOnce();
