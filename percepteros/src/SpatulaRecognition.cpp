@@ -18,6 +18,7 @@
 
 //CATERROS
 #include <geometry_msgs/PoseStamped.h>
+#include <percepteros/types/all_types.h>
 
 
 using namespace uima;
