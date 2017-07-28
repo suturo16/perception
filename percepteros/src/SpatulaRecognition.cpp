@@ -237,6 +237,14 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
       poseAnnotation.world.set(rs::conversion::to(tcas, world));
       poseAnnotation.source.set("3DEstimate");
       cluster.annotations.append(poseAnnotation);
+
+      //append RecognitionObject
+      percepteros::RecognitionObject spatulaObj = rs::create<percepteros::RecognitionObject>(tcas);
+      spatulaObj.name.set("cakeSpatula");
+      spatulaObj.type.set(8);
+      cluster.annotations.append(spatulaObj);
+
+      //put spatula into scene
       scene.identifiables.append(cluster);
       /*
       */
