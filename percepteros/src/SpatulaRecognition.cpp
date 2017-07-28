@@ -194,8 +194,8 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
 
       spat_transf.setOrigin(tf::Vector3(spatula_origin.x, spatula_origin.y, spatula_origin.z));
 
-      spat_x = tf::Vector3(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
-      spat_y = spat_x.cross(scene_z);
+      spat_x = -tf::Vector3(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
+      spat_y = scene_z.cross(spat_x);
       spat_z = spat_x.cross(spat_y);
 
       spat_x.normalize();
