@@ -194,7 +194,7 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
 
       spat_transf.setOrigin(tf::Vector3(spatula_origin.x, spatula_origin.y, spatula_origin.z));
 
-      spat_x = -tf::Vector3(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
+      spat_x = tf::Vector3(spatula_features.pca_eigen_vec(0,0), spatula_features.pca_eigen_vec(1,0), spatula_features.pca_eigen_vec(2,0));
       spat_y = scene_z.cross(spat_x);
       spat_z = spat_x.cross(spat_y);
 
@@ -234,6 +234,10 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
       percepteros::RecognitionObject spatulaObj = rs::create<percepteros::RecognitionObject>(tcas);
       spatulaObj.name.set("cakeSpatula");
       spatulaObj.type.set(8);
+      // HOTFIX: PLEASE REMOVE IF NOT NEEDED
+      spatulaObj.width.set(0.28f);
+      spatulaObj.height.set(0.056f);
+      spatulaObj.depth.set(0.03f);
       cluster.annotations.append(spatulaObj);
 
       //put spatula into scene
