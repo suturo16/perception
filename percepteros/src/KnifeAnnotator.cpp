@@ -149,7 +149,7 @@ public:
 							x[1], y[1], z[1],
 							x[2], y[2], z[2]);
 			transform.setBasis(rot);
-			recA.name.set("knife");
+            recA.name.set("cakeKnife");
 			recA.type.set(6);
 			recA.width.set(0.28f);
 			recA.height.set(0.056f);

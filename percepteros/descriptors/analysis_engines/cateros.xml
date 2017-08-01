@@ -7,6 +7,9 @@
     <delegateAnalysisEngine key="BlurDetectorAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/utils/BlurDetectorAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="BoardAnnotator">
+      <import location="../annotators/BoardAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="BoardDetector">
       <import location="../../../../robosherlock/descriptors/annotators/detection/BoardDetector.xml"/>
     </delegateAnalysisEngine>
@@ -123,6 +126,9 @@
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="SpatulAnnotator">
       <import location="../annotators/SpatulAnnotator.xml"/>
+    </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="SpatulaRecognition">
+      <import location="../annotators/SpatulaRecognition.xml"/>
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="StorageWriter">
       <import location="../../../../robosherlock/descriptors/annotators/io/StorageWriter.xml"/>
@@ -275,14 +281,17 @@
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
+        <node>CakeAnnotator</node>
+        <node>BoardAnnotator</node>
+      <!--  
+      -->
+        <node>SpatulaRecognition</node>
         <node>ColorClusterer</node>
+        <node>KnifeAnnotator</node>
         <node>PointCloudColorSegmentation</node>
         <node>PrimitiveShapeAnnotator</node>
         <node>ClusterColorHistogramCalculator</node>
         <node>PlateAnnotator</node>	
-        <node>CakeAnnotator</node>
-        <node>KnifeAnnotator</node>
-        <node>SpatulAnnotator</node>
         <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
