@@ -290,7 +290,8 @@
         <node>KnifeAnnotator</node>
         <node>PointCloudColorSegmentation</node>
         <node>PrimitiveShapeAnnotator</node>
-        <node>PlateAnnotator</node> 
+        <node>ClusterColorHistogramCalculator</node>
+        <node>PlateAnnotator</node>	
         <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
