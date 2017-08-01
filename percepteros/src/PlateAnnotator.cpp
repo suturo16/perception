@@ -208,7 +208,7 @@ public:
 		//adjust recognition object
 		percepteros::RecognitionObject o = rs::create<percepteros::RecognitionObject>(tcas);
 	
-		o.name.set("plate");
+        o.name.set("dinnerPlateForCake");
 		o.type.set(7);
 		o.color.set(std::stoi(cluster.source.get().substr(15)));
 		o.width.set(co.values[3]);

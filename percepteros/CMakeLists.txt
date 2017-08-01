@@ -89,6 +89,9 @@ target_link_libraries(rs_boardAnnotator ${CATKIN_LIBRARIES})
 rs_add_library(rs_colorClusterer src/ColorClusterer.cpp)
 target_link_libraries(rs_colorClusterer ${CATKIN_LIBRARIES})
 
+rs_add_library(rs_spatulaRecognition src/SpatulaRecognition.cpp)
+target_link_libraries(rs_spatulaRecognition ${CATKIN_LIBRARIES})
+
 rs_add_executable(caterrosRun src/CaterrosRun.cpp src/CaterrosPipelineManager.cpp src/CaterrosControlledAnalysisEngine.cpp)
 target_link_libraries(caterrosRun ${CATKIN_LIBRARIES})
 
