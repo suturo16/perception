@@ -36,8 +36,8 @@ catkin_package()
 include_directories(
         ${RS_INCLUDE_DIRS_LIST}
         ${catkin_INCLUDE_DIRS}
-				${PCL_INCLUDE_DIRS}
-        )
+		${PCL_INCLUDE_DIRS}
+)
 ################################################################################
 ## Update analysis engines, typesystem and include all relevant files         ##
 ################################################################################
@@ -82,6 +82,9 @@ target_link_libraries(rs_spatulAnnotator ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_plateAnnotator src/PlateAnnotator.cpp)
 target_link_libraries(rs_plateAnnotator ${CATKIN_LIBRARIES})
+
+rs_add_library(rs_boardAnnotator src/BoardAnnotator.cpp)
+target_link_libraries(rs_boardAnnotator ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_colorClusterer src/ColorClusterer.cpp)
 target_link_libraries(rs_colorClusterer ${CATKIN_LIBRARIES})
