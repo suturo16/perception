@@ -166,56 +166,16 @@
           <parameter>CollectionReader/camera_config_files</parameter>
         </overrides>
       </configurationParameter>
-            <configurationParameter>
-        <name>minPoints</name>
+      <configurationParameter>
+        <name>cluster_max_size</name>
         <description></description>
         <type>Integer</type>
         <multiValued>false</multiValued>
         <mandatory>false</mandatory>
         <overrides>
-          <parameter>PointCloudColorSegmentation/minPoints</parameter>
+          <parameter>PointCloudClusterExtractor/cluster_max_size</parameter>
         </overrides>
-      </configurationParameter>
-      <configurationParameter>
-        <name>maxPoints</name>
-        <description></description>
-        <type>Integer</type>
-        <multiValued>false</multiValued>
-        <mandatory>false</mandatory>
-        <overrides>
-          <parameter>PointCloudColorSegmentation/maxPoints</parameter>
-        </overrides>
-      </configurationParameter>
-      <configurationParameter>
-        <name>hueThreshold</name>
-        <description></description>
-        <type>Integer</type>
-        <multiValued>false</multiValued>
-        <mandatory>false</mandatory>
-        <overrides>
-          <parameter>PointCloudColorSegmentation/hueThreshold</parameter>
-        </overrides>
-      </configurationParameter>
-      <configurationParameter>
-        <name>distThreshold</name>
-        <description></description>
-        <type>Float</type>
-        <multiValued>false</multiValued>
-        <mandatory>false</mandatory>
-        <overrides>
-          <parameter>PointCloudColorSegmentation/distThreshold</parameter>
-        </overrides>
-      </configurationParameter>
-      <configurationParameter>
-        <name>discretize</name>
-        <description></description>
-        <type>Boolean</type>
-        <multiValued>false</multiValued>
-        <mandatory>true</mandatory>
-        <overrides>
-          <parameter>PointCloudColorSegmentation/discretize</parameter>
-        </overrides>
-      </configurationParameter>
+		</configurationParameter>
     </configurationParameters>
     <configurationParameterSettings>
       <nameValuePair>
@@ -227,47 +187,22 @@
         </value>
       </nameValuePair>
       <nameValuePair>
-        <name>minPoints</name>
+        <name>cluster_max_size</name>
         <value>
-            <integer>1000</integer>
-        </value>
-      </nameValuePair>
-      <nameValuePair>
-        <name>maxPoints</name>
-        <value>
-            <integer>25000</integer>
-        </value>
-      </nameValuePair>
-      <nameValuePair>
-        <name>hueThreshold</name>
-        <value>
-            <integer>4</integer>
-        </value>
-      </nameValuePair>
-      <nameValuePair>
-        <name>distThreshold</name>
-        <value>
-            <float>0.01</float>
-        </value>
-      </nameValuePair>
-      <nameValuePair>
-        <name>discretize</name>
-        <value>
-            <boolean>true</boolean>
+            <integer>50000</integer>
         </value>
       </nameValuePair>
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
-        <node>CollectionReader</node>
-        <node>ImagePreprocessor</node>
-        <node>PointCloudFilter</node>
-        <node>NormalEstimator</node>
-        <node>PlaneAnnotator</node>
-        <node>PointCloudColorSegmentation</node>
-        <node>PrimitiveShapeAnnotator</node>
-        <node>PlateAnnotator</node>	
-        <node>ROSPublisher</node>
+     		<node>CollectionReader</node>
+			<node>ImagePreprocessor</node>
+			<node>PointCloudFilter</node>
+			<node>NormalEstimator</node>
+			<node>PlaneAnnotator</node>
+			<node>PointCloudClusterExtractor</node>
+			<node>ColorClusterer</node>
+			<node>SpatulAnnotator</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>

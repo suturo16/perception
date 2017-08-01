@@ -166,7 +166,7 @@
           <parameter>CollectionReader/camera_config_files</parameter>
         </overrides>
       </configurationParameter>
-            <configurationParameter>
+      <configurationParameter>
         <name>minPoints</name>
         <description></description>
         <type>Integer</type>
@@ -222,32 +222,32 @@
         <name>camera_config_files</name>
         <value>
           <array>
-            <string>config_kinect_robot.ini</string>
+            <string>config_mongodb_playback.ini</string>
           </array>
         </value>
       </nameValuePair>
       <nameValuePair>
         <name>minPoints</name>
         <value>
-            <integer>1000</integer>
+            <integer>15000</integer>
         </value>
       </nameValuePair>
       <nameValuePair>
         <name>maxPoints</name>
         <value>
-            <integer>25000</integer>
+            <integer>20000</integer>
         </value>
       </nameValuePair>
       <nameValuePair>
         <name>hueThreshold</name>
         <value>
-            <integer>4</integer>
+            <integer>3</integer>
         </value>
       </nameValuePair>
       <nameValuePair>
         <name>distThreshold</name>
         <value>
-            <float>0.01</float>
+            <float>0.1</float>
         </value>
       </nameValuePair>
       <nameValuePair>
@@ -259,15 +259,15 @@
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
-        <node>CollectionReader</node>
-        <node>ImagePreprocessor</node>
-        <node>PointCloudFilter</node>
-        <node>NormalEstimator</node>
-        <node>PlaneAnnotator</node>
-        <node>PointCloudColorSegmentation</node>
-        <node>PrimitiveShapeAnnotator</node>
-        <node>PlateAnnotator</node>	
-        <node>ROSPublisher</node>
+	  		<node>Trigger</node>
+     		<node>CollectionReader</node>
+			<node>ImagePreprocessor</node>
+			<node>PointCloudFilter</node>
+			<node>NormalEstimator</node>
+			<node>PlaneAnnotator</node>
+			<node>PointCloudColorSegmentation</node>
+			<node>PrimitiveShapeAnnotator</node>
+			<node>PlateAnnotator</node>
       </fixedFlow>
     </flowConstraints>
     <typePriorities/>

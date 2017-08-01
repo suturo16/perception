@@ -7,6 +7,9 @@
     <delegateAnalysisEngine key="BlurDetectorAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/utils/BlurDetectorAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="BoardAnnotator">
+      <import location="../annotators/BoardAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="BoardDetector">
       <import location="../../../../robosherlock/descriptors/annotators/detection/BoardDetector.xml"/>
     </delegateAnalysisEngine>
