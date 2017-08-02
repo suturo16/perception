@@ -145,6 +145,22 @@ public:
 
     for(auto cluster : clusters)
     {
+
+      std::vector<rs::SemanticColor> semanticColor;
+      cluster.annotations.filter(semanticColor);
+      std::vector<float> ratios = semanticColor[0].ratio.get();
+      std::vector<std::string> colors = semanticColor[0].color.get();
+      bool ratioLow = false;
+      for(int i = 0; i < colors.size(); i++){
+          float ratio = ratios[i];
+          std::string color = colors[i];
+          if(color == "yellow" && ratio < 0.5){
+              ratioLow = true;
+          }
+      }
+      if(ratioLow){
+          continue;
+      }
       pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
       rs::ReferenceClusterPoints clusterpoints(cluster.points());
       rs::conversion::from(clusterpoints.indices(), *cluster_indices);
