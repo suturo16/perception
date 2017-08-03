@@ -10,6 +10,9 @@
     <delegateAnalysisEngine key="BlurDetectorAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/utils/BlurDetectorAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="BoardAnnotator">
+      <import location="../annotators/BoardAnnotator.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="BoardDetector">
       <import location="../../../../robosherlock/descriptors/annotators/detection/BoardDetector.xml"/>
     </delegateAnalysisEngine>
@@ -127,6 +130,9 @@
     <delegateAnalysisEngine key="SpatulAnnotator">
       <import location="../annotators/SpatulAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="SpatulaRecognition">
+      <import location="../annotators/SpatulaRecognition.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="StorageWriter">
       <import location="../../../../robosherlock/descriptors/annotators/io/StorageWriter.xml"/>
     </delegateAnalysisEngine>
@@ -173,6 +179,16 @@
           <parameter>PointCloudClusterExtractor/cluster_max_size</parameter>
         </overrides>
       </configurationParameter>
+            <configurationParameter>
+        <name>minPoints</name>
+        <description></description>
+        <type>Integer</type>
+        <multiValued>false</multiValued>
+        <mandatory>false</mandatory>
+        <overrides>
+          <parameter>PointCloudColorSegmentation/minPoints</parameter>
+        </overrides>
+      </configurationParameter>
       <configurationParameter>
         <name>maxPoints</name>
         <description></description>
@@ -203,6 +219,16 @@
           <parameter>PointCloudColorSegmentation/distThreshold</parameter>
         </overrides>
       </configurationParameter>
+      <configurationParameter>
+        <name>discretize</name>
+        <description></description>
+        <type>Boolean</type>
+        <multiValued>false</multiValued>
+        <mandatory>true</mandatory>
+        <overrides>
+          <parameter>PointCloudColorSegmentation/discretize</parameter>
+        </overrides>
+      </configurationParameter>
     </configurationParameters>
     <configurationParameterSettings>
       <nameValuePair>
@@ -219,6 +245,36 @@
             <integer>50000</integer>
         </value>
       </nameValuePair>
+      <nameValuePair>
+        <name>minPoints</name>
+        <value>
+            <integer>5000</integer>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>maxPoints</name>
+        <value>
+            <integer>25000</integer>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>hueThreshold</name>
+        <value>
+            <integer>4</integer>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>distThreshold</name>
+        <value>
+            <float>0.05</float>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>discretize</name>
+        <value>
+            <boolean>true</boolean>
+        </value>
+      </nameValuePair>
     </configurationParameterSettings>
     <flowConstraints>
       <fixedFlow>
@@ -228,8 +284,15 @@
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
-	<node>ColorClusterer</node>
+        <node>SpatulaRecognition</node>
+        <node>ColorClusterer</node>
+        <node>ClusterColorHistogramCalculator</node>
+	<node>CakeAnnotator</node>
+        <node>BoardAnnotator</node>
         <node>KnifeAnnotator</node>
+        <node>PointCloudColorSegmentation</node>
+        <node>PrimitiveShapeAnnotator</node>
+        <node>PlateAnnotator</node>	
         <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>

@@ -2,10 +2,10 @@
 <analysisEngineDescription xmlns="http://uima.apache.org/resourceSpecifier">
   <frameworkImplementation>org.apache.uima.cpp</frameworkImplementation>
   <primitive>true</primitive>
-  <annotatorImplementationName>rs_plateAnnotator</annotatorImplementationName>
+  <annotatorImplementationName>rs_boardAnnotator</annotatorImplementationName>
   <analysisEngineMetaData>
-    <name>PlateAnnotator</name>
-    <description>Plate Annotator</description>
+    <name>BoardAnnotator</name>
+    <description>Board Annotator</description>
     <version>1.0</version>
     <vendor/>
     <configurationParameters>
@@ -27,7 +27,7 @@
 		<nameValuePair>
 			<name>minHue</name>
 			<value>
-				<integer>100</integer>
+				<integer>150</integer>
 			</value>
 		</nameValuePair>
 		<nameValuePair>

@@ -49,7 +49,7 @@ namespace pcl
    *
    * \author Tobias Hahn
    */
- template<typename PointT, typename PointNT, typename PointLT>
+ template<typename PointT, typename PointNT>
  class ValueClusterComparator: public Comparator<PointT>
  {
    public:
@@ -60,12 +60,8 @@ namespace pcl
      typedef typename PointCloudN::Ptr PointCloudNPtr;
      typedef typename PointCloudN::ConstPtr PointCloudNConstPtr;
      
-     typedef typename pcl::PointCloud<PointLT> PointCloudL;
-     typedef typename PointCloudL::Ptr PointCloudLPtr;
-     typedef typename PointCloudL::ConstPtr PointCloudLConstPtr;
-
-     typedef boost::shared_ptr<ValueClusterComparator<PointT, PointNT, PointLT> > Ptr;
-     typedef boost::shared_ptr<const ValueClusterComparator<PointT, PointNT, PointLT> > ConstPtr;
+     typedef boost::shared_ptr<ValueClusterComparator<PointT, PointNT> > Ptr;
+     typedef boost::shared_ptr<const ValueClusterComparator<PointT, PointNT> > ConstPtr;
 
      using pcl::Comparator<PointT>::input_;
      
@@ -160,24 +156,6 @@ namespace pcl
          return (value_threshold_);
        }
  
-       /** \brief Set label cloud
-         * \param[in] labels The label cloud
-         */
-       void
-       setLabels (PointCloudLPtr& labels)
-       {
-         labels_ = labels;
-       }
- 
-       /** \brief Set labels in the label cloud to exclude.
-         * \param exclude_labels a vector of bools corresponding to whether or not a given label should be considered
-         */
-       void
-       setExcludeLabels (std::vector<bool>& exclude_labels)
-       {
-         exclude_labels_ = boost::make_shared<std::vector<bool> >(exclude_labels);
-       }
- 
        /** \brief Compare points at two indices by their plane equations.  True if the angle between the normals is less than the angular threshold,
          * and the difference between the d component of the normals is less than distance threshold, else false
          * \param idx1 The first index for the comparison
@@ -186,21 +164,13 @@ namespace pcl
        virtual bool
        compare (int idx1, int idx2) const
        {
-         int label1 = labels_->points[idx1].label;
-         int label2 = labels_->points[idx2].label;
-         
-         if (label1 == -1 || label2 == -1)
-           return false;
+		 int value1 = input_->points[idx1].v;
+		 int value2 = input_->points[idx2].v;
+		 int diff = std::abs(value1 - value2);
 
-				 int value1 = input_->points[idx1].v;
-	 			 int value2 = input_->points[idx2].v;
-	 			 int diff = std::abs(value1 - value2);
-	 
-	 			 if (value_threshold_ < diff)
-	   		   		return false;
+		 if (value_threshold_ < diff)
+	   		return false;
          
-         if ( (*exclude_labels_)[label1] || (*exclude_labels_)[label2])
-           return false;
          
          float dist_threshold = distance_threshold_;
          if (depth_dependent_)
@@ -220,9 +190,7 @@ namespace pcl
        
      protected:
        PointCloudNConstPtr normals_;
-       PointCloudLPtr labels_;
  
-       boost::shared_ptr<std::vector<bool> > exclude_labels_;
        float angular_threshold_;
        float distance_threshold_;
        bool depth_dependent_;

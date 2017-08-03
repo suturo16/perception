@@ -47,9 +47,7 @@ private:
 	PCR::Ptr temp = PCR::Ptr(new PCR);
 	PCH::Ptr cloud = PCH::Ptr(new PCH);
 	PCN::Ptr normals = PCN::Ptr(new PCN);
-/*	PCXN::Ptr cloud_n = PCXN::Ptr(new PCXN);
-	PCX::Ptr cloud_x = PCX::Ptr(new PCX);
-*/
+	
 	std::vector<pcl::PointIndices> hue_indices;
 	std::vector<pcl::PointIndices> value_indices;
 
@@ -97,35 +95,29 @@ public:
 		cas.get(VIEW_CLOUD, *temp);
 		cas.get(VIEW_NORMALS, *normals);
 		pcl::PointCloudXYZRGBAtoXYZHSV(*temp, *cloud);
-/*		
-		pcl::copyPointCloud(*temp, *cloud_x);
-		pcl::concatenateFields(*cloud_x, *normals, *cloud_n);
-*/		//helpers
+		//helpers
 		rs::StopWatch clock;
 		bool found = false;
 		
-		std::vector<bool> ignore_labels;
-		pcl::PointCloud<pcl::Label>::Ptr input_labels(new pcl::PointCloud<pcl::Label>);
-
-		ignore_labels.resize(2);
-		ignore_labels[0] = true;
-		ignore_labels[1] = false;
-
-		input_labels->height = cloud->height;
-		input_labels->width = cloud->width;
-		input_labels->points.resize(cloud->points.size());
-
 		for (auto clust : clusters) {
-			found = checkCluster(clust, cloud, input_labels);
+			found = checkCluster(clust, cloud);
 			if (found) {
 				outInfo("Found rack!"); found = true;
+				
+				pcl::ExtractIndices<PointH> ex;
+				ex.setKeepOrganized(true);
+				pcl::PointIndices::Ptr rack_i(new pcl::PointIndices);
+				rs::ReferenceClusterPoints clusterpoints(clust.points());
+				rs::conversion::from(clusterpoints.indices(), *rack_i);
+				ex.setInputCloud(cloud);
+				ex.setIndices(rack_i);
+				ex.filterDirectly(cloud);
+
 				annotateCluster(clust, normals, tcas);				
 				pcl::PointCloud<pcl::Label>::Ptr output_labels(new pcl::PointCloud<pcl::Label>);
 
-				pcl::HueClusterComparator<PointH, pcl::Normal, pcl::Label>::Ptr hcc(new pcl::HueClusterComparator<PointH, pcl::Normal, pcl::Label>());
+				pcl::HueClusterComparator<PointH, pcl::Normal>::Ptr hcc(new pcl::HueClusterComparator<PointH, pcl::Normal>());
 				hcc->setInputCloud(cloud);
-				hcc->setLabels(input_labels);
-				hcc->setExcludeLabels(ignore_labels);
 				hcc->setDistanceThreshold(DISTANCE_THRESHOLD, true);
 				hcc->setInputNormals(normals);
 				hcc->setHueThreshold(HUE_THRESHOLD);
@@ -135,6 +127,7 @@ public:
 				segmenter.setInputCloud(cloud);
 				segmenter.segment(*output_labels, cluster_i);
 				
+				hue_indices.clear();
 				for (size_t i = 0; i < cluster_i.size(); i++) {
 					if (cluster_i.at(i).indices.size() > CLUSTER_THRESHOLD) {
 						hue_indices.push_back(cluster_i.at(i));
@@ -146,7 +139,6 @@ public:
 				PCH::Ptr cloud_b(new PCH());
 				pcl::copyPointCloud(*cloud, *cloud_b);
 
-				pcl::ExtractIndices<PointH> ex;
 				ex.setNegative(true);
 				ex.setKeepOrganized(true);
 				pcl::PointIndices::Ptr clust(new pcl::PointIndices());
@@ -158,10 +150,8 @@ public:
 					ex.filterDirectly(cloud_b);
 				}
 				
-				pcl::ValueClusterComparator<PointH, pcl::Normal, pcl::Label>::Ptr vcc(new pcl::ValueClusterComparator<PointH, pcl::Normal, pcl::Label>());
+				pcl::ValueClusterComparator<PointH, pcl::Normal>::Ptr vcc(new pcl::ValueClusterComparator<PointH, pcl::Normal>());
 				vcc->setInputCloud(cloud_b);
-				vcc->setLabels(input_labels);
-				vcc->setExcludeLabels(ignore_labels);
 				vcc->setDistanceThreshold(DISTANCE_THRESHOLD, true);
 				vcc->setInputNormals(normals);
 				vcc->setValueThreshold(VALUE_THRESHOLD);
@@ -171,7 +161,8 @@ public:
 				pcl::OrganizedConnectedComponentSegmentation<PointH, pcl::Label> segmenterV(vcc);
 				segmenterV.setInputCloud(cloud_b);
 				segmenterV.segment(*output_l, cluster_i);
-					
+				
+				value_indices.clear();
 				for (size_t i = 0; i < cluster_i.size(); i++) {
 					if (cluster_i.at(i).indices.size() > CLUSTER_THRESHOLD) {
 						value_indices.push_back(cluster_i.at(i));
@@ -289,17 +280,13 @@ public:
 		}
 	}
 
-	bool checkCluster(rs::Cluster clust, PCH::Ptr cloud_ptr, pcl::PointCloud<pcl::Label>::Ptr labels) {
+	bool checkCluster(rs::Cluster clust, PCH::Ptr cloud_ptr) {
 		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
 		rs::ReferenceClusterPoints clusterpoints(clust.points());
 		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 		
 		PointH temp;
 		int count = 0;
-		
-		for (int i = 0; i < labels->size(); i++) {
-			labels->points[i].label = 0;
-		}
 
 		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
 				 pit != cluster_indices->indices.end(); pit++) {
@@ -307,7 +294,6 @@ public:
 			if (temp.h > HUE_LOWER_BOUND && temp.h < HUE_UPPER_BOUND) {
 				count++;
 			}
-			labels->points[*pit].label = 1;
 		}
 				
 		if (count > POINT_THRESHOLD) {

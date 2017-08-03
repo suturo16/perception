@@ -52,6 +52,7 @@ private:
   };
 
   float test_param;
+  float width, height, depth;
   tf::Transform transform;
 
   pcl::PointCloud<PointT>::Ptr cloud_ptr;
@@ -142,8 +143,25 @@ public:
 
     box_objects.clear();
 
+
     for(auto cluster : clusters)
     {
+
+      std::vector<rs::SemanticColor> semanticColor;
+      cluster.annotations.filter(semanticColor);
+      std::vector<float> ratios = semanticColor[0].ratio.get();
+      std::vector<std::string> colors = semanticColor[0].color.get();
+      bool ratioLow = false;
+      for(int i = 0; i < colors.size(); i++){
+          float ratio = ratios[i];
+          std::string color = colors[i];
+          if(color == "yellow" && ratio < 0.5){
+              ratioLow = true;
+          }
+      }
+      if(ratioLow){
+          continue;
+      }
       pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
       rs::ReferenceClusterPoints clusterpoints(cluster.points());
       rs::conversion::from(clusterpoints.indices(), *cluster_indices);
@@ -207,7 +225,7 @@ public:
           poseAnnotation.world.set(rs::conversion::to(tcas, world));
           poseAnnotation.source.set("3DEstimate");
           cluster.annotations.append(poseAnnotation);
-          scene.identifiables.append(cluster);
+          //scene.identifiables.append(cluster);
       } else{
           outInfo("No Box");
       }
@@ -442,7 +460,6 @@ public:
           min_v2 = fminf(min_v2, value_v2);
           min_v3 = fminf(min_v3, value_v3);
         }
-        float height, width, depth;
         height = max_v3 - min_v3;
         width = max_v1 - min_v1;
         depth = max_v2 - min_v2;
@@ -463,7 +480,7 @@ public:
         mat << bo.xVector, bo.yVector, bo.zVector;
         Eigen::Quaternionf qua(mat);
         qua.normalize();
-
+		
         pose.header.frame_id = cloud_object->header.frame_id;
         pose.pose.orientation.x = qua.x();
         pose.pose.orientation.y = qua.y();
@@ -480,7 +497,7 @@ public:
 
         tf::Vector3 trans(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
         tf::Matrix3x3 rot;
-
+		
         rot.setValue(mat(0,0), mat(0,1), mat(0,2),
                      mat(1,0), mat(1,1), mat(1,2),
                      mat(2,0), mat(2,1), mat(2,2));
@@ -490,23 +507,23 @@ public:
 
         o.name.set("box");
         o.type.set(1);
-        o.width.set(max_v1 - min_v1);
-        o.height.set(max_v3 - min_v3);
-        o.depth.set(max_v2 - min_v2);
+        o.width.set(width);
+        o.height.set(height);
+        o.depth.set(depth);
 
         return matched_points;
   }
 
-  pcl::ModelCoefficients getCoefficients(Eigen::Vector3f axis, PointT highest) {
+  pcl::ModelCoefficients getCoefficients(Eigen::Vector3f axis, PointT highest, float length) {
       pcl::ModelCoefficients coeffs;
       //point
       coeffs.values.push_back(highest.x);
       coeffs.values.push_back(highest.y);
       coeffs.values.push_back(highest.z);
       //direction
-      coeffs.values.push_back(axis[0]);
-      coeffs.values.push_back(axis[1]);
-      coeffs.values.push_back(axis[2]);
+      coeffs.values.push_back(axis[0] * length);
+      coeffs.values.push_back(axis[1] * length);
+      coeffs.values.push_back(axis[2] * length);
       //radius
       coeffs.values.push_back(1.0f);
 
@@ -515,8 +532,6 @@ public:
 
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
   {
-
-    outInfo("amout of boxes: "<< box_objects.size());
     for(box_object bo: box_objects){
         pcl::PointIndices::Ptr plane1(new pcl::PointIndices ());
         pcl::PointIndices::Ptr plane2(new pcl::PointIndices ());
@@ -546,13 +561,13 @@ public:
       if(box_objects.size() == 0){
           return;
       }
-      visualizer.addCone(getCoefficients(box_objects[0].xVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"x");
+      visualizer.addCone(getCoefficients(box_objects[0].xVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]], depth),"x");
       visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
 
-      visualizer.addCone(getCoefficients(box_objects[0].yVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"y");
+      visualizer.addCone(getCoefficients(box_objects[0].yVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]], height),"y");
       visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
 
-      visualizer.addCone(getCoefficients(box_objects[0].zVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"z");
+      visualizer.addCone(getCoefficients(box_objects[0].zVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]], width),"z");
       visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
     }
     else
@@ -565,13 +580,13 @@ public:
           return;
       }
 
-      visualizer.addCone(getCoefficients(box_objects[0].xVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"x");
+      visualizer.addCone(getCoefficients(box_objects[0].xVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]], depth),"x");
       visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
 
-      visualizer.addCone(getCoefficients(box_objects[0].yVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"y");
+      visualizer.addCone(getCoefficients(box_objects[0].yVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]], height),"y");
       visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
 
-      visualizer.addCone(getCoefficients(box_objects[0].zVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]]),"z");
+      visualizer.addCone(getCoefficients(box_objects[0].zVector, cloud_ptr->points[box_objects[0].clusterInSzene.indices[0]], width),"z");
       visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
 
     }

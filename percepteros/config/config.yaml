@@ -7,8 +7,12 @@ annotators:
     - PlaneAnnotator
     - PointCloudClusterExtractor
     - ColorClusterer
-    - TrayAnnotator
+    - PointCloudColorSegmentation
+    - PrimitiveShapeAnnotator
+    - PlateAnnotator
+    - SpatulAnnotator
+    - ClusterColorHistogramCalculator
     - CakeAnnotator
-    - CylinderAnnotator
+    - BoardAnnotator
     - KnifeAnnotator
     - ROSPublisher
