@@ -143,6 +143,7 @@ public:
 
     box_objects.clear();
 
+
     for(auto cluster : clusters)
     {
 
