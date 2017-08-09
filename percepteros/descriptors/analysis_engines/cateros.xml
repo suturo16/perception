@@ -281,11 +281,10 @@
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
+        <node>SpatulaRecognition</node>
+        <node>ClusterColorHistogramCalculator</node>
         <node>CakeAnnotator</node>
         <node>BoardAnnotator</node>
-      <!--  
-      -->
-        <node>SpatulaRecognition</node>
         <node>ColorClusterer</node>
         <node>KnifeAnnotator</node>
         <node>PointCloudColorSegmentation</node>

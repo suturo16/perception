@@ -123,7 +123,7 @@ public:
 				seg.setInputCloud(clust);
 				seg.segment(*cin1, *cco1);
 				
-				//printCoefficients("First circle", cco1);
+				printCoefficients("First circle", cco1);
 	
 				ex.setInputCloud(clust);
 				ex.setIndices(cin1);
@@ -133,7 +133,7 @@ public:
 				seg.setInputCloud(clust_filtered);
 				seg.segment(*cin2, *cco2);
 				
-				//printCoefficients("Second circle", cco2);
+				printCoefficients("Second circle", cco2);
 				
 
 				if 	(isPlate(cco1, cco2, (int) std::strtof(cluster.source.get().erase(0, 15).data(), NULL))) {
@@ -210,7 +210,7 @@ public:
 	
         o.name.set("dinnerPlateForCake");
 		o.type.set(7);
-		o.color.set(std::stoi(cluster.source.get().substr(15)));
+		//o.color.set(std::stoi(cluster.source.get().substr(15)));
 		o.width.set(co.values[3]);
 		o.height.set(0);
 		o.depth.set(0);
@@ -234,7 +234,10 @@ public:
 	}
 
 	bool isPlate(pcl::ModelCoefficients::Ptr co1, pcl::ModelCoefficients::Ptr co2, int avHue) {
-		return avHue > HUE_LOWER_BOUND && avHue < HUE_UPPER_BOUND && (sqrt(pow(co1->values[0] - co2->values[0], 2) + pow(co1->values[1] - co2->values[1], 2) + pow(co1->values[2] - co2->values[2], 2)) < MAX_DIST_CENTS);
+		float dist = sqrt(pow(co1->values[0] - co2->values[0], 2) + pow(co1->values[1] - co2->values[1], 2) + pow(co1->values[2] - co2->values[2], 2));
+		outInfo("computed distance is " << dist);
+		outInfo("average hue is " << avHue);
+		return (dist < MAX_DIST_CENTS);
 	}
 
 	void extractCluster(PC::Ptr clust, PC::Ptr cloud, rs::Cluster cluster) {

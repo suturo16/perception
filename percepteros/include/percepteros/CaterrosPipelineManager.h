@@ -115,12 +115,18 @@ public:
           } else if(object == "cylinder"){
             pipelineName = "cylinder";
           } else if(object =="knife"){
-              pipelineName = "knife";
+            pipelineName = "knife";
           } else if (object == "end") {
-			pipelineName = "end";
-		}
-		else {
-              pipelineName= "config";
+			      pipelineName = "end";
+          } else if (object == "spatula") {
+            pipelineName = "spatulaRecognition";
+          } else if (object == "plate") {
+            pipelineName = "plate";
+          } else if (object == "board") {
+            pipelineName = "board";
+		      } else {
+            outInfo("No Corresponding Object found, setting pipelineName to 'config'!");
+            pipelineName= "config";
           }
       }
       std::string configFile_ = ros::package::getPath("percepteros") +"/config/"+pipelineName+".yaml";

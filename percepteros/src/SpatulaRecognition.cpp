@@ -331,27 +331,27 @@ featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA
 
 bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
 {
-  outInfo("hasSimilarFS started");
+  //outInfo("hasSimilarFS started");
   //check eigenvectors
   Eigen::Vector3f compared_eigen_vec;
   compared_eigen_vec << compared.pca_eigen_vec(0,0), compared.pca_eigen_vec(1,0), compared.pca_eigen_vec(2,0); 
   Eigen::Vector3f comparing_eigen_vec;
   comparing_eigen_vec << comparing.pca_eigen_vec(0,0), comparing.pca_eigen_vec(1,0), comparing.pca_eigen_vec(2,0); 
   float eigen_vec_dist = (compared_eigen_vec - comparing_eigen_vec).squaredNorm();
-  outInfo("vec distance" << eigen_vec_dist);
+  //outInfo("vec distance" << eigen_vec_dist);
   if (eigen_vec_dist>range) return false;
 
   //check EigenValues
   float eigen_val_dist = (compared.pca_eigen_vals - comparing.pca_eigen_vals).squaredNorm();
-  outInfo("val distance" << eigen_val_dist);
+  //outInfo("val distance" << eigen_val_dist);
   if (eigen_val_dist > range) return false;
 
   //check hsv
   float hsv_dist = (compared.hsv_means- comparing.hsv_means).squaredNorm();
-  outInfo("hsv distance" << hsv_dist);
+  //outInfo("hsv distance" << hsv_dist);
   if (hsv_dist > range) return false;
 
-  outInfo("hasSimilarFS ended");
+  //outInfo("hasSimilarFS ended");
 
   return true;
 }
