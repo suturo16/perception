@@ -282,8 +282,6 @@
         <node>ImagePreprocessor</node>
         <node>PointCloudFilter</node>
         <node>NormalEstimator</node>
-        <node>ObjectRegionFilter</node>
-        <!--
         <node>PlaneAnnotator</node>
         <node>PointCloudClusterExtractor</node>
         <node>SpatulaRecognition</node>
@@ -295,8 +293,7 @@
         <node>PointCloudColorSegmentation</node>
         <node>PrimitiveShapeAnnotator</node>
         <node>ClusterColorHistogramCalculator</node>
-        <node>PlateAnnotator</node>	
-        -->
+        <node>PlateAnnotator</node> 
         <node>ROSPublisher</node>
       </fixedFlow>
     </flowConstraints>
