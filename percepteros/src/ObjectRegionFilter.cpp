@@ -25,10 +25,15 @@
 using namespace uima;
 
 struct regionDescriptor{
+  //filled by parser
   std::string outViewID;
   std::vector<std::string> processViews;
   Eigen::Vector3d center_position;
   Eigen::Vector3d axis_ranges;
+
+  //supported values computed later on
+  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud_ptr;
+  pcl::PointCloud<pcl::Normal>::Ptr normal_ptr;
 };
 
 class ObjectRegionFilter : public DrawingAnnotator
@@ -36,18 +41,18 @@ class ObjectRegionFilter : public DrawingAnnotator
 private:
   std::string region_config;
   double pointSize;
-  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr;
+  std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cloud_ptrs;
   std::vector<regionDescriptor> regions;
 
   void filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud_ptr, float center, std::string field_name, float range);
   bool parseRegionConfig(std::string region_file);
+  bool processRegions(rs::SceneCas cas);
 
 public:
 
   ObjectRegionFilter(): 
     DrawingAnnotator(__func__),
-    pointSize(1),
-    cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGBA>)
+    pointSize(1)
   {
   }
 
@@ -125,13 +130,52 @@ void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_
   pass.filter (*out_cloud_ptr);
 }
 
+bool ObjectRegionFilter::processRegions(rs::SceneCas cas)
+{
+  for (auto reg_it = regions.begin(); reg_it != regions.end(); ++ reg_it)
+  {
+    for (auto view_it = reg_it->processViews.begin(); view_it != reg_it->processViews.end(); ++reg_it )
+    {
+      //getting correct view
+      if (view_it->c_str() == VIEW_CLOUD) 
+      {
+        pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
+        cas.get(VIEW_CLOUD, cloud_ptr);
+        outError("Need to fix the case where no x-axis range is defined!");
+        if (reg_it->axis_ranges.x() > 0)
+          filterCloud(cloud_ptr, reg_it->view_cloud_ptr, reg_it->center_position.x(), "x", reg_it->axis_ranges.x());
+        if (reg_it->axis_ranges.y() > 0)
+          filterCloud(reg_it->view_cloud_ptr, reg_it->view_cloud_ptr, reg_it->center_position.x(), "y", reg_it->axis_ranges.y()); //possible error working on input cloud
+        if (reg_it->axis_ranges.z() > 0)
+          filterCloud(reg_it->view_cloud_ptr, reg_it->view_cloud_ptr, reg_it->center_position.x(), "z", reg_it->axis_ranges.z()); //possible error working on input cloud
+      } 
+      else if (view_it->c_str() == VIEW_NORMALS) 
+      {
+        outError("PointCloud with point type pcl::Normal is not supported yet. BREAK.");
+        break;
+        pcl::PointCloud<pcl::Normal>::Ptr cloud_ptr(new pcl::PointCloud<pcl::Normal>);
+        cas.get(VIEW_NORMALS, cloud_ptr);
+      } 
+      else
+      {
+        outError("View defined in regionDescriptor is not supported!");
+        break;
+      }
+    }
+  }
+  return true;
+}
+
 
 TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification const &res_spec)
 {
   outInfo("process start");
+  cloud_ptrs.clear();
+
   rs::StopWatch clock;
   rs::SceneCas cas(tcas);
-  cas.get(VIEW_CLOUD,*cloud_ptr);
+  //cas.get(VIEW_CLOUD,*cloud_ptr);
+
 
 
 
@@ -144,10 +188,10 @@ void ObjectRegionFilter::fillVisualizerWithLock(pcl::visualization::PCLVisualize
   std::string cloudname("object region scene points");
   
   if (firstRun){
-    visualizer.addPointCloud(cloud_ptr, cloudname);
+    visualizer.addPointCloud(cloud_ptrs[0], cloudname);
     visualizer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
   } else {
-    visualizer.updatePointCloud(cloud_ptr, cloudname);
+    visualizer.updatePointCloud(cloud_ptrs[0], cloudname);
     visualizer.removeAllShapes();
     visualizer.getPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
   }
