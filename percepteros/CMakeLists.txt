@@ -93,7 +93,7 @@ rs_add_library(rs_spatulaRecognition src/SpatulaRecognition.cpp)
 target_link_libraries(rs_spatulaRecognition ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_objectRegionFilter src/ObjectRegionFilter.cpp)
-target_link_libraries(rs_objectRegionFilter ${CATKIN_LIBRARIES})
+target_link_libraries(rs_objectRegionFilter ${CATKIN_LIBRARIES} yaml-cpp)
 
 rs_add_executable(caterrosRun src/CaterrosRun.cpp src/CaterrosPipelineManager.cpp src/CaterrosControlledAnalysisEngine.cpp)
 target_link_libraries(caterrosRun ${CATKIN_LIBRARIES})

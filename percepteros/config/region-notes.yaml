@@ -1,17 +1,9 @@
-spatula:
-  ll:
-    x: -0.467041969299
-    y: 0.381439208984
-    z: 0.964346170425
-  lr: 
-    x: -0.0325608253479
-    y: 0.379172801971
-    z: 0.970687627792
-  ur: 
-    x: 0.0003966614604
-    y: -1.2810049057
-    z: -0.00160074234009
-  ul: 
-    x: -0.485357701778
-    y: 0.140309810638
-    z: 1.30512547493
+- outViewID: "spatula" # valid input can be found in view_names.h
+  viewsToProcess: ["cloud"] # appending "_<process_views>" to the name for cas.set
+  region_center: [-0.387466371059, 0.170032024384, 0.9]
+  range: [0.1, 0.1, 0.1]
+
+- outViewID: "knife" # valid input can be found in view_names.h
+  viewsToProcess: ["cloud", "normals"] # appending "_<process_views>" to the name for cas.set
+  region_center: [1, 0.170032024384, 0.9]
+  range: [0.1, 0.1, 0.1]

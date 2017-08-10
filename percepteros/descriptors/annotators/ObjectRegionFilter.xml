@@ -10,17 +10,17 @@
     <vendor/>
     <configurationParameters>
         <configurationParameter>
-            <name>test_param</name>
-            <type>Float</type>
+            <name>region_config</name>
+            <type>String</type>
             <multiValued>false</multiValued>
-            <mandatory>false</mandatory>
+            <mandatory>true</mandatory>
         </configurationParameter>
     </configurationParameters>
     <configurationParameterSettings>
         <nameValuePair>
-            <name>test_param</name>
+            <name>region_config</name>
             <value>
-                <float>0.01</float>
+                <string>region-notes.yaml</string>
             </value>
         </nameValuePair>
     </configurationParameterSettings>
