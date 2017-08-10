@@ -85,6 +85,9 @@
     <delegateAnalysisEngine key="ObjectIdentityResolution">
       <import location="../../../../robosherlock/descriptors/annotators/tracker/ObjectIdentityResolution.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="ObjectRegionFilter">
+      <import location="../annotators/ObjectRegionFilter.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="PCLDescriptorExtractor">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/PCLDescriptorExtractor.xml"/>
     </delegateAnalysisEngine>
