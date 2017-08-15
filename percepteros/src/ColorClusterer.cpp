@@ -91,6 +91,11 @@ public:
 		std::vector<rs::Cluster> clusters;
 		scene.identifiables.filter(clusters);
 
+		//clear pointclouds
+		temp->clear();
+		normals->clear();
+		cloud->clear();
+
 		//get scene points
 		cas.get(VIEW_CLOUD, *temp);
 		cas.get(VIEW_NORMALS, *normals);
