@@ -65,7 +65,9 @@ public:
   SpatulaRecognition(): DrawingAnnotator(__func__), pointSize(1){
 
       cloud_ptr = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
-      //orf = ObjectRegionFilter::getInstance();
+      outInfo("saf: " << ObjectRegionFilter::number);
+      ObjectRegionFilter::print();
+      ObjectRegionFilter::getInstance();
   }
 
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun);

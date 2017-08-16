@@ -43,16 +43,19 @@ struct regionDescriptor{
 class ObjectRegionFilter{
 
 private:
-	static bool instanceFlag;
-	static ObjectRegionFilter *single_orf;
+	static ObjectRegionFilter *orf_instance;
 	std::string region_file;
   std::vector<regionDescriptor> regions;
 
 	ObjectRegionFilter():
 		region_file("region-notes.yaml")
 	{
+		outInfo("ObjectRegionFilter constructor");
 		parseRegionConfig(this->region_file);
 	}
+
+	ObjectRegionFilter(ObjectRegionFilter const&);
+	void operator=(ObjectRegionFilter const&);
 
 	bool parseRegionConfig(std::string region_file);
 	bool findRegion(std::string regionID, regionDescriptor& rD);
@@ -63,13 +66,20 @@ private:
 */
 public:
 
-	~ObjectRegionFilter()
-	{
-		instanceFlag = false;
-	}
+	const static int number = 1;
 
-	static ObjectRegionFilter* getInstance()
+	static void print()
 	{
+		outInfo("HEREEE");
+	}
+	static void getInstance()
+	{
+		outInfo("WHHHHHHHHHAAAAAAAAAAA");
+		/*
+		if (!orf_instance)
+			orf_instance = new ObjectRegionFilter;
+		return orf_instance;
+//
 		if (!instanceFlag)
 		{
 			single_orf = new ObjectRegionFilter;
@@ -80,7 +90,9 @@ public:
 		{
 			return single_orf;
 		}
+	*/
 	}
+	/**/
 	
 	bool getviewCloud(std::string regionID, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud);
 /*
