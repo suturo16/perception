@@ -18,6 +18,10 @@
 #include <pcl/common/geometry.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/common/transforms.h>
+
+//tf
+#include <tf_conversions/tf_eigen.h>
 
 //c++ base
 #include <float.h>
@@ -106,11 +110,28 @@ class DataAquisition : public DrawingAnnotator
 		//get scene points
 		cas.get(VIEW_CLOUD, *cloud);
 
+		//get transformations
+		tf::StampedTransform camToWorld, worldToCam;
+		Eigen::Affine3d eigenT;
+
+		camToWorld.setIdentity();
+		if(scene.viewPoint.has()) {
+			rs::conversion::from(scene.viewPoint.get(), camToWorld);
+		} else {
+			outInfo("No camera to world transformation!");
+		}
+		worldToCam = tf::StampedTransform(camToWorld.inverse(), camToWorld.stamp_, camToWorld.child_frame_id_, camToWorld.frame_id_);
+		tf::transformTFToEigen(worldToCam, eigenT);
+
 		//make points
 		PointG oneP(one_x, one_y, one_z);
+		oneP = pcl::transformPoint(oneP, eigenT.cast<float>());
 		PointG twoP(two_x, two_y, two_z);
+		twoP = pcl::transformPoint(twoP, eigenT.cast<float>());
 		PointG threeP(three_x, three_y, three_z);
+		threeP = pcl::transformPoint(threeP, eigenT.cast<float>());
 		PointG fourP(four_x, four_y, four_z);
+		fourP = pcl::transformPoint(fourP, eigenT.cast<float>());
 
 		for (int i = 0; i < clusters.size(); i++) {
 			averageP = getAverage(cloud, clusters[i]);
@@ -151,9 +172,9 @@ class DataAquisition : public DrawingAnnotator
 		extract.setInputCloud(cloud);
 
 		std::time_t t = std::time(NULL);
-    	char mbstr[20];
-    	std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
-    	string time(mbstr);
+		char mbstr[20];
+		std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+		string time(mbstr);
 		writeCloud(cluster, clusters[one_i], dir + one + "/" + time + ".pcd");
 		writeCloud(cluster, clusters[two_i], dir + two + "/" + time + ".pcd");
 		writeCloud(cluster, clusters[three_i], dir + three + "/" + time + ".pcd");
