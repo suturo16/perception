@@ -91,7 +91,7 @@ public:
 		std::vector<rs::Cluster> clusters;
 		scene.identifiables.filter(clusters);
 
-		//clear clouds
+		//clear pointclouds
 		temp->clear();
 		normals->clear();
 		cloud->clear();
@@ -100,7 +100,6 @@ public:
 		cas.get(VIEW_CLOUD, *temp);
 		cas.get(VIEW_NORMALS, *normals);
 		pcl::PointCloudXYZRGBAtoXYZHSV(*temp, *cloud);
-
 		//helpers
 		rs::StopWatch clock;
 		bool found = false;
