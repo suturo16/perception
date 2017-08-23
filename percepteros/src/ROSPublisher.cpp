@@ -16,7 +16,7 @@
 
 using namespace uima;
 
-class ROSPublisher : public DrawingAnnotator
+class ROSPublisher : public Annotator
 {
 private:
 
@@ -28,9 +28,6 @@ private:
 
 
 public:
-  ROSPublisher() : DrawingAnnotator(__func__)
-  {
-  }
 
   TyErrorId initialize(AnnotatorContext &ctx)
   {
@@ -50,7 +47,7 @@ public:
   }
 
 private:
-  TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec)
+  TyErrorId process(CAS &tcas, ResultSpecification const &res_spec)
   {
     rs::SceneCas cas(tcas);
     rs::Scene scene = cas.getScene();
@@ -128,10 +125,6 @@ private:
     return UIMA_ERR_NONE;
   }
 
-  void drawImageWithLock(cv::Mat &disp)
-  {
-
-  }
 };
 
 MAKE_AE(ROSPublisher)
