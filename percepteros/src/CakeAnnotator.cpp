@@ -66,9 +66,13 @@ private:
 
   double pointSize = 1;
 
-  constexpr static double BOX_NORMAL_WEIGHT = 0.04;
-  constexpr static double BOX_DISTANCE_THRESHOLD_NORMALPLANE = 0.015;
-  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE1 = 0.004;
+  float BOX_DISTANCE_THRESHOLD_PLANE1, BOX_DISTANCE_THRESHOLD_PLANE2,BOX_DISTANCE_THRESHOLD_PLANE3,
+  BOX_EPSILON_PLANE1, BOX_MAX_SIZE_RATIO_PLANE1, BOX_MIN_SIZE_RATIO_PLANE1, BOX_MIN_SIZE_RATIO_PLANE2,
+  BOX_MIN_SIZE_RATIO_PLANE3, BOX_MIN_MATCHED_POINTS_RATIO, EPSILON_ANGLE;
+  int MAX_SEGMENTATION_ITERATIONS, MIN_CLOUD_SIZE;
+  std::string COLOR;
+
+  /*constexpr static double BOX_DISTANCE_THRESHOLD_PLANE1 = 0.004;
   constexpr static double BOX_DISTANCE_THRESHOLD_PLANE2 = 0.005;
   constexpr static double BOX_DISTANCE_THRESHOLD_PLANE3 = 0.005;
   constexpr static double BOX_EPSILON_PLANE1 = 0.1;
@@ -76,11 +80,10 @@ private:
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE1 = 0.2;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE2 = 0.25;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE3 = 0.15;
-  //constexpr static double PLANE2_TO_BOX_MIN_RATIO = 0.20;
   constexpr static double BOX_MIN_MATCHED_POINTS_RATIO = 0.4;
   constexpr static int MAX_SEGMENTATION_ITERATIONS = 2000;
   constexpr static double EPSILON_ANGLE = 0.3;
-  constexpr static int MIN_CLOUD_SIZE = 50;
+  constexpr static int MIN_CLOUD_SIZE = 50;*/
 
 
 public:
@@ -93,7 +96,20 @@ public:
   TyErrorId initialize(AnnotatorContext &ctx)
   {
     outInfo("initialize");
-    ctx.extractValue("test_param", test_param);
+    ctx.extractValue("BOX_DISTANCE_THRESHOLD_PLANE1", BOX_DISTANCE_THRESHOLD_PLANE1);
+    ctx.extractValue("BOX_DISTANCE_THRESHOLD_PLANE2", BOX_DISTANCE_THRESHOLD_PLANE2);
+    ctx.extractValue("BOX_DISTANCE_THRESHOLD_PLANE3", BOX_DISTANCE_THRESHOLD_PLANE3);
+    ctx.extractValue("BOX_EPSILON_PLANE1", BOX_EPSILON_PLANE1);
+    ctx.extractValue("BOX_MAX_SIZE_RATIO_PLANE1", BOX_MAX_SIZE_RATIO_PLANE1);
+    ctx.extractValue("BOX_MIN_SIZE_RATIO_PLANE1", BOX_MIN_SIZE_RATIO_PLANE1);
+    ctx.extractValue("BOX_MIN_SIZE_RATIO_PLANE2", BOX_MIN_SIZE_RATIO_PLANE2);
+    ctx.extractValue("BOX_MIN_SIZE_RATIO_PLANE3", BOX_MIN_SIZE_RATIO_PLANE3);
+    ctx.extractValue("BOX_MIN_MATCHED_POINTS_RATIO", BOX_MIN_MATCHED_POINTS_RATIO);
+    ctx.extractValue("MAX_SEGMENTATION_ITERATIONS", MAX_SEGMENTATION_ITERATIONS);
+    ctx.extractValue("EPSILON_ANGLE", EPSILON_ANGLE);
+    ctx.extractValue("MIN_CLOUD_SIZE", MIN_CLOUD_SIZE);
+    ctx.extractValue("COLOR", COLOR);
+
     return UIMA_ERR_NONE;
   }
 
@@ -155,7 +171,7 @@ public:
       for(int i = 0; i < colors.size(); i++){
           float ratio = ratios[i];
           std::string color = colors[i];
-          if(color == "yellow" && ratio < 0.5){
+          if(color == COLOR && ratio < 0.5){
               ratioLow = true;
           }
       }
@@ -352,11 +368,7 @@ public:
         pcl::PointIndices::Ptr inliers2(new pcl::PointIndices ());
         pcl::PointIndices::Ptr inliers3(new pcl::PointIndices ());
 
-        //int matched_points = segmentPlaneFromNormals(cloud_object, pcl::SACMODEL_NORMAL_PLANE, BOX_NORMAL_WEIGHT,
-        //                                             BOX_DISTANCE_THRESHOLD_NORMALPLANE, coefficients_plane1, inliers1, cloud_rem1);
-
         //up
-        //Eigen::Vector3f norm_plane1 = vectorFromCoeff(coefficients_plane1,0);
         bo.zVector = sceneUp;
 
         pcl::ModelCoefficients::Ptr co(new pcl::ModelCoefficients ());
@@ -389,10 +401,6 @@ public:
 
         Eigen::Vector3f norm_plane2 = vectorFromCoeff(coefficients_plane2,0);
         bo.xVector = norm_plane2;
-
-        /*if((double) plane_size / (double) cloud_object->points.size() < PLANE2_TO_BOX_MIN_RATIO) {
-            return 0;
-        }*/
 
         if ((double) plane_size / (double) cloud_rem1->points.size() < BOX_MIN_SIZE_RATIO_PLANE2)
         {
