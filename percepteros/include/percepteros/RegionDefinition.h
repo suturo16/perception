@@ -45,7 +45,7 @@ class ObjectRegionFilter{
 private:
 	static ObjectRegionFilter *orf_instance;
 	std::string region_file;
-  std::vector<regionDescriptor> regions;
+  	std::vector<regionDescriptor> regions;
 
 	ObjectRegionFilter():
 		region_file("region-notes.yaml")
@@ -68,13 +68,13 @@ public:
 
 	const static int number = 1;
 
-	static void print()
+	static ObjectRegionFilter& getInstance()
 	{
-		outInfo("HEREEE");
-	}
-	static void getInstance()
-	{
-		outInfo("WHHHHHHHHHAAAAAAAAAAA");
+		outInfo("WHHHHHHHHHAAAAAAAAAAA1");
+		static ObjectRegionFilter orf_instance;// = ObjectRegionFilter();
+		outInfo("WHHHHHHHHHAAAAAAAAAAA2");
+		return orf_instance; 
+		//return NULL;
 		/*
 		if (!orf_instance)
 			orf_instance = new ObjectRegionFilter;

@@ -36,7 +36,7 @@ struct featureSet{
 class SpatulaRecognition : public DrawingAnnotator
 {
 private:
-  ObjectRegionFilter* orf;
+  //ObjectRegionFilter* orf;
   double pointSize;
   pcl::PointCloud<PointXYZRGBA>::Ptr cloud_ptr;
   pcl::PointCloud<pcl::PointXYZ>::Ptr spatula;
@@ -65,9 +65,8 @@ public:
   SpatulaRecognition(): DrawingAnnotator(__func__), pointSize(1){
 
       cloud_ptr = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
-      outInfo("saf: " << ObjectRegionFilter::number);
-      ObjectRegionFilter::print();
-      ObjectRegionFilter::getInstance();
+      outInfo("initialize");
+      ObjectRegionFilter &orf = ObjectRegionFilter::getInstance();
   }
 
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun);

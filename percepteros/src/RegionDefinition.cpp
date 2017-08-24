@@ -5,7 +5,11 @@ bool ObjectRegionFilter::parseRegionConfig(std::string region_file)
 {
   std::string regionConfigFile = ros::package::getPath("percepteros") +"/config/" + region_file;
   YAML::Node regionList = YAML::LoadFile(regionConfigFile);
-  assert(regionList.IsSequence());
+  if(!regionList.IsSequence())
+  {
+    outError("RegionDefinition: YAML contains no seqquence!");
+    return false;
+  }
   
   if(regionList.IsNull()){ 
     outError("Config file not found!");
@@ -20,19 +24,17 @@ bool ObjectRegionFilter::parseRegionConfig(std::string region_file)
     rD.regionID = regionItem["regionID"].as<std::string>();
     outInfo("processing region with ID" + rD.regionID);
 
-    /*
-    YAML::Node viewsToProcess = regionItem["viewsToProcess"];
-    assert(viewsToProcess.IsSequence());
-    if(viewsToProcess.size()==0)
-    {
-      outError("Parser does not accept region with 0 views!");
-      return false;
-    }
-    for(YAML::const_iterator view_it = viewsToProcess.begin(); view_it != viewsToProcess.end(); ++view_it){
-      std::string viewName = view_it->as<std::string>();
-      rD.processViews.push_back(viewName);
-    }
-    */
+//    YAML::Node viewsToProcess = regionItem["viewsToProcess"];
+//    assert(viewsToProcess.IsSequence());
+//    if(viewsToProcess.size()==0)
+//    {
+//      outError("Parser does not accept region with 0 views!");
+//      return false;
+//    }
+//    for(YAML::const_iterator view_it = viewsToProcess.begin(); view_it != viewsToProcess.end(); ++view_it){
+//      std::string viewName = view_it->as<std::string>();
+//      rD.processViews.push_back(viewName);
+//    }
 
     YAML::Node region_center = regionItem["region_center"];
     assert(region_center.IsSequence());
@@ -54,22 +56,21 @@ bool ObjectRegionFilter::parseRegionConfig(std::string region_file)
 
     this->regions.push_back(rD);
   }
-
-  return true;
+   return true; 
 }
 
 bool ObjectRegionFilter::findRegion(std::string regionID, regionDescriptor& rD)
 {
-	for (size_t i = 0; i < this->regions.size(); i++) {
-		outInfo("iterating through: " << regions[i].regionID);
-		if (regions[i].regionID == regionID) 
-		{
-			rD = regions[i];
-			outInfo("found Region");
-			return true;
-		}
-	}
-	outError("found no region!");
+  for (size_t i = 0; i < this->regions.size(); i++) {
+    outInfo("iterating through: " << regions[i].regionID);
+    if (regions[i].regionID == regionID) 
+    {
+      rD = regions[i];
+      outInfo("found Region");
+      return true;
+    }
+  }
+  outError("found no region!");
 	return false;
 }
 
