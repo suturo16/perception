@@ -66,7 +66,6 @@ public:
 
       cloud_ptr = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
       outInfo("initialize");
-      ObjectRegionFilter &orf = ObjectRegionFilter::getInstance();
   }
 
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun);
@@ -141,7 +140,10 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
   rs::SceneCas cas(tcas);
   rs::Scene scene = cas.getScene();
   cas.get(VIEW_CLOUD,*cloud_ptr);
-//  orf->getviewCloud("spatula", cloud_ptr, cloud_ptr);
+  ObjectRegionFilter &orf = ObjectRegionFilter::getInstance();
+  outInfo("Size before: " << cloud_ptr->size());
+  orf.getviewCloud("spatula", cloud_ptr, cloud_ptr);
+  outInfo("Size after: " << cloud_ptr->size());
 
   //getting "up-achis" of scene
   tf::StampedTransform camToWorld, worldToCam;

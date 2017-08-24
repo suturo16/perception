@@ -76,7 +76,6 @@ bool ObjectRegionFilter::findRegion(std::string regionID, regionDescriptor& rD)
 
 void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud_ptr, float center, float range, std::string field_name)
 {
-	/*
   pcl::PassThrough<pcl::PointXYZRGBA> pass;
   pass.setInputCloud (in_cloud_ptr);
   pass.setFilterFieldName (field_name);
@@ -84,6 +83,7 @@ void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_
   float right_endpoint = center + (range/2);
   pass.setFilterLimits (left_endpoint, right_endpoint);
   pass.filter (*out_cloud_ptr);
+	/*
   */
 }
 

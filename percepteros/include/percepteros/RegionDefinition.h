@@ -70,32 +70,15 @@ public:
 
 	static ObjectRegionFilter& getInstance()
 	{
-		outInfo("WHHHHHHHHHAAAAAAAAAAA1");
 		static ObjectRegionFilter orf_instance;// = ObjectRegionFilter();
-		outInfo("WHHHHHHHHHAAAAAAAAAAA2");
 		return orf_instance; 
-		//return NULL;
-		/*
-		if (!orf_instance)
-			orf_instance = new ObjectRegionFilter;
-		return orf_instance;
-//
-		if (!instanceFlag)
-		{
-			single_orf = new ObjectRegionFilter;
-			instanceFlag = true;
-			return single_orf;
-		}
-		else
-		{
-			return single_orf;
-		}
-	*/
 	}
-	/**/
 	
 	bool getviewCloud(std::string regionID, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud);
+	
 /*
+	template <class PointT>
+	bool getviewCloud2(std::string regionID, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud);
 	template <class PointType> 
 	bool ObjectRegionFilter::getCloud(std::string regionID, pcl::PointCloud<PointType>::Ptr view_cloud, pcl::PointCloud<PointType>::Ptr out_cloud);
 
