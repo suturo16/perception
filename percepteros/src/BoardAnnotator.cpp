@@ -143,6 +143,7 @@ class BoardAnnotator : public DrawingAnnotator {
 		 */
 	  TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec) {
 	    outInfo("Start calculation of board pose.");
+			rs::StopWatch clock;
 
 			//empty containers
 			cloud->clear();
@@ -153,7 +154,7 @@ class BoardAnnotator : public DrawingAnnotator {
 			rs::SceneCas cas(tcas);
 			rs::Scene scene = cas.getScene();
 			std::vector<rs::Cluster> clusters;
-			std::vector<std::vector<percepteros::RecognitionObject>> cluster_annotions;
+			std::vector<std::vector<percepteros::RecognitionObject>> cluster_annotations;
 			scene.identifiables.filter(clusters, cluster_annotations);
 
 			//get scene points
@@ -174,13 +175,13 @@ class BoardAnnotator : public DrawingAnnotator {
 						foundBox = true;
 
 						//get dimensions
-						perepteros::RecognitionObject rec = cluster_annotations[i][0];
+						percepteros::RecognitionObject rec = cluster_annotations[i][0];
 						width = rec.width.get();
 						height = rec.height.get();
 						depth = rec.depth.get();
 
 						//get pose
-						cluster[i].annotations.filter(poses);
+						clusters[i].annotations.filter(poses);
 						rs::PoseAnnotation pose = poses[0];
 
 						//get transformation from camera to object coordinates
@@ -214,7 +215,7 @@ class BoardAnnotator : public DrawingAnnotator {
 			}
 
 			if (!foundBox) {
-				outInfo("No box found!");
+				outInfo("No box found in " << clock.getTime() << "ms.");
 				return UIMA_ERR_NONE;
 			}
 
@@ -319,6 +320,7 @@ class BoardAnnotator : public DrawingAnnotator {
 			cluster.annotations.append(o);
 			scene.identifiables.append(cluster);
 
+			outInfo("Found box in " << clock.getTime() << "ms.");
 			return UIMA_ERR_NONE;
 	  }
 

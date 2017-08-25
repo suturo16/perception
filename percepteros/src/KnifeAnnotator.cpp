@@ -45,6 +45,7 @@
 #include <rs/types/all_types.h>
 #include <rs/scene_cas.h>
 #include <rs/DrawingAnnotator.h>
+#include <rs/utils/time.h>
 
 //SUTURO
 #include <percepteros/types/all_types.h>
@@ -149,8 +150,8 @@ class KnifeAnnotator : public DrawingAnnotator {
 		ex.setIndices(cluster_indices);
 		ex.filter(*container);
 
-		//filter.setInputCloud(container);
-		//filter.filter(*container);
+		filter.setInputCloud(container);
+		filter.filter(*container);
 	}
 
 	/**
@@ -195,7 +196,7 @@ class KnifeAnnotator : public DrawingAnnotator {
 
 		//extract color parameters
 		ctx.extractValue("minHue", HUE_LOWER_BOUND);
-		ctx.extractValue("maxHue", HUE_UPPER_BOU[description]ND);
+		ctx.extractValue("maxHue", HUE_UPPER_BOUND);
 
 		return UIMA_ERR_NONE;
 	}
@@ -218,7 +219,8 @@ class KnifeAnnotator : public DrawingAnnotator {
 	 * @return                 UIMA error id specifying success.
 	 */
 	TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec) {
-		outInfo("Start KnifeAnnotator");
+		outInfo("Starting KnifeAnnotator");
+		rs::StopWatch clock;
 
 		//clear clouds
 		cloud_r->clear();
@@ -266,7 +268,7 @@ class KnifeAnnotator : public DrawingAnnotator {
 
 		//prepare helpers
 		ex.setInputCloud(cloud);
-		//filter.setLeafSize(0.01f, 0.01f, 0.01f);
+		filter.setLeafSize(0.01f, 0.01f, 0.01f);
 
 		int cluster_index = 0;
 		//search for knife
@@ -307,7 +309,7 @@ class KnifeAnnotator : public DrawingAnnotator {
 
 		//if knife is not found, return an error
 		if (!foundKnife) {
-			outInfo("No knife found.");
+			outInfo("No knife found in " << clock.getTime() << "ms.");
 			return UIMA_ERR_NONE;
 		}
 
@@ -353,8 +355,8 @@ class KnifeAnnotator : public DrawingAnnotator {
 
 		tool_clusters[cluster_index].annotations.append(poseA);
 		tool_clusters[cluster_index].annotations.append(recA);
-		outInfo("Finished looking for knife.");
 
+		outInfo("Finished looking for knife in " << clock.getTime() << "ms.");
 		return UIMA_ERR_NONE;
 	}
 

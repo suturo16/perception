@@ -20,6 +20,7 @@
 #include <rs/types/all_types.h>
 #include <rs/scene_cas.h>
 #include <rs/DrawingAnnotator.h>
+#include <rs/utils/time.h>
 
 //SUTURO
 #include <percepteros/types/all_types.h>
@@ -300,6 +301,8 @@ class PlateAnnotator : public DrawingAnnotator {
 		 */
 	  TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec) {
 	    outInfo("Starting plate detection.");
+			rs::StopWatch clock;
+
 			//get clusters
 	    rs::SceneCas cas(tcas);
 			rs::Scene scene = cas.getScene();
@@ -366,7 +369,7 @@ class PlateAnnotator : public DrawingAnnotator {
 
 
 						if 	(isPlate(cco1, cco2, (int) std::strtof(cluster.source.get().erase(0, 15).data(), NULL))) {
-							outInfo("Found a plate.");
+							outInfo("Found a plate in " << clock.getTime() << "ms.");
 							addAnnotation(tcas, cluster, *cco1, clust->points[cin1->indices[0]]);
 						}
 					}

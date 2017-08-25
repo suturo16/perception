@@ -243,7 +243,9 @@ class ColorClusterer : public DrawingAnnotator {
 		 * @return                 UIMA error id specifying success.
 		 */
 	  TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec) {
-	    outInfo("process start\n");
+	    outInfo("Starting ColorClusterer.\n");
+			rs::StopWatch clock;
+
 			//get clusters
 	    	rs::SceneCas cas(tcas);
 			rs::Scene scene = cas.getScene();
@@ -260,7 +262,6 @@ class ColorClusterer : public DrawingAnnotator {
 			cas.get(VIEW_NORMALS, *normals);
 			pcl::PointCloudXYZRGBAtoXYZHSV(*temp, *cloud);
 			//helpers
-			rs::StopWatch clock;
 			bool found = false;
 
 			for (auto clust : clusters) {
@@ -390,10 +391,10 @@ class ColorClusterer : public DrawingAnnotator {
 			}
 
 			if (!found) {
-				outInfo("No matching cluster");
+				outInfo("No rack found in " << clock.getTime() << "ms.");
 			}
 
-			outInfo("Finished clustering in: " << clock.getTime() << "ms.");
+			outInfo("Finished rack clustering in " << clock.getTime() << "ms.");
 	    return UIMA_ERR_NONE;
 	  }
 
