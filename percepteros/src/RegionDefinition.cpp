@@ -78,11 +78,16 @@ void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_
 {
   pcl::PassThrough<pcl::PointXYZRGBA> pass;
   pass.setInputCloud (in_cloud_ptr);
+  outInfo("in cloud size = " << in_cloud_ptr->size());
+  outInfo("field_name = " << field_name);
   pass.setFilterFieldName (field_name);
   float left_endpoint = center - (range/2);
   float right_endpoint = center + (range/2);
+  outInfo("setting filter Limits le = " << left_endpoint << "right endpoint = " << right_endpoint);
   pass.setFilterLimits (left_endpoint, right_endpoint);
+  outInfo("filtering");
   pass.filter (*out_cloud_ptr);
+  outInfo("end filterCloud");
 	/*
   */
 }
@@ -96,12 +101,9 @@ bool ObjectRegionFilter::getviewCloud(std::string regionID, pcl::PointCloud<pcl:
 		return false;
 	}
 
-	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tmp0;//(pcl::PointCloud<pcl::PointXYZRGBA>);
-	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tmp1;
-
-	filterCloud(view_cloud, tmp0, rD.center_position.x(), rD.axis_ranges.x(), std::string("x"));
-	filterCloud(tmp0, tmp1, rD.center_position.y(), rD.axis_ranges.y(), "y");
-	filterCloud(tmp1, out_cloud, rD.center_position.z(), rD.axis_ranges.z(), "z");
+	filterCloud(view_cloud, out_cloud, rD.center_position.x(), rD.axis_ranges.x(), std::string("x"));
+	filterCloud(out_cloud,  out_cloud, rD.center_position.y(), rD.axis_ranges.y(), "y");
+	filterCloud(out_cloud,  out_cloud, rD.center_position.z(), rD.axis_ranges.z(), "z");
 
 	return true;
 }

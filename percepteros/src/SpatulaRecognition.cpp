@@ -132,10 +132,6 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
   this->obj_feats.clear();
   found_spat = false;
 
-  /*
-  rs::StopWatch clock;
-  outInfo("took: " << clock.getTime() << " ms.");
-  */
   //setting up scene variables
   rs::SceneCas cas(tcas);
   rs::Scene scene = cas.getScene();
