@@ -119,6 +119,12 @@ public:
     return UIMA_ERR_NONE;
   }
 
+  /**
+   * @brief lookupIndicesInPointcloud Looks up indices of cluster pointcloud in the origin pointcloud
+   * @param target_indices the indices in the origin pointcloud
+   * @param cluster_indices indices of the cluster
+   * @param out_indices indices of cluster points in origin pointcloud
+   */
   void lookupIndicesInPointcloud(pcl::PointIndices target_indices, pcl::PointIndices cluster_indices,
                            pcl::PointIndices::Ptr out_indices)
   {
@@ -250,6 +256,19 @@ public:
     return UIMA_ERR_NONE;
   }
 
+  /**
+   * @brief segmentPlaneFromNormals Computes model coefficients for a plane using the pointclouds normals
+   * @param cloud_input
+   * @param model_type
+   * @param normal_weight
+   * @param distance
+   * @param coefficients
+   * @param inliers
+   * @param cloud_remaining
+   * @param axis
+   * @param epsilon
+   * @return
+   */
   int segmentPlaneFromNormals(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_input,
                                           int model_type,
                                           double normal_weight,
@@ -284,16 +303,40 @@ public:
     return (int)inliers->indices.size();
   }
 
+  /**
+   * @brief dot Computes the dot product between pcl and eigen vectors
+   * @param p1 pcl vector
+   * @param p2 eigen vector
+   * @return the dot product
+   */
   float dot(pcl::PointXYZRGBNormal p1, Eigen::Vector3f p2)
   {
     return p1.x * p2.x() + p1.y * p2.y() + p1.z * p2.z();
   }
 
+  /**
+   * @brief dot Computes the dot product between pcl and eigen vectors
+   * @param p1 pcl vector
+   * @param p2 eigen vector
+   * @return the dot product
+   */
   float dot(pcl::PointXYZRGB p1, Eigen::Vector3f p2)
   {
     return p1.x * p2.x() + p1.y * p2.y() + p1.z * p2.z();
   }
 
+  /**
+   * @brief segmentPlane Segments a plane from a given pointcloud
+   * @param cloud_input
+   * @param model_type
+   * @param distance
+   * @param coefficients
+   * @param inliers
+   * @param cloud_remaining
+   * @param axis
+   * @param epsilon
+   * @return
+   */
   int segmentPlane(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_input,
                                int model_type,
                                double distance,
@@ -324,6 +367,12 @@ public:
     return (int)inliers->indices.size();
   }
 
+  /**
+   * @brief vectorFromCoeff Write model coefficitens into an eigen vector
+   * @param coefficients the model coefficients
+   * @param begin_index the index at which to begin
+   * @return the vector
+   */
   Eigen::Vector3f vectorFromCoeff(pcl::ModelCoefficients::Ptr coefficients, int begin_index)
   {
     return Eigen::Vector3f(coefficients->values[begin_index+0],
@@ -331,6 +380,11 @@ public:
                            coefficients->values[begin_index+2]);
   }
 
+  /**
+   * @brief removeIndicesfromPointcloud Sets points within a pointcloud to NaN
+   * @param cloud_object the pointcloud
+   * @param inliers the indices at which the point should be NaN
+   */
   void removeIndicesfromPointcloud(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object, pcl::PointIndices::Ptr inliers){
       for(int i = 0; i < inliers->indices.size(); i++){
           const float badPoint = std::numeric_limits<float>::quiet_NaN();
@@ -342,6 +396,15 @@ public:
   }
 
 
+  /**
+   * @brief isBox Checks whether the input cloud is a box
+   * @param cloud_object the input cloud
+   * @param pose the resulting pose
+   * @param o the resulting recognition object
+   * @param transform the transform of the box
+   * @param bo box_object for visualizing objects
+   * @return the amount of matched points
+   */
   int isBox(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object,
                              geometry_msgs::PoseStamped &pose,
                              percepteros::RecognitionObject& o,
@@ -522,6 +585,13 @@ public:
         return matched_points;
   }
 
+  /**
+   * @brief getCoefficients Writes Modelcoefficient from an eigen vector
+   * @param axis direction of model
+   * @param highest highest point of model
+   * @param length
+   * @return model coefficients
+   */
   pcl::ModelCoefficients getCoefficients(Eigen::Vector3f axis, PointT highest, float length) {
       pcl::ModelCoefficients coeffs;
       //point
