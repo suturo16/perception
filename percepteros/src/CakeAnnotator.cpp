@@ -66,9 +66,13 @@ private:
 
   double pointSize = 1;
 
-  constexpr static double BOX_NORMAL_WEIGHT = 0.04;
-  constexpr static double BOX_DISTANCE_THRESHOLD_NORMALPLANE = 0.015;
-  constexpr static double BOX_DISTANCE_THRESHOLD_PLANE1 = 0.004;
+  float BOX_DISTANCE_THRESHOLD_PLANE1, BOX_DISTANCE_THRESHOLD_PLANE2,BOX_DISTANCE_THRESHOLD_PLANE3,
+  BOX_EPSILON_PLANE1, BOX_MAX_SIZE_RATIO_PLANE1, BOX_MIN_SIZE_RATIO_PLANE1, BOX_MIN_SIZE_RATIO_PLANE2,
+  BOX_MIN_SIZE_RATIO_PLANE3, BOX_MIN_MATCHED_POINTS_RATIO, EPSILON_ANGLE;
+  int MAX_SEGMENTATION_ITERATIONS, MIN_CLOUD_SIZE;
+  std::string COLOR;
+
+  /*constexpr static double BOX_DISTANCE_THRESHOLD_PLANE1 = 0.004;
   constexpr static double BOX_DISTANCE_THRESHOLD_PLANE2 = 0.005;
   constexpr static double BOX_DISTANCE_THRESHOLD_PLANE3 = 0.005;
   constexpr static double BOX_EPSILON_PLANE1 = 0.1;
@@ -76,11 +80,10 @@ private:
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE1 = 0.2;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE2 = 0.25;
   constexpr static double BOX_MIN_SIZE_RATIO_PLANE3 = 0.15;
-  //constexpr static double PLANE2_TO_BOX_MIN_RATIO = 0.20;
   constexpr static double BOX_MIN_MATCHED_POINTS_RATIO = 0.4;
   constexpr static int MAX_SEGMENTATION_ITERATIONS = 2000;
   constexpr static double EPSILON_ANGLE = 0.3;
-  constexpr static int MIN_CLOUD_SIZE = 50;
+  constexpr static int MIN_CLOUD_SIZE = 50;*/
 
 
 public:
@@ -93,7 +96,20 @@ public:
   TyErrorId initialize(AnnotatorContext &ctx)
   {
     outInfo("initialize");
-    ctx.extractValue("test_param", test_param);
+    ctx.extractValue("BOX_DISTANCE_THRESHOLD_PLANE1", BOX_DISTANCE_THRESHOLD_PLANE1);
+    ctx.extractValue("BOX_DISTANCE_THRESHOLD_PLANE2", BOX_DISTANCE_THRESHOLD_PLANE2);
+    ctx.extractValue("BOX_DISTANCE_THRESHOLD_PLANE3", BOX_DISTANCE_THRESHOLD_PLANE3);
+    ctx.extractValue("BOX_EPSILON_PLANE1", BOX_EPSILON_PLANE1);
+    ctx.extractValue("BOX_MAX_SIZE_RATIO_PLANE1", BOX_MAX_SIZE_RATIO_PLANE1);
+    ctx.extractValue("BOX_MIN_SIZE_RATIO_PLANE1", BOX_MIN_SIZE_RATIO_PLANE1);
+    ctx.extractValue("BOX_MIN_SIZE_RATIO_PLANE2", BOX_MIN_SIZE_RATIO_PLANE2);
+    ctx.extractValue("BOX_MIN_SIZE_RATIO_PLANE3", BOX_MIN_SIZE_RATIO_PLANE3);
+    ctx.extractValue("BOX_MIN_MATCHED_POINTS_RATIO", BOX_MIN_MATCHED_POINTS_RATIO);
+    ctx.extractValue("MAX_SEGMENTATION_ITERATIONS", MAX_SEGMENTATION_ITERATIONS);
+    ctx.extractValue("EPSILON_ANGLE", EPSILON_ANGLE);
+    ctx.extractValue("MIN_CLOUD_SIZE", MIN_CLOUD_SIZE);
+    ctx.extractValue("COLOR", COLOR);
+
     return UIMA_ERR_NONE;
   }
 
@@ -103,6 +119,12 @@ public:
     return UIMA_ERR_NONE;
   }
 
+  /**
+   * @brief lookupIndicesInPointcloud Looks up indices of cluster pointcloud in the origin pointcloud
+   * @param target_indices the indices in the origin pointcloud
+   * @param cluster_indices indices of the cluster
+   * @param out_indices indices of cluster points in origin pointcloud
+   */
   void lookupIndicesInPointcloud(pcl::PointIndices target_indices, pcl::PointIndices cluster_indices,
                            pcl::PointIndices::Ptr out_indices)
   {
@@ -155,7 +177,7 @@ public:
       for(int i = 0; i < colors.size(); i++){
           float ratio = ratios[i];
           std::string color = colors[i];
-          if(color == "yellow" && ratio < 0.5){
+          if(color == COLOR && ratio < 0.5){
               ratioLow = true;
           }
       }
@@ -234,6 +256,19 @@ public:
     return UIMA_ERR_NONE;
   }
 
+  /**
+   * @brief segmentPlaneFromNormals Computes model coefficients for a plane using the pointclouds normals
+   * @param cloud_input
+   * @param model_type
+   * @param normal_weight
+   * @param distance
+   * @param coefficients
+   * @param inliers
+   * @param cloud_remaining
+   * @param axis
+   * @param epsilon
+   * @return
+   */
   int segmentPlaneFromNormals(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_input,
                                           int model_type,
                                           double normal_weight,
@@ -268,16 +303,40 @@ public:
     return (int)inliers->indices.size();
   }
 
+  /**
+   * @brief dot Computes the dot product between pcl and eigen vectors
+   * @param p1 pcl vector
+   * @param p2 eigen vector
+   * @return the dot product
+   */
   float dot(pcl::PointXYZRGBNormal p1, Eigen::Vector3f p2)
   {
     return p1.x * p2.x() + p1.y * p2.y() + p1.z * p2.z();
   }
 
+  /**
+   * @brief dot Computes the dot product between pcl and eigen vectors
+   * @param p1 pcl vector
+   * @param p2 eigen vector
+   * @return the dot product
+   */
   float dot(pcl::PointXYZRGB p1, Eigen::Vector3f p2)
   {
     return p1.x * p2.x() + p1.y * p2.y() + p1.z * p2.z();
   }
 
+  /**
+   * @brief segmentPlane Segments a plane from a given pointcloud
+   * @param cloud_input
+   * @param model_type
+   * @param distance
+   * @param coefficients
+   * @param inliers
+   * @param cloud_remaining
+   * @param axis
+   * @param epsilon
+   * @return
+   */
   int segmentPlane(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_input,
                                int model_type,
                                double distance,
@@ -308,6 +367,12 @@ public:
     return (int)inliers->indices.size();
   }
 
+  /**
+   * @brief vectorFromCoeff Write model coefficitens into an eigen vector
+   * @param coefficients the model coefficients
+   * @param begin_index the index at which to begin
+   * @return the vector
+   */
   Eigen::Vector3f vectorFromCoeff(pcl::ModelCoefficients::Ptr coefficients, int begin_index)
   {
     return Eigen::Vector3f(coefficients->values[begin_index+0],
@@ -315,6 +380,11 @@ public:
                            coefficients->values[begin_index+2]);
   }
 
+  /**
+   * @brief removeIndicesfromPointcloud Sets points within a pointcloud to NaN
+   * @param cloud_object the pointcloud
+   * @param inliers the indices at which the point should be NaN
+   */
   void removeIndicesfromPointcloud(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object, pcl::PointIndices::Ptr inliers){
       for(int i = 0; i < inliers->indices.size(); i++){
           const float badPoint = std::numeric_limits<float>::quiet_NaN();
@@ -326,6 +396,15 @@ public:
   }
 
 
+  /**
+   * @brief isBox Checks whether the input cloud is a box
+   * @param cloud_object the input cloud
+   * @param pose the resulting pose
+   * @param o the resulting recognition object
+   * @param transform the transform of the box
+   * @param bo box_object for visualizing objects
+   * @return the amount of matched points
+   */
   int isBox(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_object,
                              geometry_msgs::PoseStamped &pose,
                              percepteros::RecognitionObject& o,
@@ -352,11 +431,7 @@ public:
         pcl::PointIndices::Ptr inliers2(new pcl::PointIndices ());
         pcl::PointIndices::Ptr inliers3(new pcl::PointIndices ());
 
-        //int matched_points = segmentPlaneFromNormals(cloud_object, pcl::SACMODEL_NORMAL_PLANE, BOX_NORMAL_WEIGHT,
-        //                                             BOX_DISTANCE_THRESHOLD_NORMALPLANE, coefficients_plane1, inliers1, cloud_rem1);
-
         //up
-        //Eigen::Vector3f norm_plane1 = vectorFromCoeff(coefficients_plane1,0);
         bo.zVector = sceneUp;
 
         pcl::ModelCoefficients::Ptr co(new pcl::ModelCoefficients ());
@@ -389,10 +464,6 @@ public:
 
         Eigen::Vector3f norm_plane2 = vectorFromCoeff(coefficients_plane2,0);
         bo.xVector = norm_plane2;
-
-        /*if((double) plane_size / (double) cloud_object->points.size() < PLANE2_TO_BOX_MIN_RATIO) {
-            return 0;
-        }*/
 
         if ((double) plane_size / (double) cloud_rem1->points.size() < BOX_MIN_SIZE_RATIO_PLANE2)
         {
@@ -514,6 +585,13 @@ public:
         return matched_points;
   }
 
+  /**
+   * @brief getCoefficients Writes Modelcoefficient from an eigen vector
+   * @param axis direction of model
+   * @param highest highest point of model
+   * @param length
+   * @return model coefficients
+   */
   pcl::ModelCoefficients getCoefficients(Eigen::Vector3f axis, PointT highest, float length) {
       pcl::ModelCoefficients coeffs;
       //point
