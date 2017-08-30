@@ -45,7 +45,7 @@ private:
   float range;
   float vector_length;
   Eigen::Vector3f spatula_pos; //this one describes the cluster center
-  
+
   //spatula description
   bool found_spat;
   tf::Transform spat_transf;
@@ -66,7 +66,7 @@ public:
   }
 
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun);
-  TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec); 
+  TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec);
   TyErrorId destroy();
   TyErrorId initialize(AnnotatorContext &ctx);
 };
@@ -108,7 +108,7 @@ TyErrorId SpatulaRecognition::initialize(AnnotatorContext &ctx)
     this->spatula_features.hsv_means = Eigen::Vector3f(h, s, v);
     outInfo("set vaule: h_val, s_val, v_val");
   }
- 
+
   outInfo("initialize");
   return UIMA_ERR_NONE;
 }
@@ -163,13 +163,13 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
     rs::conversion::from(clusterpoints.indices(), *cluster_indices);
 
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr temp(new pcl::PointCloud<pcl::PointXYZRGBA>());
-    
+
     for(std::vector<int>::const_iterator pit = cluster_indices->indices.begin();
         pit != cluster_indices->indices.end(); pit++)
     {
       temp->points.push_back(cloud_ptr->points[*pit]);
     }
-    
+
     pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::copyPointCloud(*temp, *object_cloud);
 
@@ -202,12 +202,12 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
       spat_y.normalize();
       spat_z.normalize();
 
-      
+
       if (
         std::isnan(spat_x[0]) || std::isnan(spat_x[1]) || std::isnan(spat_x[2]) ||
         std::isnan(spat_y[0]) || std::isnan(spat_y[1]) || std::isnan(spat_y[2]) ||
         std::isnan(spat_z[0]) || std::isnan(spat_z[1]) || std::isnan(spat_z[2])
-        ) 
+        )
       {
         outError("Found wrong orientation. Abort.");
         break;
@@ -215,12 +215,12 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
 
       tf::Matrix3x3 spat_rot;
       spat_rot.setValue(
-                    spat_x.x(), spat_y.x(), spat_z.x(), 
-                    spat_x.y(), spat_y.y(), spat_z.y(), 
+                    spat_x.x(), spat_y.x(), spat_z.x(),
+                    spat_x.y(), spat_y.y(), spat_z.y(),
                     spat_x.z(), spat_y.z(), spat_z.z()
                   );
       spat_transf.setBasis(spat_rot);
-      
+
       tf::Stamped<tf::Pose> camera(spat_transf, camToWorld.stamp_, camToWorld.child_frame_id_);
       tf::Stamped<tf::Pose> world(camToWorld*spat_transf, camToWorld.stamp_, camToWorld.frame_id_);
 
@@ -259,9 +259,9 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
 
 void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
 {
-  
+
   std::string cloudname("scene points");
-  
+
   if (firstRun){
     outInfo("1Cloud size: " << cloud_ptr->points.size());
     visualizer.addPointCloud(cloud_ptr, cloudname);
@@ -293,20 +293,20 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
       std::string obj_desc("");
       obj_desc += "eV: " + std::to_string(obj_feats[i].pca_eigen_vec(0,0)) + ", " + std::to_string(obj_feats[i].pca_eigen_vec(1,0)) + ", " + std::to_string(obj_feats[i].pca_eigen_vec(2,0)) + "/n" ;
     }
-  }  
+  }
 }
 
 featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cluster)
 {
   featureSet cluster_feats;
-  
+
   pcl::PointCloud<pcl::PointXYZ>::Ptr space_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   pcl::copyPointCloud(*cluster, *space_cloud);
 
   space_cloud->width = space_cloud->points.size();
   space_cloud->height = 1;
   space_cloud->is_dense = true;
-  
+
   //get Eigenvectors
   pcl::PCA<pcl::PointXYZ> cluster_axis;
   cluster_axis.setInputCloud(space_cloud);
@@ -314,14 +314,14 @@ featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA
 
   //compute their magnitude
   cluster_feats.pca_eigen_vals = cluster_axis.getEigenValues();
-  
+
   //compute rgb centroid
   pcl::CentroidPoint<pcl::PointXYZRGBA> centroidComputer;
   for(auto point = cluster->begin(); point != cluster->end(); point++)
     centroidComputer.add(*point);
   pcl::PointXYZRGBA centroid;
   centroidComputer.get(centroid);
-  
+
   pcl::PointXYZHSV hsv;
   pcl::PointXYZRGBAtoXYZHSV(centroid, hsv);
   cluster_feats.hsv_means = Eigen::Vector3f(hsv.h, hsv.s, hsv.v);
@@ -334,9 +334,9 @@ bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
   //outInfo("hasSimilarFS started");
   //check eigenvectors
   Eigen::Vector3f compared_eigen_vec;
-  compared_eigen_vec << compared.pca_eigen_vec(0,0), compared.pca_eigen_vec(1,0), compared.pca_eigen_vec(2,0); 
+  compared_eigen_vec << compared.pca_eigen_vec(0,0), compared.pca_eigen_vec(1,0), compared.pca_eigen_vec(2,0);
   Eigen::Vector3f comparing_eigen_vec;
-  comparing_eigen_vec << comparing.pca_eigen_vec(0,0), comparing.pca_eigen_vec(1,0), comparing.pca_eigen_vec(2,0); 
+  comparing_eigen_vec << comparing.pca_eigen_vec(0,0), comparing.pca_eigen_vec(1,0), comparing.pca_eigen_vec(2,0);
   float eigen_vec_dist = (compared_eigen_vec - comparing_eigen_vec).squaredNorm();
   //outInfo("vec distance" << eigen_vec_dist);
   if (eigen_vec_dist>range) return false;
@@ -375,9 +375,9 @@ pcl::ModelCoefficients SpatulaRecognition::getCoefficients(tf::Vector3 axis, pcl
 pcl::PointXYZ SpatulaRecognition::getOrigin(pcl::PointCloud<pcl::PointXYZ>::Ptr spat) {
   pcl::PointXYZ spatula_origin,begin, end;
   std::vector<pcl::PointXYZ> endpoints(2);
-  int size = spat->size(); 
+  int size = spat->size();
   float currDistance = 0;
-  
+
   for (int i = 0; i < size; i++) {
     begin = spat->points[i];
     for (int j = i+1; j < size; j++) {
