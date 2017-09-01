@@ -1,303 +1,234 @@
+//INCLUDES
+//UIMA
 #include <uima/api.hpp>
 
-#include <pcl/point_types.h>
-#include <rs/types/all_types.h>
 //RS
 #include <rs/scene_cas.h>
 #include <rs/DrawingAnnotator.h>
-#include <rs/utils/common.h>
-#include <rs/utils/time.h>
+#include <rs/types/all_types.h>
 
+//SUTURO
 #include <percepteros/types/all_types.h>
 
+//ROS
 #include <geometry_msgs/PoseStamped.h>
+
+//PCL
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/point_types_conversion.h>
-#include <pcl/common/geometry.h>
-#include <iostream>
-#include <pcl/filters/voxel_grid.h>
 #include <pcl/common/pca.h>
+#include <pcl/point_types_conversion.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/common/geometry.h>
 
-#include <cmath>
-
-//surface matching
-#include <pcl/console/print.h>
-
-#include <tf/transform_datatypes.h>
-#include <tf_conversions/tf_eigen.h>
-
+//NAMESPACES
 using namespace uima;
 
+//DEFINITIONS
 typedef pcl::PointXYZRGBA PointR;
 typedef pcl::PointCloud<PointR> PCR;
-typedef pcl::Normal	Normal;
-typedef pcl::PointCloud<Normal> PCN;
-typedef pcl::PointNormal PointN;
-typedef pcl::PointCloud<PointN> PC;
+typedef pcl::PointXYZHSV PointH;
+typedef pcl::PointCloud<PointH> PCH;
 
 class SpatulAnnotator : public DrawingAnnotator
 {
-private:
-	PCR::Ptr cloud_r = PCR::Ptr(new PCR);
-	PCN::Ptr cloud_n = PCN::Ptr(new PCN);
-	PC::Ptr cloud = PC::Ptr(new PC);
-	PC::Ptr spatula = PC::Ptr(new PC);
-	PC::Ptr spatula_projected = PC::Ptr(new PC);
-	float VAL_UPPER_BOUND, VAL_LOWER_BOUND;
+	private:
+		PCR::Ptr cloud_r = PCR::Ptr(new PCR);
+		PCH::Ptr cloud_h = PCH::Ptr(new PCH);
+		PCH::Ptr spatula = PCH::Ptr(new PCH);
+		float LINE_DISTANCE, MIN_INLIERS;
 
-public:
-	tf::Vector3 x, y, z;
-	PointN highest, lowest;
+		pcl::ModelCoefficients getCoefficients(tf::Vector3 axis, PointH origin) {
+			pcl::ModelCoefficients coeffs;
+			//point
+			coeffs.values.push_back(origin.x);
+			coeffs.values.push_back(origin.y);
+			coeffs.values.push_back(origin.z);
+			//direction
+			coeffs.values.push_back(axis[0]);
+			coeffs.values.push_back(axis[1]);
+			coeffs.values.push_back(axis[2]);
+			//radius
+			coeffs.values.push_back(1.0f);
 
-  SpatulAnnotator(): DrawingAnnotator(__func__){
-  }
-
-  TyErrorId initialize(AnnotatorContext &ctx)
-  {
-    outInfo("initialize");
-		
-	//extract color parameters
-	ctx.extractValue("minVal", VAL_LOWER_BOUND);
-	ctx.extractValue("maxVal", VAL_UPPER_BOUND);
-
-    return UIMA_ERR_NONE;
-  }
-
-  TyErrorId destroy()
-  {
-    outInfo("destroy");
-    return UIMA_ERR_NONE;
-  }
-
-  TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec)
-  {
-    outInfo("process start\n");
-	//get clusters
-    rs::SceneCas cas(tcas);
-	rs::Scene scene = cas.getScene();
-	std::vector<rs::Cluster> clusters;
-	scene.identifiables.filter(clusters);
-
-	//get scene points
-	cas.get(VIEW_CLOUD, *cloud_r);
-	cas.get(VIEW_NORMALS, *cloud_n);
-	pcl::PointCloud<pcl::PointXYZ>::Ptr temp(new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::copyPointCloud(*cloud_r, *temp);
-	pcl::concatenateFields(*temp, *cloud_n, *cloud);
-
-	//helpers
-	rs::StopWatch clock;
-	bool foundSpatula = false;
-	bool foundRack = false;
-
-	std::vector<percepteros::ToolObject> tools;
-	std::vector<percepteros::RackObject> racks;
-	for (auto it = clusters.begin(); it != clusters.end(); ++it) {
-		auto cluster = *it;
-		tools.clear();
-		racks.clear();
-		cluster.annotations.filter(tools);
-		cluster.annotations.filter(racks);
-		if (racks.size() > 0) {
-			outInfo("Found rack!");
-			foundRack = true;
-			std::vector<float> yv = racks[0].normal.get();
-			y.setX(yv[0]);
-			y.setY(yv[1]);
-			y.setZ(yv[2]);
+			return coeffs;
 		}
-		if (tools.size() > 0) {
-			percepteros::ToolObject tool = tools[0];
-			if (tool.value.get() > VAL_LOWER_BOUND && tool.value.get() < VAL_UPPER_BOUND) {
-				outInfo("Found spatula cluster!");
-				extractPoints(cloud, cluster, spatula);
-				foundSpatula = true;
-			}
-		}
-		if ((foundSpatula && foundRack) || (foundSpatula && std::next(it) == clusters.end())) {
-			rs::PoseAnnotation poseA = rs::create<rs::PoseAnnotation>(tcas);
-			percepteros::RecognitionObject recA = rs::create<percepteros::RecognitionObject>(tcas);
-			tf::StampedTransform camToWorld;
-			camToWorld.setIdentity();
-			if (scene.viewPoint.has()) {
-				rs::conversion::from(scene.viewPoint.get(), camToWorld);
-			}
-			
-			x = getX(spatula);
-			if (!foundRack) {
-				y = getY(spatula);
-			}
-			tf::Transform transform;
-			/*
-			pcl::PCA<PointN> ax;
-			ax.setInputCloud(spatula);
-			ax.project(*spatula, *spatula_projected);
 
-			Eigen::Quaterniond quaternion(ax.getEigenVectors().cast<double>());
-			tf::Quaternion quat;
-			tf::quaternionEigenToTF(quaternion, quat);
-			transform.setRotation(quat);
-			*/
-			transform.setOrigin(getOrigin(spatula));
-			
-			z = x.cross(y);
-			y = z.cross(x);
+		float getGreatestDistance(PointH middle) {
+			float greatest = 0;
 
-			x.normalize(); y.normalize(); z.normalize();
-			if (std::isnan(x[0]) || std::isnan(x[1]) || std::isnan(x[2]) ||
-				std::isnan(y[0]) || std::isnan(y[1]) || std::isnan(x[2]) ||
-				std::isnan(z[0]) || std::isnan(z[1]) || std::isnan(z[2])) {
-				outInfo("Found wrong orientation. Abort.");
-				break;
-			}
-			
-			tf::Matrix3x3 rot;
-			/*
-			rot.setValue(	x[0], x[1], x[2],
-							y[0], y[1], y[2],
-							z[0], z[1], z[2]);
-							*/
-
-			rot.setValue(	x[0], y[0], z[0],
-							x[1], y[1], z[1],
-							x[2], y[2], z[2]);
-
-			transform.setBasis(rot);
-			
-			recA.name.set("spatula");
-			recA.type.set(7);
-			recA.width.set(0.28f);
-			recA.height.set(0.056f);
-			recA.depth.set(0.03f);
-
-			tf::Stamped<tf::Pose> camera(transform, camToWorld.stamp_, camToWorld.child_frame_id_);
-			tf::Stamped<tf::Pose> world(camToWorld * transform, camToWorld.stamp_, camToWorld.frame_id_);
-
-			poseA.source.set("SpatulAnnotator");
-			poseA.camera.set(rs::conversion::to(tcas, camera));
-			poseA.world.set(rs::conversion::to(tcas, world));
-		
-			cluster.annotations.append(poseA);
-			cluster.annotations.append(recA);
-			outInfo("Finished");
-			break;
-		}
-	} 	
-
-	if (!foundSpatula) {
-		outInfo("No spatula found.");
-		return UIMA_ERR_NONE;
-	}
-		
-    return UIMA_ERR_NONE;
-}
-
-	void setEndpoints(PC::Ptr spat) {
-		PointN begin, end;
-		std::vector<PointN> endpoints(2);
-		int size = spat->size();	
-		float currDistance = 0;
-		
-		for (int i = 0; i < size; i++) {
-			begin = spat->points[i];
-			for (int j = i+1; j < size; j++) {
-				end = spat->points[j];
-				if (pcl::geometry::distance(begin, end) > currDistance) {
-					endpoints[0] = begin;
-					endpoints[1] = end;
-					currDistance = pcl::geometry::distance(begin, end);
+			for (PointH p : spatula->points) {
+				if (pcl::geometry::distance(middle, p) > greatest) {
+					greatest = pcl::geometry::distance(middle, p);
 				}
 			}
+
+			return greatest;
 		}
 
-		if (endpoints[0].x + endpoints[0].y + endpoints[0].z < endpoints[1].x + endpoints[1].y + endpoints[1].z) {
-			highest = endpoints[0];
-			lowest = endpoints[1];
-		} else {
-			highest = endpoints[1];
-			lowest = endpoints[0];
+		PointH getOrigin(PCH::Ptr spatula) {
+		  PointH origin, begin, end;
+		  std::vector<PointH> endpoints(2);
+		  int size = spatula->size();
+		  float currDistance = 0;
+
+		  for (int i = 0; i < size; i++) {
+		    begin = spatula->points[i];
+		    for (int j = i+1; j < size; j++) {
+		      end = spatula->points[j];
+		      if (pcl::geometry::distance(begin, end) > currDistance) {
+		        endpoints[0] = begin;
+		        endpoints[1] = end;
+		        currDistance = pcl::geometry::distance(begin, end);
+		      }
+		    }
+		  }
+
+		  if (endpoints[0].x + endpoints[0].y + endpoints[0].z < endpoints[1].x + endpoints[1].y + endpoints[1].z) {
+		    origin = endpoints[0];
+		  } else {
+		    origin = endpoints[1];
+		  }
+		  return origin;
 		}
 
-}
+	public:
+		tf::Vector3 x, y, z;
+		PointH origin;
 
-	tf::Vector3 getX(PC::Ptr spat) {
-		setEndpoints(spat);
-		x.setValue(lowest.x - highest.x, lowest.y - highest.y, lowest.z - highest.z);
-		return x;
-	}
-
-	tf::Vector3 getOrigin(PC::Ptr spat) {
-		setEndpoints(spat);
-		tf::Vector3 origin;
-		origin.setValue(highest.x, highest.y, highest.z);
-		return origin;
-	}
-
-	tf::Vector3 getY(PC::Ptr object) {
-		tf::Vector3 object_normal(0, 0, 0);
-		PC::Ptr temp = PC::Ptr(new PC);
-		std::vector<int> indices;
-		pcl::removeNaNNormalsFromPointCloud(*object, *temp, indices);
-		int size = temp->size();
-
-		for (size_t i = 0; i < size; i++) {
-			object_normal[0] -= temp->points[i].normal_x / size;
-			object_normal[1] -= temp->points[i].normal_y / size;
-			object_normal[2] -= temp->points[i].normal_z / size;
+		SpatulAnnotator(): DrawingAnnotator(__func__) {
 		}
 
-		return object_normal;
-	}
+		TyErrorId initialize(AnnotatorContext &ctx) {
+			outInfo("Initialize SpatulAnnotation.");
 
-	void extractPoints(PC::Ptr cloud, rs::Cluster cluster, PC::Ptr container) {
-		pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
-		rs::ReferenceClusterPoints clusterpoints(cluster.points());
-		rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+			//extract color parameters
+			ctx.extractValue("lineDistance", LINE_DISTANCE);
+			ctx.extractValue("inliers", MIN_INLIERS);
 
-		for (std::vector<int>::const_iterator pit = cluster_indices->indices.begin(); pit != cluster_indices->indices.end(); pit++) {
-			container->push_back(cloud->points[*pit]);
+			return UIMA_ERR_NONE;
 		}
-		
-		pcl::VoxelGrid<PointN> filter;
-		filter.setLeafSize(0.01f, 0.01f, 0.01f);
-		filter.setInputCloud(container);
-		filter.filter(*container);
-	}
 
-	void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun) {
-		if (firstRun) {
-			visualizer.addPointCloud(cloud_r, "scene points");
-		} else {
-			visualizer.updatePointCloud(cloud_r, "scene points");
-			visualizer.removeAllShapes();
+		TyErrorId destroy()	{
+			outInfo("Destroy SpatulAnnotation.");
+			return UIMA_ERR_NONE;
 		}
-				
-		visualizer.addCone(getCoefficients(x, highest), "x");
-		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
-		
-		visualizer.addCone(getCoefficients(y, highest), "y");
-		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
 
-		visualizer.addCone(getCoefficients(z, highest), "z");
-		visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
-	}
+		TyErrorId processWithLock(CAS &tcas, ResultSpecification const &res_spec) {
+			outInfo("Start SpatulaAnnotation.");
 
-	pcl::ModelCoefficients getCoefficients(tf::Vector3 axis, PointN highest) {
-		pcl::ModelCoefficients coeffs;
-		//point
-		coeffs.values.push_back(highest.x);
-		coeffs.values.push_back(highest.y);
-		coeffs.values.push_back(highest.z);
-		//direction
-		coeffs.values.push_back(axis[0]);
-		coeffs.values.push_back(axis[1]);
-		coeffs.values.push_back(axis[2]);
-		//radius
-		coeffs.values.push_back(1.0f);
+			//get clusters
+			rs::SceneCas cas(tcas);
+			rs::Scene scene = cas.getScene();
+			std::vector<rs::Cluster> clusters;
+			scene.identifiables.filter(clusters);
 
-		return coeffs;
-	}
+			//getting "up-axis" of scene
+		  tf::StampedTransform camToWorld, worldToCam;
+		  camToWorld.setIdentity();
+		  if(scene.viewPoint.has()) {
+		    rs::conversion::from(scene.viewPoint.get(), camToWorld);
+		  } else {
+		    outInfo("No camera to world transformation!");
+		  }
+		  worldToCam = tf::StampedTransform(camToWorld.inverse(), camToWorld.stamp_, camToWorld.child_frame_id_, camToWorld.frame_id_);
+		  tf::Matrix3x3 matrix = worldToCam.getBasis();
+		  z = matrix*tf::Vector3(0,0,1);
+
+			//get scene points
+			cas.get(VIEW_CLOUD, *cloud_r);
+			pcl::PointCloudXYZRGBAtoXYZHSV(*cloud_r, *cloud_h);
+
+			//prepare segmenter
+			pcl::SACSegmentation<PointH> seg;
+			seg.setOptimizeCoefficients(true);
+			seg.setMethodType(pcl::SAC_RANSAC);
+			seg.setMaxIterations(1000);
+			seg.setModelType(pcl::SACMODEL_LINE);
+			seg.setDistanceThreshold(LINE_DISTANCE);
+
+			//prepare line pointers
+			pcl::ModelCoefficients::Ptr lco(new pcl::ModelCoefficients());
+			pcl::PointIndices::Ptr lin(new pcl::PointIndices());
+
+			//prepare extractor
+			pcl::ExtractIndices<PointH> ex;
+			ex.setInputCloud(cloud_h);
+
+			//find cluster
+			rs::Cluster spatula_cluster = clusters[0];
+			bool foundSpatula = false;
+			for (rs::Cluster cluster : clusters) {
+				pcl::PointIndices::Ptr cluster_indices(new pcl::PointIndices);
+		    rs::ReferenceClusterPoints clusterpoints(cluster.points());
+		    rs::conversion::from(clusterpoints.indices(), *cluster_indices);
+
+				//extract points
+				ex.setIndices(cluster_indices);
+				ex.filter(*spatula);
+
+				//segment
+				seg.setInputCloud(spatula);
+				seg.segment(*lin, *lco);
+
+				//check inlier ratio
+				float inlier = lin->indices.size();
+				float size = spatula->points.size();
+				float ratio = inlier / size;
+
+				//check average value
+				if (ratio > MIN_INLIERS) {
+					spatula_cluster = cluster;
+					foundSpatula = true;
+					break;
+				}
+			}
+
+			if (!foundSpatula) {
+				outInfo("Didn't find a spatula.");
+				return UIMA_ERR_NONE;
+			}
+
+			pcl::PCA<PointH> pca;
+			pca.setInputCloud(spatula);
+			Eigen::Matrix3f vecs = pca.getEigenVectors();
+			Eigen::Vector4f orig = pca.getMean();
+
+			//set vectors
+			x.setValue(vecs(0,0), vecs(1,0), vecs(2,0));
+			y = z.cross(x);
+			z = x.cross(y);
+			x.normalize(); y.normalize(); z.normalize();
+
+			//set origin
+			origin = getOrigin(spatula);
+
+			return UIMA_ERR_NONE;
+		}
+
+
+
+		void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun) {
+			if (firstRun) {
+				visualizer.addPointCloud(cloud_r, "scene points");
+			} else {
+				visualizer.updatePointCloud(cloud_r, "scene points");
+				visualizer.removeAllShapes();
+			}
+
+			visualizer.addCone(getCoefficients(x, origin), "x");
+			visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "x");
+
+			visualizer.addCone(getCoefficients(y, origin), "y");
+			visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "y");
+
+			visualizer.addCone(getCoefficients(z, origin), "z");
+			visualizer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "z");
+		}
 };
 
 // This macro exports an entry point that is used to create the annotator.

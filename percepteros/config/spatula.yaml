@@ -2,10 +2,9 @@
 annotators:
     - CollectionReader
     - ImagePreprocessor
-    - PointCloudFilter
+    - RegionFilter
     - NormalEstimator
     - PlaneAnnotator
     - PointCloudClusterExtractor
-    - ColorClusterer
     - SpatulAnnotator
     - ROSPublisher

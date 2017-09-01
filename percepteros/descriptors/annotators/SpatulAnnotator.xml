@@ -10,13 +10,13 @@
     <vendor/>
     <configurationParameters>
 		<configurationParameter>
-			<name>minVal</name>
+			<name>lineDistance</name>
 			<type>Float</type>
 			<multiValued>false</multiValued>
 			<mandatory>true</mandatory>
 		</configurationParameter>
 		<configurationParameter>
-			<name>maxVal</name>
+			<name>inliers</name>
 			<type>Float</type>
 			<multiValued>false</multiValued>
 			<mandatory>true</mandatory>
@@ -24,15 +24,15 @@
 	</configurationParameters>
 	<configurationParameterSettings>
 		<nameValuePair>
-			<name>minVal</name>
+			<name>lineDistance</name>
 			<value>
-				<float>0.1</float>
+				<float>0.02</float>
 			</value>
 		</nameValuePair>
 		<nameValuePair>
-			<name>maxVal</name>
+			<name>inliers</name>
 			<value>
-				<float>0.5</float>
+				<float>0.9</float>
 			</value>
 		</nameValuePair>
     </configurationParameterSettings>
