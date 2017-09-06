@@ -1,6 +1,9 @@
 #include <percepteros/CaterrosPipelineManager.h>
 
-
+/**
+ * @brief CaterrosPipelineManager::run Runs the pipeline. Checks first, whether a new pipeline was selected and
+ * applies the new pipeline if needed.
+ */
 void CaterrosPipelineManager::run()
 {
   for(; ros::ok();)
@@ -20,6 +23,11 @@ void CaterrosPipelineManager::run()
   }
 }
 
+/**
+ * @brief CaterrosPipelineManager::resetAE Resets the AnalysisEngine.
+ * @param newPipelineName The name of the new AnalysisEngine
+ * @return
+ */
 bool CaterrosPipelineManager::resetAE(std::string newPipelineName)
 {
   std::string contextAEPath;

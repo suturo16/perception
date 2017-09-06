@@ -1,5 +1,11 @@
 #include <percepteros/CaterrosControlledAnalysisEngine.h>
 
+/**
+ * @brief CaterrosControlledAnalysisEngine::init Initialize The ControlledAnalysisEngine, using the given aefile
+ * as a definition of the existing annotators and the lowLvlPipeline as the default pipeline
+ * @param AEFile definition of the existing annotators
+ * @param lowLvlPipeline the default pipeline
+ */
 void CaterrosControlledAnalysisEngine::init(const std::string &AEFile, const std::vector<std::string> &lowLvlPipeline)
 {
   uima::ErrorInfo errorInfo;
@@ -51,6 +57,10 @@ void CaterrosControlledAnalysisEngine::init(const std::string &AEFile, const std
   currentAEName = AEFile;
 }
 
+/**
+ * @brief CaterrosControlledAnalysisEngine::process Executes the pipeline once
+ * @param reset_pipeline_after_process unused
+ */
 void CaterrosControlledAnalysisEngine::process(bool reset_pipeline_after_process){
     cas->reset();
     UnicodeString ustrInputText;
