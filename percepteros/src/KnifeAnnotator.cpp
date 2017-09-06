@@ -286,10 +286,28 @@ class KnifeAnnotator : public DrawingAnnotator {
 					setEndpoints(blade);
 
 					//extract vectors
+					/*
 					x.setValue(lowest.x - highest.x, lowest.y - highest.y, lowest.z - highest.z);
+					*/
 					if (!foundRack) {
 						y = getY(blade);
 					}
+					//getting "up-achis" of scene
+				  tf::StampedTransform camToWorld, worldToCam;
+				  camToWorld.setIdentity();
+				  if(scene.viewPoint.has())
+				  {
+				    rs::conversion::from(scene.viewPoint.get(), camToWorld);
+				  }
+				  else
+				  {
+				    outInfo("No camera to world transformation!!!");
+				  }
+				  worldToCam = tf::StampedTransform(camToWorld.inverse(), camToWorld.stamp_, camToWorld.child_frame_id_, camToWorld.frame_id_);
+
+				  tf::Matrix3x3 matrix = worldToCam.getBasis();
+				  x = matrix*tf::Vector3(0,0,-1);
+
 					z = x.cross(y);
 					y = z.cross(x);
 					x.normalize(); y.normalize(); z.normalize();
