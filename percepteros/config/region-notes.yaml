@@ -4,6 +4,7 @@
   range: [0.1, 0.1, 0.1]
 
 - regionID: "knife" # valid input can be found in view_names.h
-  viewsToProcess: ["cloud", "normals"] # appending "_<process_views>" to the name for cas.set
+#not working for normals yet
+  viewsToProcess: ["cloud"] #, "normals"] # appending "_<process_views>" to the name for cas.set
   region_center: [1, 0.170032024384, 0.9]
   range: [0.1, 0.1, 0.1]
