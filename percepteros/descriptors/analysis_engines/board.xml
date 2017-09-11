@@ -49,6 +49,9 @@
     <delegateAnalysisEngine key="CylinderAnnotator">
       <import location="../annotators/CylinderAnnotator.xml"/>
     </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="DataAquisition">
+      <import location="../annotators/DataAquisition.xml"/>
+    </delegateAnalysisEngine>
     <delegateAnalysisEngine key="FeatureAnnotator">
       <import location="../../../../robosherlock/descriptors/annotators/annotation/FeatureAnnotator.xml"/>
     </delegateAnalysisEngine>
@@ -108,6 +111,9 @@
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="PointCloudDownsampler">
       <import location="../../../../robosherlock/descriptors/annotators/utils/PointCloudDownsampler.xml"/>
+    </delegateAnalysisEngine>
+    <delegateAnalysisEngine key="PointCloudFileWriter">
+      <import location="../../../../robosherlock/descriptors/annotators/io/PointCloudFileWriter.xml"/>
     </delegateAnalysisEngine>
     <delegateAnalysisEngine key="PointCloudFilter">
       <import location="../../../../robosherlock/descriptors/annotators/filter/PointCloudFilter.xml"/>

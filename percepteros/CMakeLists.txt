@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(percepteros)
-find_package(catkin REQUIRED PCL REQUIRED robosherlock suturo_perception_msgs)
+find_package(catkin REQUIRED PCL REQUIRED robosherlock REQUIRED COMPONENTS suturo_perception_msgs)
 ################################################################################
 ## Constants for project                                                      ##
 ################################################################################
@@ -20,7 +20,9 @@ configure_file(${RS_PROJECT_CONFIG} ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}_
 ## Find all include directories                                               ##
 ################################################################################
 find_include_dirs(RS_INCLUDE_DIRS_LIST)
-catkin_package()
+catkin_package(
+ CATKIN_DEPENDS suturo_perception_msgs
+)
 ################################################################################
 ## Package dependencies                                                       ##
 ################################################################################

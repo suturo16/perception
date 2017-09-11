@@ -103,6 +103,12 @@ public:
     processing_mutex_.unlock();
   }
 
+  /**
+   * @brief setPipelineCallback Callback for service which sets the requested pipeline
+   * @param req The requested pipeline
+   * @param res The result, containing all objects for which there was no pipeline found
+   * @return
+   */
   bool setPipelineCallback(suturo_perception_msgs::RunPipeline::Request &req,
                        suturo_perception_msgs::RunPipeline::Response &res){
 	waitForServiceCall_ = false;
@@ -137,6 +143,12 @@ public:
       return true;
   }
 
+  /**
+   * @brief resetAECallback
+   * @param req
+   * @param res
+   * @return
+   */
   bool resetAECallback(suturo_perception_msgs::RunPipeline::Request &req,
                        suturo_perception_msgs::RunPipeline::Response &res){
       std::vector<std::string> objects = req.objects;

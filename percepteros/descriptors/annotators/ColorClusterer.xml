@@ -86,7 +86,7 @@
 	<nameValuePair>
 		<name>minPoints</name>
 		<value>
-			<integer>1000</integer>
+			<integer>3000</integer>
 		</value>
 	</nameValuePair>
 	<nameValuePair>
