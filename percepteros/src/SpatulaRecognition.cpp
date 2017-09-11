@@ -19,7 +19,6 @@
 //CATERROS
 #include <geometry_msgs/PoseStamped.h>
 #include <percepteros/types/all_types.h>
-#include <percepteros/RegionDefinition.h>
 
 
 using namespace uima;
@@ -36,7 +35,6 @@ struct featureSet{
 class SpatulaRecognition : public DrawingAnnotator
 {
 private:
-  //ObjectRegionFilter* orf;
   double pointSize;
   pcl::PointCloud<PointXYZRGBA>::Ptr cloud_ptr;
   pcl::PointCloud<pcl::PointXYZ>::Ptr spatula;
@@ -65,7 +63,6 @@ public:
   SpatulaRecognition(): DrawingAnnotator(__func__), pointSize(1){
 
       cloud_ptr = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
-      outInfo("initialize");
   }
 
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun);
@@ -132,14 +129,14 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
   this->obj_feats.clear();
   found_spat = false;
 
+  /*
+  rs::StopWatch clock;
+  outInfo("took: " << clock.getTime() << " ms.");
+  */
   //setting up scene variables
   rs::SceneCas cas(tcas);
   rs::Scene scene = cas.getScene();
   cas.get(VIEW_CLOUD,*cloud_ptr);
-  ObjectRegionFilter &orf = ObjectRegionFilter::getInstance();
-  outInfo("Size before: " << cloud_ptr->size());
-  orf.getviewCloud("spatula", cloud_ptr, cloud_ptr);
-  outInfo("Size after: " << cloud_ptr->size());
 
   //getting "up-achis" of scene
   tf::StampedTransform camToWorld, worldToCam;
