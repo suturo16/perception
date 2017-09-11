@@ -27,12 +27,12 @@ using namespace uima;
 struct regionDescriptor{
   //filled by parser
   std::string regionID;
-  //std::vector<std::string> processViews;
+  std::vector<std::string> processViews;
   Eigen::Vector3d center_position;
   Eigen::Vector3d axis_ranges;
 
   //supported values computed later on
-  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud_ptr;
+  //pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr;
   pcl::PointCloud<pcl::Normal>::Ptr normal_ptr;
 };
 
@@ -41,10 +41,13 @@ class ObjectRegionFilter : public DrawingAnnotator
 private:
   std::string region_config;
   double pointSize;
-  std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cloud_ptrs;
+  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr;
   std::vector<regionDescriptor> regions;
 
-  bool parseRegionConfig(std::string region_file);
+  bool parseRegionConfig(std::string);
+  bool findRegion(std::string regionID, regionDescriptor& rD);
+  void filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr , pcl::PointCloud<pcl::PointXYZRGBA>::Ptr, float, float, std::string );
+  bool getviewCloud(std::string regionID, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud);
 
 public:
 
@@ -60,6 +63,7 @@ public:
   void fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun);
 
 };
+
 bool ObjectRegionFilter::parseRegionConfig(std::string region_file)
 {
   std::string regionConfigFile = ros::package::getPath("percepteros") +"/config/" + region_file;
@@ -83,17 +87,17 @@ bool ObjectRegionFilter::parseRegionConfig(std::string region_file)
     rD.regionID = regionItem["regionID"].as<std::string>();
     outInfo("processing region with ID" + rD.regionID);
 
-//    YAML::Node viewsToProcess = regionItem["viewsToProcess"];
-//    assert(viewsToProcess.IsSequence());
-//    if(viewsToProcess.size()==0)
-//    {
-//      outError("Parser does not accept region with 0 views!");
-//      return false;
-//    }
-//    for(YAML::const_iterator view_it = viewsToProcess.begin(); view_it != viewsToProcess.end(); ++view_it){
-//      std::string viewName = view_it->as<std::string>();
-//      rD.processViews.push_back(viewName);
-//    }
+    YAML::Node viewsToProcess = regionItem["viewsToProcess"];
+    assert(viewsToProcess.IsSequence());
+    if(viewsToProcess.size()==0)
+    {
+      outError("Parser does not accept region with 0 views!");
+      return false;
+    }
+    for(YAML::const_iterator view_it = viewsToProcess.begin(); view_it != viewsToProcess.end(); ++view_it){
+      std::string viewName = view_it->as<std::string>();
+      rD.processViews.push_back(viewName);
+    }
 
     YAML::Node region_center = regionItem["region_center"];
     assert(region_center.IsSequence());
@@ -115,18 +119,91 @@ bool ObjectRegionFilter::parseRegionConfig(std::string region_file)
 
     this->regions.push_back(rD);
   }
+  return true;
+}
 
-  return true; 
+bool ObjectRegionFilter::findRegion(std::string regionID, regionDescriptor& rD)
+{
+  for (size_t i = 0; i < this->regions.size(); i++) {
+    outInfo("iterating through: " << regions[i].regionID);
+    if (regions[i].regionID == regionID) 
+    {
+      rD = regions[i];
+      outInfo("found Region");
+      return true;
+    }
+  }
+  outError("found no region!");
+  return false;
+}
+
+void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud_ptr, float center, float range, std::string field_name)
+{
+  pcl::PassThrough<pcl::PointXYZRGBA> pass;
+  pass.setKeepOrganized(true);
+  pass.setInputCloud (in_cloud_ptr);
+  //outInfo("in cloud size = " << in_cloud_ptr->size());
+  //outInfo("field_name = " << field_name);
+  pass.setFilterFieldName (field_name);
+  float left_endpoint = center - (range/2);
+  float right_endpoint = center + (range/2);
+  //outInfo("setting filter Limits le = " << left_endpoint << "right endpoint = " << right_endpoint);
+  pass.setFilterLimits (left_endpoint, right_endpoint);
+  //outInfo("filtering");
+  pass.filter (*out_cloud_ptr);
+  //outInfo("end filterCloud");
+  /*
+  */
+}
+
+
+bool ObjectRegionFilter::getviewCloud(std::string regionID, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud)
+{
+  regionDescriptor rD;
+  if (!findRegion(regionID, rD)) 
+  {
+    outError("Abort: found no matching region");
+    return false;
+  }
+
+  filterCloud(view_cloud, out_cloud, rD.center_position.x(), rD.axis_ranges.x(), std::string("x"));
+  filterCloud(out_cloud,  out_cloud, rD.center_position.y(), rD.axis_ranges.y(), "y");
+  filterCloud(out_cloud,  out_cloud, rD.center_position.z(), rD.axis_ranges.z(), "z");
+
+  return true;
 }
 
 TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification const &res_spec)
 {
   outInfo("process start");
-  cloud_ptrs.clear();
+  //cloud_ptrs.clear();
 
   rs::StopWatch clock;
   rs::SceneCas cas(tcas);
-  //cas.get(VIEW_CLOUD,*cloud_ptr);
+  rs::Scene scene = cas.getScene();
+
+  std::vector<percepteros::PipelineAnnotation> pipeline_spec;
+  scene.identifiables.filter(pipeline_spec);
+  if (pipeline_spec.size() == 0) 
+  {
+    outError("Scene contains no PipelineAnnotation!\nStopping process.");
+    return UIMA_ERR_NONE;
+  }
+  std::string pipelineID = pipeline_spec[0].pipelineID.get();
+
+  outInfo("pipelineID set to: " << pipelineID);
+
+  regionDescriptor currentRegion;
+  findRegion(pipelineID, currentRegion);
+
+  for (int i = 0; i < currentRegion.processViews.size(); i++)
+  {
+    cas.get(currentRegion.processViews[i].c_str() ,*cloud_ptr);
+    getviewCloud(pipelineID, cloud_ptr, cloud_ptr);
+    cas.set(currentRegion.processViews[i].c_str(), *cloud_ptr);
+  }
+
+
 
   return UIMA_ERR_NONE;
 }
@@ -134,7 +211,7 @@ TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification con
 void ObjectRegionFilter::fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
 {
   std::string cloudname("object region scene points");
-  
+  /*
   if (firstRun){
     visualizer.addPointCloud(cloud_ptrs[0], cloudname);
     visualizer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
@@ -144,6 +221,7 @@ void ObjectRegionFilter::fillVisualizerWithLock(pcl::visualization::PCLVisualize
     visualizer.getPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
   }
   visualizer.addSphere(pcl::PointXYZ(-0.387466371059, 0.170032024384, 0.9), 0.1, "spatpos");
+  */
 }
 
 TyErrorId ObjectRegionFilter::initialize(AnnotatorContext &ctx)
