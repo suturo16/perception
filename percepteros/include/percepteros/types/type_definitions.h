@@ -4,6 +4,7 @@
 #ifndef __PERCEPTEROS_TYPE_DEFINITIONS_H__
 #define __PERCEPTEROS_TYPE_DEFINITIONS_H__
 
+#define PERCEPTEROS_PIPELINETYPES_PIPELINEANNOTATION "percepteros.pipelinetypes.PipelineAnnotation"
 #define PERCEPTEROS_RECOGNITIONTYPES_TOOLOBJECT "percepteros.recognitiontypes.ToolObject"
 #define PERCEPTEROS_RECOGNITIONTYPES_RACKOBJECT "percepteros.recognitiontypes.RackObject"
 #define PERCEPTEROS_RECOGNITIONTYPES_RECOGNITIONOBJECT "percepteros.recognitiontypes.RecognitionObject"

@@ -1,4 +1,5 @@
 #include <percepteros/CaterrosControlledAnalysisEngine.h>
+#include <percepteros/types/all_types.h>
 
 void CaterrosControlledAnalysisEngine::init(const std::string &AEFile, const std::vector<std::string> &lowLvlPipeline)
 {
@@ -88,4 +89,10 @@ void CaterrosControlledAnalysisEngine::process(bool reset_pipeline_after_process
      {
        outError("Unknown exception!");
    }
+  percepteros::PipelineAnnotation annotation = rs::create<percepteros::PipelineAnnotation>(*cas);
+  annotation.pipelineID.set(this->pipelineID.c_str());
+  rs::SceneCas sCas(*cas);
+  rs::Scene scene = sCas.getScene();
+  scene.identifiables.append(annotation);
+  outInfo("Appended PipelineID to cluster");
 }

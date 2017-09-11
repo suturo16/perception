@@ -31,6 +31,7 @@ private:
   ros::Publisher pc_pub_;
   image_transport::Publisher image_pub_;
   image_transport::ImageTransport it_;
+  std::string pipelineID;
 
   bool useIdentityResolution_;
 
@@ -64,10 +65,11 @@ public:
   }
 
   /*set the next order of AEs to be executed*/
-  void setNextPipeline(std::vector<std::string> l)
+  void setNextPipeline(std::vector<std::string> l, std::string pipelineID )
   {
     next_pipeline_order = l;
     queued = true;
+    this->pipelineID = pipelineID;
   }
 
 
