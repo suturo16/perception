@@ -48,7 +48,7 @@ private:
   bool parseRegionConfig(std::string);
   bool findRegion(std::string regionID, regionDescriptor& rD);
   void filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr , pcl::PointCloud<pcl::PointXYZRGBA>::Ptr, float, float, std::string );
-  bool getviewCloud(std::string regionID, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud);
+  bool getviewCloud(regionDescriptor rD, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud);
 
 public:
 
@@ -56,6 +56,7 @@ public:
     DrawingAnnotator(__func__),
     pointSize(1)
   {
+    cloud_ptr = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
   }
 
   TyErrorId initialize(AnnotatorContext &ctx);
@@ -158,21 +159,16 @@ void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_
 }
 
 
-bool ObjectRegionFilter::getviewCloud(std::string regionID, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud)
+bool ObjectRegionFilter::getviewCloud(regionDescriptor rD, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud)
 {
-  regionDescriptor rD;
-  if (!findRegion(regionID, rD)) 
-  {
-    outError("Abort: found no matching region");
-    return false;
-  }
+
   outInfo(FG_MAGENTA << "filter 1");
-  /*
   filterCloud(view_cloud, out_cloud, rD.center_position.x(), rD.axis_ranges.x(), std::string("x"));
   outInfo(FG_MAGENTA << "filter 2");
   filterCloud(out_cloud,  out_cloud, rD.center_position.y(), rD.axis_ranges.y(), "y");
   outInfo(FG_MAGENTA << "filter 3");
   filterCloud(out_cloud,  out_cloud, rD.center_position.z(), rD.axis_ranges.z(), "z");
+  /*
 */
   return true;
 }
@@ -210,10 +206,12 @@ TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification con
 
   for (int i = 0; i < currentRegion.processViews.size(); i++)
   {
+    outInfo(FG_MAGENTA << "Wubbalubbadubdub " << i << 0);
     cas.get(currentRegion.processViews[i].c_str() ,*cloud_ptr);
-    getviewCloud(pipelineID, cloud_ptr, cloud_ptr);
+    outInfo(FG_MAGENTA << "Wubbalubbadubdub " << i << 1);
+    getviewCloud(currentRegion, cloud_ptr, cloud_ptr);
+    cas.set(currentRegion.processViews[i].c_str() ,*cloud_ptr);
     outInfo(FG_MAGENTA << "terminated getviewCloud successfully");
-    cas.set(currentRegion.processViews[i].c_str(), *cloud_ptr);
   }
 
 
@@ -224,15 +222,15 @@ TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification con
 void ObjectRegionFilter::fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
 {
   std::string cloudname("object region scene points");
-  /*
   if (firstRun){
-    visualizer.addPointCloud(cloud_ptrs[0], cloudname);
+    visualizer.addPointCloud(cloud_ptr, cloudname);
     visualizer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
   } else {
-    visualizer.updatePointCloud(cloud_ptrs[0], cloudname);
+    visualizer.updatePointCloud(cloud_ptr, cloudname);
     visualizer.removeAllShapes();
     visualizer.getPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
   }
+  /*
   visualizer.addSphere(pcl::PointXYZ(-0.387466371059, 0.170032024384, 0.9), 0.1, "spatpos");
   */
 }

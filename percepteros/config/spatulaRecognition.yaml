@@ -2,8 +2,8 @@
 annotators:
   - CollectionReader
   - ImagePreprocessor
-  - NormalEstimator
   - ObjectRegionFilter
+  - NormalEstimator
   - PlaneAnnotator
   - PointCloudClusterExtractor
   - SpatulaRecognition
