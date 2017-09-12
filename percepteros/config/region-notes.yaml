@@ -3,16 +3,9 @@
   region_center: [-0.387466371059, 0.170032024384, 0.9]
   range: [0.5, 0.5, 0.35]
 
-- regionID: "cake" # valid input can be found in view_names.h
+- regionID: "plate" # valid input can be found in view_names.h
   viewsToProcess: ["cloud"] # appending "_<process_views>" to the name for cas.set
-  region_center: [0.0109152495861, 0.0605369210243, 1.00669622421]
+  region_center: [-0.354085087776, -0.160685777664, 1.2780995369]
   range: [0.4, 0.4, 0.4]
 
-- regionID: "knife" # valid input can be found in view_names.h
-#not working for normals yet
-  viewsToProcess: ["cloud"] #, "normals"] # appending "_<process_views>" to the name for cas.set
-  region_center: [0.306358039379, -0.189462780952, 0.851193547249]
-  range: [0.5, 0.5, 0.5]
-
-# the correct frame for this would be head mound kinect ir link
-
+# the correct frame for this would be head_mount_kinect_rgb_optical_frame
