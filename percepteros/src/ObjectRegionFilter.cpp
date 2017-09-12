@@ -40,6 +40,7 @@ struct regionDescriptor{
 class ObjectRegionFilter : public DrawingAnnotator
 {
 private:
+  regionDescriptor currentRegion;
   std::string region_config;
   double pointSize;
   pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr;
@@ -201,7 +202,6 @@ TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification con
 
   outInfo(FG_MAGENTA << "pipelineID set to: " << pipelineID);
 
-  regionDescriptor currentRegion;
   findRegion(pipelineID, currentRegion);
 
   for (int i = 0; i < currentRegion.processViews.size(); i++)
@@ -230,9 +230,7 @@ void ObjectRegionFilter::fillVisualizerWithLock(pcl::visualization::PCLVisualize
     visualizer.removeAllShapes();
     visualizer.getPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, pointSize, cloudname);
   }
-  /*
-  visualizer.addSphere(pcl::PointXYZ(-0.387466371059, 0.170032024384, 0.9), 0.1, "spatpos");
-  */
+  visualizer.addSphere(pcl::PointXYZ(currentRegion.center_position.x(), currentRegion.center_position.y(), currentRegion.center_position.z()), 0.1, "RegionSpots");
 }
 
 TyErrorId ObjectRegionFilter::initialize(AnnotatorContext &ctx)
