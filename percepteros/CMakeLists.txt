@@ -56,9 +56,6 @@ find_additional_files()
 #each containing a CMakeLists.txt here
 #add_subdirectory(src/xxx)
 
-add_library(percepteros_orf src/RegionDefinition.cpp)
-add_dependencies(percepteros_orf yaml-cpp)
-
 rs_add_library(rs_cylinderAnnotator src/CylinderAnnotator.cpp)
 target_link_libraries(rs_cylinderAnnotator ${CATKIN_LIBRARIES})
 
@@ -96,7 +93,7 @@ rs_add_library(rs_colorClusterer src/ColorClusterer.cpp)
 target_link_libraries(rs_colorClusterer ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_spatulaRecognition src/SpatulaRecognition.cpp)
-target_link_libraries(rs_spatulaRecognition ${CATKIN_LIBRARIES} percepteros_orf yaml-cpp)
+target_link_libraries(rs_spatulaRecognition ${CATKIN_LIBRARIES})
 
 rs_add_library(rs_objectRegionFilter src/ObjectRegionFilter.cpp)
 target_link_libraries(rs_objectRegionFilter ${CATKIN_LIBRARIES} yaml-cpp)

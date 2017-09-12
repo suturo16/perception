@@ -32,9 +32,6 @@ struct regionDescriptor{
   Eigen::Vector3d center_position;
   Eigen::Vector3d axis_ranges;
 
-  //supported values computed later on
-  //pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_ptr;
-  pcl::PointCloud<pcl::Normal>::Ptr normal_ptr;
 };
 
 class ObjectRegionFilter : public DrawingAnnotator
@@ -145,39 +142,26 @@ void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_
   pcl::PassThrough<pcl::PointXYZRGBA> pass;
   pass.setKeepOrganized(true);
   pass.setInputCloud (in_cloud_ptr);
-  //outInfo("in cloud size = " << in_cloud_ptr->size());
-  //outInfo("field_name = " << field_name);
   pass.setFilterFieldName (field_name);
   float left_endpoint = center - (range/2);
   float right_endpoint = center + (range/2);
-  //outInfo("setting filter Limits le = " << left_endpoint << "right endpoint = " << right_endpoint);
   pass.setFilterLimits (left_endpoint, right_endpoint);
-  //outInfo("filtering");
   pass.filter (*out_cloud_ptr);
-  //outInfo("end filterCloud");
-  /*
-  */
 }
 
 
 bool ObjectRegionFilter::getviewCloud(regionDescriptor rD, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud)
 {
 
-  outInfo(FG_MAGENTA << "filter 1");
   filterCloud(view_cloud, out_cloud, rD.center_position.x(), rD.axis_ranges.x(), std::string("x"));
-  outInfo(FG_MAGENTA << "filter 2");
   filterCloud(out_cloud,  out_cloud, rD.center_position.y(), rD.axis_ranges.y(), "y");
-  outInfo(FG_MAGENTA << "filter 3");
   filterCloud(out_cloud,  out_cloud, rD.center_position.z(), rD.axis_ranges.z(), "z");
-  /*
-*/
   return true;
 }
 
 TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification const &res_spec)
 {
-  outInfo(FG_MAGENTA << "process start");
-  //cloud_ptrs.clear();
+  outInfo("process start");
 
   rs::StopWatch clock;
   rs::SceneCas cas(tcas);
@@ -185,10 +169,10 @@ TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification con
 
   std::vector<percepteros::PipelineAnnotation> pipeline_spec;
   scene.identifiables.filter(pipeline_spec);
-  /*
+  /* not working
   if (pipeline_spec.size() == 0) 
   {
-    outError(FG_MAGENTA << "Scene contains no PipelineAnnotation!\nStopping process.");
+    outError("Scene contains no PipelineAnnotation!\nStopping process.");
     return UIMA_ERR_NONE;
   }
   std::string pipelineID = pipeline_spec[0].pipelineID.get();
@@ -196,22 +180,20 @@ TyErrorId ObjectRegionFilter::processWithLock(CAS &tcas, ResultSpecification con
   std::string pipelineID = PipelineIdentifikator::pipelineID;
   if (pipelineID == "")
   {
-    outError(FG_MAGENTA << "pipelineID is empty");
+    outError("pipelineID is empty");
     return UIMA_ERR_NONE;
   }
 
-  outInfo(FG_MAGENTA << "pipelineID set to: " << pipelineID);
+  outInfo("pipelineID set to: " << pipelineID);
 
   findRegion(pipelineID, currentRegion);
 
   for (int i = 0; i < currentRegion.processViews.size(); i++)
   {
-    outInfo(FG_MAGENTA << "Wubbalubbadubdub " << i << 0);
     cas.get(currentRegion.processViews[i].c_str() ,*cloud_ptr);
-    outInfo(FG_MAGENTA << "Wubbalubbadubdub " << i << 1);
     getviewCloud(currentRegion, cloud_ptr, cloud_ptr);
     cas.set(currentRegion.processViews[i].c_str() ,*cloud_ptr);
-    outInfo(FG_MAGENTA << "terminated getviewCloud successfully");
+    outInfo("terminated getviewCloud successfully");
   }
 
 
@@ -235,7 +217,7 @@ void ObjectRegionFilter::fillVisualizerWithLock(pcl::visualization::PCLVisualize
 
 TyErrorId ObjectRegionFilter::initialize(AnnotatorContext &ctx)
 {
-  outInfo(FG_MAGENTA << "initialize");
+  outInfo("initialize");
   if(ctx.isParameterDefined("region_config")) ctx.extractValue("region_config", region_config);
   parseRegionConfig(region_config);
   

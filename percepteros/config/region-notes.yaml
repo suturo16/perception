@@ -1,7 +1,7 @@
 - regionID: "spatulaRecognition" # valid input can be found in view_names.h
   viewsToProcess: ["cloud"] # appending "_<process_views>" to the name for cas.set
   region_center: [-0.387466371059, 0.170032024384, 0.9]
-  range: [0.5, 0.5, 0.35]
+  range: [0.6, 0.6, 0.6]
 
 - regionID: "plate" # valid input can be found in view_names.h
   viewsToProcess: ["cloud"] # appending "_<process_views>" to the name for cas.set
