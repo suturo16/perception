@@ -5,6 +5,7 @@
 #define __PERCEPTEROS_ALL_TYPES_H__
 
 #include <percepteros/types/type_definitions.h>
+#include <percepteros/types/pipeline_specifications.h>
 #include <percepteros/types/recognition_objects.h>
 #include <percepteros/types/record_data.h>
 

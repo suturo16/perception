@@ -283,6 +283,7 @@
       <fixedFlow>
         <node>CollectionReader</node>
         <node>ImagePreprocessor</node>
+        <node>ObjectRegionFilter</node>
         <node>PointCloudFilter</node>
         <node>NormalEstimator</node>
         <node>PlaneAnnotator</node>
