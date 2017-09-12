@@ -1,5 +1,6 @@
 #include <percepteros/CaterrosControlledAnalysisEngine.h>
 #include <percepteros/types/all_types.h>
+#include <percepteros/ObjectRegionFilter.h>
 
 /**
  * @brief CaterrosControlledAnalysisEngine::init Initialize The ControlledAnalysisEngine, using the given aefile
@@ -105,4 +106,8 @@ void CaterrosControlledAnalysisEngine::process(bool reset_pipeline_after_process
   rs::Scene scene = sCas.getScene();
   scene.identifiables.append(annotation);
   outInfo("Appended PipelineID to cluster");
+  std::vector<percepteros::PipelineAnnotation> pipeline_spec;
+  scene.identifiables.filter(pipeline_spec);
+  outInfo("set pipeline to: " << pipeline_spec[0].pipelineID.get());
+  PipelineIdentifikator::pipelineID = pipelineID;
 }
