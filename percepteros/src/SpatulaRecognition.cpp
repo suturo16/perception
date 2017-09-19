@@ -25,13 +25,20 @@ using namespace uima;
 
 typedef pcl::PointXYZRGBA PointXYZRGBA;
 
+/**
+* @brief featureSet Struct that assembles the value of the analysed paramters in one set.
+*/
 struct featureSet{
-  Eigen::Matrix3f pca_eigen_vec;
-  Eigen::Vector3f pca_eigen_vals;
-  Eigen::Vector3f hsv_means;
+
+  Eigen::Matrix3f pca_eigen_vec; /**< the cluster's eigenvectors resulting from the PCA analysis */
+  Eigen::Vector3f pca_eigen_vals; /**< the cluster's eigenvalues resulting form the PCA analysis */
+  Eigen::Vector3f hsv_means; /**< the cluster's hsv centroid */
 
 };
 
+/**
+* @brief SpatulaRecognition Annotator for the spatula  recognition.  This Annotator filters the scene for clusters and performs the principal component analysis on each of them and also analyses their hue value. It takes then the first cluster whose parameter set is in terms of the euclidean distance close enough to the pre-determined spatula parameters.
+*/
 class SpatulaRecognition : public DrawingAnnotator
 {
 private:
@@ -71,7 +78,10 @@ public:
   TyErrorId initialize(AnnotatorContext &ctx);
 };
 
-
+/**
+* @brief initialize Sets up a featureSet whose values have the ideal spatula parameters for later comparision with the clusters featureSet.  
+* @param ctx
+*/
 TyErrorId SpatulaRecognition::initialize(AnnotatorContext &ctx)
 {
   if(ctx.isParameterDefined("range")) ctx.extractValue("range", range);
@@ -119,6 +129,11 @@ TyErrorId SpatulaRecognition::destroy()
   return UIMA_ERR_NONE;
 }
 
+/**
+* @brief processWithLock Filters the scene for clusters and computes their featureSet.
+* @param tcas
+* @param res_spec
+*/
 TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification const &res_spec)
 {
   outInfo("process start");
@@ -256,7 +271,9 @@ TyErrorId SpatulaRecognition::processWithLock(CAS &tcas, ResultSpecification con
   return UIMA_ERR_NONE;
 }
 
-
+/**
+* @brief fillVisualizerWithLock Visualizes the scene and the axis of the recognized spatula cluster.
+*/
 void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualizer &visualizer, const bool firstRun)
 {
 
@@ -296,6 +313,10 @@ void SpatulaRecognition::fillVisualizerWithLock(pcl::visualization::PCLVisualize
   }
 }
 
+/**
+* @brief computeFeatures Computes the features for the given cluster.
+* @param cluster  Point cloud representing the cluster.
+*/
 featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cluster)
 {
   featureSet cluster_feats;
@@ -329,6 +350,12 @@ featureSet SpatulaRecognition::computeFeatures(pcl::PointCloud<pcl::PointXYZRGBA
   return cluster_feats;
 }
 
+/**
+* @brief hasSimilarFS Compares two featureŚets and if their euclidean distance is small enough it will cathegorize them as similar.
+* @param compared featureSet with the 'true' parameters.
+* @param comparing  
+* @return bool Value indicating whether the two featureSets are similar or not.
+*/
 bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
 {
   //outInfo("hasSimilarFS started");
@@ -356,6 +383,9 @@ bool SpatulaRecognition::hasSimilarFS(featureSet compared, featureSet comparing)
   return true;
 }
 
+/**
+* @brief getCoefficients Computes pcl::ModelCoefficients of the computed spatula axis for visualization purposes.
+*/
 pcl::ModelCoefficients SpatulaRecognition::getCoefficients(tf::Vector3 axis, pcl::PointXYZ origin) {
   pcl::ModelCoefficients coeffs;
   //point
@@ -372,6 +402,10 @@ pcl::ModelCoefficients SpatulaRecognition::getCoefficients(tf::Vector3 axis, pcl
   return coeffs;
 }
 
+/**
+* @brief getOrigin Computes the highest point of the spatula cluster which is then the position of the spatula frame.
+* @param spat Cluster representing the spatula
+*/
 pcl::PointXYZ SpatulaRecognition::getOrigin(pcl::PointCloud<pcl::PointXYZ>::Ptr spat) {
   pcl::PointXYZ spatula_origin,begin, end;
   std::vector<pcl::PointXYZ> endpoints(2);
