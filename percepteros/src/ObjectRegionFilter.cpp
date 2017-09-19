@@ -25,6 +25,9 @@
 
 using namespace uima;
 
+/**
+* @brief regionDescriptor Struct to assemble all features of a region in one set
+*/
 struct regionDescriptor{
   //filled by parser
   std::string regionID;
@@ -34,6 +37,10 @@ struct regionDescriptor{
 
 };
 
+
+/**
+* @brief ObjectRegionFilter Point cloud filter that filters the could so that only a specified region is left.
+*/
 class ObjectRegionFilter : public DrawingAnnotator
 {
 private:
@@ -64,6 +71,10 @@ public:
 
 };
 
+/**
+* @brief parseRegionConfig YAML parser for the file which specifies the different regions.
+* @param region_file Name of the yaml file.
+*/
 bool ObjectRegionFilter::parseRegionConfig(std::string region_file)
 {
   std::string regionConfigFile = ros::package::getPath("percepteros") +"/config/" + region_file;
@@ -122,6 +133,11 @@ bool ObjectRegionFilter::parseRegionConfig(std::string region_file)
   return true;
 }
 
+/**
+* @brief findRegion Searches through all the available regions to find the specified one.
+* @param regionID String ID for searched region.
+* @param regionDescriptor if region is found then its content is written into this variable.
+*/
 bool ObjectRegionFilter::findRegion(std::string regionID, regionDescriptor& rD)
 {
   for (size_t i = 0; i < this->regions.size(); i++) {
@@ -137,6 +153,14 @@ bool ObjectRegionFilter::findRegion(std::string regionID, regionDescriptor& rD)
   return false;
 }
 
+/**
+* @brief filterCloud Filters cloud along specified axis.
+* @param in_cloud_ptr original cloud
+* @param out_cloud_ptr filtered cloud
+* @param center region center
+* @param range the width of the region
+* @param field_name along what axis the cloud should be filtered
+*/
 void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud_ptr, float center, float range, std::string field_name)
 {
   pcl::PassThrough<pcl::PointXYZRGBA> pass;
@@ -149,7 +173,12 @@ void ObjectRegionFilter::filterCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr in_
   pass.filter (*out_cloud_ptr);
 }
 
-
+/**
+* @brief getviewCloud Initiates filering of cloud alon x, y, and z axis.
+* @param rD region description
+* @param view_cloud cloud to be filtered
+* @param out_cloud filtered cloud
+*/
 bool ObjectRegionFilter::getviewCloud(regionDescriptor rD, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr view_cloud, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr out_cloud)
 {
 
