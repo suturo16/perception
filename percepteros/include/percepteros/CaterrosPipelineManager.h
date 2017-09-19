@@ -139,7 +139,7 @@ public:
       cv::FileStorage fs(configFile_, cv::FileStorage::READ);
       std::vector<std::string> lowLvlPipeline;
       fs["annotators"] >> lowLvlPipeline;
-      engine.setNextPipeline(lowLvlPipeline);
+      engine.setNextPipeline(lowLvlPipeline, pipelineName);
       return true;
   }
 
